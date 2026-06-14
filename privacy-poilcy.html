@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LingoStar Privacy Policy / 개인정보 처리방침</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f7f7f3;
+      --fg: #172326;
+      --muted: #5c686b;
+      --panel: #ffffff;
+      --line: #d9ddd6;
+      --accent: #1f5d66;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #111817;
+        --fg: #f2f5f1;
+        --muted: #bac4c0;
+        --panel: #18211f;
+        --line: #31403c;
+        --accent: #80c7d0;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.65;
+      background: var(--bg);
+      color: var(--fg);
+    }
+    main {
+      width: min(960px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 48px 0 72px;
+    }
+    header, section, footer {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 18px;
+    }
+    h1, h2, h3 { line-height: 1.25; margin: 0 0 12px; }
+    h1 { font-size: clamp(1.8rem, 4vw, 2.8rem); }
+    h2 { font-size: 1.35rem; color: var(--accent); }
+    h3 { font-size: 1.05rem; margin-top: 20px; }
+    p, ul { margin: 0 0 12px; }
+    ul { padding-left: 1.4rem; }
+    .muted { color: var(--muted); }
+    .language { display: grid; gap: 18px; }
+    .notice { border-left: 4px solid var(--accent); padding-left: 16px; }
+    footer { font-size: 0.92rem; color: var(--muted); }
+    footer p:last-child { margin-bottom: 0; }
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>LingoStar Privacy Policy / 개인정보 처리방침</h1>
+      <p class="muted">Effective date / 시행일: June 13, 2026</p>
+      <p class="notice">This bilingual policy explains how LingoStar handles data when used as a ChatGPT App. If the Korean and English text differ, the meaning most protective of the user should be applied unless applicable law requires otherwise.</p>
+      <p class="notice">본 한영 병기 문서는 LingoStar를 ChatGPT App으로 사용할 때의 데이터 처리 방식을 설명합니다. 한글과 영문 내용이 다르게 해석될 경우, 관련 법령에서 달리 요구하지 않는 한 사용자에게 더 보호적인 의미를 적용합니다.</p>
+    </header>
+
+    <section>
+      <h2>한국어</h2>
+      <div class="language">
+        <article>
+          <h3>1. 서비스 개요</h3>
+          <p>LingoStar는 실용주의 컴퓨팅 연구소(사업자등록번호 705-12-02862, 대표 김정우)가 운영하는, ChatGPT 안에서 동작하는 외국어 학습 앱입니다. 사용자는 말하기, 듣기, 쓰기, 읽기 기반 문제를 풀고, 학습 세션, 진행 상황, 답안, 피드백, 복습 항목을 관리할 수 있습니다.</p>
+        </article>
+
+        <article>
+          <h3>2. 처리하는 정보</h3>
+          <ul>
+            <li>학습 세션 정보: 학습 대상 언어, 사용자 표시 언어, 목표, 관심 주제, 피하고 싶은 주제, 레벨, 설정</li>
+            <li>학습 활동 정보: 생성된 문제, 사용자의 답안, 점수, 피드백, 복습 항목, 완료 기록</li>
+            <li>음성 관련 정보: 사용자가 말하기 녹음을 전사할 때 제공하는 오디오 데이터와 전사 결과</li>
+            <li>기술 정보: ChatGPT/MCP가 제공하는 사용자 또는 세션 식별자, 로케일, 오류 처리에 필요한 최소한의 요청 정보</li>
+          </ul>
+          <p>LingoStar는 결제 정보, 주민등록번호, 정부 발급 신분증 번호, 민감한 인증 정보, 비밀번호를 요구하지 않습니다.</p>
+        </article>
+
+        <article>
+          <h3>3. 정보 사용 목적</h3>
+          <ul>
+            <li>학습 세션 생성 및 유지</li>
+            <li>영역별 문제 생성과 진행 상황 표시</li>
+            <li>답안 채점 결과, 피드백, 복습 항목 저장</li>
+            <li>브라우저 음성 기능이 불가능하거나 실패할 때 선택적 음성 전사 또는 음성 합성 제공</li>
+            <li>서비스 안정성, 보안, 오류 진단</li>
+          </ul>
+        </article>
+
+        <article>
+          <h3>4. 음성 처리</h3>
+          <p>듣기 문제는 비용 절감을 위해 브라우저의 음성 합성 기능을 먼저 사용합니다. 브라우저 음성 합성이 없거나 실패할 때만 서버 측 OpenAI TTS API를 사용할 수 있습니다.</p>
+          <p>말하기 녹음은 사용자가 명시적으로 녹음 및 전사를 요청할 때만 서버 측 OpenAI STT API로 전송될 수 있습니다. LingoStar 서버는 음성 평가를 직접 수행하지 않으며, 전사 결과는 ChatGPT가 답안 평가를 수행하는 데 사용될 수 있습니다.</p>
+        </article>
+
+        <article>
+          <h3>5. 제3자 처리</h3>
+          <p>LingoStar는 ChatGPT 및 OpenAI API 환경 위에서 동작합니다. 사용자가 ChatGPT에 입력하는 대화, 첨부, 앱 호출, OpenAI API를 통한 음성 전사 및 합성은 OpenAI의 약관과 개인정보 처리방침의 적용을 받을 수 있습니다.</p>
+          <p>LingoStar 자체는 광고 네트워크, 결제 처리, 판매 목적의 데이터 브로커에 사용자 데이터를 제공하지 않습니다.</p>
+        </article>
+
+        <article>
+          <h3>6. 보관 및 삭제</h3>
+          <p>현재 LingoStar 프로토타입은 서버 메모리 기반 상태 저장을 사용합니다. 학습 세션과 진행 정보는 서버 프로세스가 유지되는 동안 또는 사용자가 명시적으로 세션 삭제를 요청할 때까지 보관될 수 있습니다. 서버 재시작 또는 배포 환경 설정에 따라 데이터가 초기화될 수 있습니다.</p>
+          <p>사용자는 ChatGPT에서 명시적으로 특정 언어 세션 삭제를 요청할 수 있으며, 이 경우 해당 세션은 LingoStar 상태에서 제거됩니다.</p>
+        </article>
+
+        <article>
+          <h3>7. 보안</h3>
+          <p>LingoStar는 사용자별 또는 세션별 식별자를 기준으로 상태를 분리하고, 필요한 최소한의 데이터만 처리하도록 설계되었습니다. 다만 인터넷 기반 서비스와 AI 서비스에는 항상 보안 위험이 존재하므로, 민감한 개인정보나 비밀 정보를 학습 답안에 입력하지 않는 것을 권장합니다.</p>
+        </article>
+
+        <article>
+          <h3>8. 아동의 개인정보</h3>
+          <p>LingoStar는 13세 미만 아동을 대상으로 하지 않습니다. 거주 지역에서 더 높은 연령 기준이 적용되는 경우 해당 기준을 따릅니다.</p>
+        </article>
+
+        <article>
+          <h3>9. 사용자 권리와 문의</h3>
+          <p>사용자는 자신의 학습 세션 삭제를 요청할 수 있습니다. 추가 문의, 접근, 정정, 삭제 요청은 실용주의 컴퓨팅 연구소(대표 김정우)에 이메일 <a href="mailto:pps.jeongwoo@gmail.com">pps.jeongwoo@gmail.com</a>로 요청해 주십시오.</p>
+        </article>
+
+        <article>
+          <h3>10. 변경</h3>
+          <p>이 개인정보 처리방침은 기능, 법령, 운영 방식 변경에 따라 개정될 수 있습니다. 중요한 변경이 있는 경우 홈페이지 또는 앱 설명을 통해 알립니다.</p>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <h2>English</h2>
+      <div class="language">
+        <article>
+          <h3>1. Service Overview</h3>
+          <p>LingoStar is a language-learning app operated by Practical Problem Solvers (Business Registration No. 705-12-02862, Representative: Jeongwoo Kim) that runs inside ChatGPT. Users can practice speaking, listening, writing, and reading, and manage learning sessions, progress, answers, feedback, and review items.</p>
+        </article>
+
+        <article>
+          <h3>2. Information We Process</h3>
+          <ul>
+            <li>Learning session data: target language, interface language, goals, interests, avoided topics, levels, and settings</li>
+            <li>Learning activity data: generated exercises, user answers, scores, feedback, review items, and completion history</li>
+            <li>Audio-related data: audio submitted for speaking transcription and the resulting transcript</li>
+            <li>Technical data: user or session identifiers, locale, and minimal request information needed for error handling and service operation</li>
+          </ul>
+          <p>LingoStar does not ask for payment card data, national identification numbers, government ID numbers, sensitive authentication information, or passwords.</p>
+        </article>
+
+        <article>
+          <h3>3. How We Use Information</h3>
+          <ul>
+            <li>To create and maintain learning sessions</li>
+            <li>To generate skill-specific exercises and display progress</li>
+            <li>To save grading results, feedback, and review items</li>
+            <li>To provide optional speech transcription or synthesis when browser audio is unavailable or fails</li>
+            <li>To maintain service reliability, security, and troubleshooting</li>
+          </ul>
+        </article>
+
+        <article>
+          <h3>4. Audio Processing</h3>
+          <p>For listening exercises, LingoStar uses browser speech synthesis first to reduce cost and data transfer. Server-side OpenAI TTS may be used only when browser speech synthesis is unavailable or fails.</p>
+          <p>Speaking recordings may be sent to server-side OpenAI STT only when the user explicitly records and requests transcription. The LingoStar server does not grade speech directly; transcripts may be used by ChatGPT to evaluate answers.</p>
+        </article>
+
+        <article>
+          <h3>5. Third-Party Processing</h3>
+          <p>LingoStar runs in the ChatGPT and OpenAI API environment. Conversations, attachments, app calls, and audio transcription or synthesis through OpenAI APIs may be subject to OpenAI's terms and privacy policies.</p>
+          <p>LingoStar itself does not provide user data to advertising networks, payment processors, or data brokers for sale.</p>
+        </article>
+
+        <article>
+          <h3>6. Retention and Deletion</h3>
+          <p>The current LingoStar prototype uses in-memory server state. Learning sessions and progress may be retained while the server process is running or until the user explicitly asks to delete a session. Data may reset when the server restarts or depending on deployment configuration.</p>
+          <p>Users can explicitly ask in ChatGPT to delete a specific language session, and that session will be removed from LingoStar state.</p>
+        </article>
+
+        <article>
+          <h3>7. Security</h3>
+          <p>LingoStar is designed to separate state by user or session identifiers and to process only the data needed for the learning workflow. However, internet-based and AI services always involve security risks, so users should avoid entering sensitive personal information or secrets in learning answers.</p>
+        </article>
+
+        <article>
+          <h3>8. Children's Privacy</h3>
+          <p>LingoStar is not directed to children under 13. If a higher age threshold applies in the user's location, that threshold applies.</p>
+        </article>
+
+        <article>
+          <h3>9. User Rights and Contact</h3>
+          <p>Users may request deletion of their learning sessions. For additional questions, access, correction, or deletion requests, please contact Practical Problem Solvers, represented by Jeongwoo Kim, at <a href="mailto:pps.jeongwoo@gmail.com">pps.jeongwoo@gmail.com</a>.</p>
+        </article>
+
+        <article>
+          <h3>10. Changes</h3>
+          <p>This Privacy Policy may be updated as features, laws, or operating practices change. Material changes will be posted on the website or in the app description.</p>
+        </article>
+      </div>
+    </section>
+
+    <footer>
+      <p><strong>운영자</strong>: 실용주의 컴퓨팅 연구소 | <strong>사업자등록번호</strong>: 705-12-02862 | <strong>대표</strong>: 김정우 | <strong>연락처</strong>: <a href="mailto:pps.jeongwoo@gmail.com">pps.jeongwoo@gmail.com</a></p>
+      <p><strong>Operator</strong>: Practical Problem Solvers | <strong>Business Registration No.</strong>: 705-12-02862 | <strong>Representative</strong>: Jeongwoo Kim | <strong>Contact</strong>: <a href="mailto:pps.jeongwoo@gmail.com">pps.jeongwoo@gmail.com</a></p>
+    </footer>
+  </main>
+</body>
+</html>

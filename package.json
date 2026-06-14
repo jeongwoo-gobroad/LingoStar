@@ -1,0 +1,23 @@
+{
+  "name": "lingostar",
+  "version": "0.6.1",
+  "description": "AI-powered language learning GPT App prototype using the OpenAI Apps SDK and MCP.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check server.js && node scripts/check-widget.mjs",
+    "verify": "node scripts/verify-server.mjs",
+    "verify:auth": "node scripts/verify-auth.mjs",
+    "verify:developer-mode": "node scripts/verify-developer-mode.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/ext-apps": "^1.0.1",
+    "@modelcontextprotocol/sdk": "^1.20.2",
+    "jose": "^6.2.3",
+    "zod": "^3.25.76"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "private": true
+}

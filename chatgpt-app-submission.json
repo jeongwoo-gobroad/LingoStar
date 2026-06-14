@@ -1,0 +1,220 @@
+{
+  "$schema": "https://developers.openai.com/apps-sdk/schemas/chatgpt-app-submission.v1.json",
+  "schema_version": 1,
+  "app_info": {
+    "display_name": "LingoStar",
+    "subtitle": "AI 기반 언어 학습 / AI language practice",
+    "description": "LingoStar는 ChatGPT 안의 위젯에서 언어 정보, 듣기, 읽기, 쓰기, 말하기를 영역별로 연습하고 진행 상황을 저장하는 외국어 학습 앱입니다. / LingoStar is a ChatGPT app for practicing language-specific knowledge, listening, reading, writing, and speaking in a widget, with saved progress.",
+    "category": "EDUCATION"
+  },
+  "tools": {
+    "get_lingostar_state": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Only returns the learner's private LingoStar state, dashboard, active section, GUI settings, and persisted logical contexts.",
+        "open_world_justification": "Does not publish, send, or modify data in public internet or third-party systems.",
+        "destructive_justification": "Does not delete, overwrite, revoke, or perform irreversible actions."
+      }
+    },
+    "manage_learning_session": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Creates or updates a private language-learning session, learner settings, progress context, weakness context, and may store a first section.",
+        "open_world_justification": "Only changes the app's private learner state and does not publish or update external systems.",
+        "destructive_justification": "Does not delete sessions or perform irreversible destructive actions."
+      }
+    },
+    "create_lesson_exercises": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Stores a generated private exercise section for the active learner session after structural validation.",
+        "open_world_justification": "Only updates private app state and does not publish content or modify external systems.",
+        "destructive_justification": "Does not delete or irreversibly overwrite learner data."
+      }
+    },
+    "grade_section_answers": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Saves grading results, updates private skill scores, creates review exercises, and records section pass/fail.",
+        "open_world_justification": "Only updates private learner progress inside the app.",
+        "destructive_justification": "Does not delete data or perform irreversible destructive operations."
+      }
+    },
+    "store_level_judgment": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Records a private judgment about whether a level is complete and may update that level's status.",
+        "open_world_justification": "Only mutates private learning-progress state within LingoStar.",
+        "destructive_justification": "Does not delete records or perform irreversible destructive actions."
+      }
+    },
+    "store_goal_judgment": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Records GPT's private goal-completion judgment under CEFR or a named certification standard and may mark the goal complete only after the configured minimum section threshold.",
+        "open_world_justification": "Only mutates private learner goal state within LingoStar.",
+        "destructive_justification": "Does not delete records or perform irreversible destructive actions."
+      }
+    },
+    "transcribe_audio": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Transcribes supplied audio and returns text without changing LingoStar state.",
+        "open_world_justification": "May call the external OpenAI audio transcription API with user-provided audio only when AI fallback is enabled and configured.",
+        "destructive_justification": "Does not delete, overwrite, revoke, or perform irreversible actions."
+      }
+    },
+    "synthesize_speech": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Synthesizes audio from supplied lesson text and returns a playback data URL without changing LingoStar state.",
+        "open_world_justification": "May call the external OpenAI audio speech API with exercise text only when browser TTS is unavailable and AI fallback is enabled.",
+        "destructive_justification": "Does not delete, overwrite, revoke, or perform irreversible actions."
+      }
+    },
+    "delete_session": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Deletes a private language-learning session from LingoStar state.",
+        "open_world_justification": "Only changes private app state and does not publish or update external systems.",
+        "destructive_justification": "Permanently removes the selected language-learning session when the user explicitly asks for deletion."
+      }
+    }
+  },
+  "test_cases": [
+    {
+      "description": "Create a first Japanese JLPT session and open the first section immediately.",
+      "user_prompt": "JLPT N4를 준비하고 싶어요. 한국어 UI로 일본어 기초부터 시작해 주세요.",
+      "file_attachment_urls": null,
+      "tools_triggered": "manage_learning_session, create_lesson_exercises",
+      "expected_output": "Creates a Japanese learning session and stores a first section in the widget with language_info, listening, reading, writing, and speaking items according to exerciseCounts.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Load learner dashboard and persisted logical contexts.",
+      "user_prompt": "Show my LingoStar dashboard and current Japanese progress.",
+      "file_attachment_urls": null,
+      "tools_triggered": "get_lingostar_state",
+      "expected_output": "Returns saved sessions, active section state, skill profile, recent feedback, dashboard summary, and agentContexts.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Generate a foundation-stage section with language-specific knowledge.",
+      "user_prompt": "I am a complete beginner in Japanese. Make the next section with kana and pronunciation basics.",
+      "file_attachment_urls": null,
+      "tools_triggered": "create_lesson_exercises",
+      "expected_output": "Stores a validated section containing separate language_info exercises plus the configured listening, reading, writing, and speaking exercises.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Grade submitted speaking answers while objective items are already auto-graded.",
+      "user_prompt": "Grade my LingoStar speaking answers for this section.",
+      "file_attachment_urls": null,
+      "tools_triggered": "grade_section_answers",
+      "expected_output": "Stores 0-100 speaking scores and feedback, preserves skipped items without lowering skill profile, and completes the section when all exercises are graded.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Record a goal-completion judgment.",
+      "user_prompt": "Based on my recent sections, decide whether my JLPT N4 goal is complete.",
+      "file_attachment_urls": null,
+      "tools_triggered": "store_goal_judgment",
+      "expected_output": "Records the judgment and only marks the goal complete if the model's standard-based judgment is positive and the minimum completed-section threshold is satisfied.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Use server STT fallback for a speaking recording.",
+      "user_prompt": "My browser speech recognition failed. Transcribe this recorded speaking answer.",
+      "file_attachment_urls": null,
+      "tools_triggered": "transcribe_audio",
+      "expected_output": "Returns the transcript when AI fallback is enabled and configured, or a browser speech error message when disabled.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Use server TTS fallback for a listening exercise.",
+      "user_prompt": "My browser cannot play the listening prompt. Generate fallback audio for this LingoStar text.",
+      "file_attachment_urls": null,
+      "tools_triggered": "synthesize_speech",
+      "expected_output": "Returns a playable audio data URL when AI fallback is enabled and configured, or a browser speech error message when disabled.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Delete a session after explicit user request.",
+      "user_prompt": "Delete my LingoStar Spanish session.",
+      "file_attachment_urls": null,
+      "tools_triggered": "delete_session",
+      "expected_output": "Deletes only the explicitly requested language session and leaves other sessions intact.",
+      "expected_output_url": null
+    }
+  ],
+  "negative_test_cases": [
+    {
+      "description": "Do not trigger for unrelated scheduling.",
+      "user_prompt": "Schedule a meeting with my Japanese tutor next Tuesday.",
+      "file_attachment_urls": null,
+      "tools_triggered": null,
+      "expected_output": "The app should not be invoked because it does not manage calendars or scheduling.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Do not trigger for translation-only requests without a learning workflow.",
+      "user_prompt": "Translate this restaurant menu from Japanese to English.",
+      "file_attachment_urls": null,
+      "tools_triggered": null,
+      "expected_output": "The app should not be invoked unless the user asks to turn the content into LingoStar learning practice.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Do not delete a session from ambiguous intent.",
+      "user_prompt": "I think I am done with my Spanish session for now.",
+      "file_attachment_urls": null,
+      "tools_triggered": null,
+      "expected_output": "The app should not delete anything because deletion requires an explicit delete request.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Do not trigger for unrelated financial advice.",
+      "user_prompt": "Should I buy more shares of an AI stock this week?",
+      "file_attachment_urls": null,
+      "tools_triggered": null,
+      "expected_output": "The app should not be invoked because financial advice is outside the language-learning workflow.",
+      "expected_output_url": null
+    }
+  ]
+}

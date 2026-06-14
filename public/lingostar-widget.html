@@ -1,0 +1,2634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>LingoStar</title>
+<style>
+/* ================================================================ */
+/*  Theme Variables                                                 */
+/* ================================================================ */
+:root, [data-theme="light"] {
+  --bg-primary: #f0f2f5;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f6f8fa;
+  --bg-elevated: #ffffff;
+  --surface-glass: rgba(255,255,255,0.72);
+  --border: #dfe2e6;
+  --border-subtle: rgba(0,0,0,0.04);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-tertiary: #94a3b8;
+  --accent: #6366f1;
+  --accent-hover: #4f46e5;
+  --accent-soft: rgba(99,102,241,0.07);
+  --accent-glow: rgba(99,102,241,0.18);
+  --success: #10b981;
+  --success-soft: rgba(16,185,129,0.08);
+  --warning: #f59e0b;
+  --warning-soft: rgba(245,158,11,0.08);
+  --danger: #ef4444;
+  --danger-soft: rgba(239,68,68,0.08);
+  --orange: #f97316;
+  --orange-soft: rgba(249,115,22,0.07);
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.03);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06),0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07),0 2px 4px -1px rgba(0,0,0,0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08),0 4px 6px -2px rgba(0,0,0,0.04);
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+  --transition: 0.2s cubic-bezier(0.4,0,0.2,1);
+  --font: 'Inter',ui-sans-serif,system-ui,-apple-system,sans-serif;
+}
+[data-theme="dark"] {
+  --bg-primary: #0d1117;
+  --bg-secondary: #161b22;
+  --bg-tertiary: #1c2128;
+  --bg-elevated: #21262d;
+  --surface-glass: rgba(22,27,34,0.72);
+  --border: rgba(240,246,252,0.1);
+  --border-subtle: rgba(240,246,252,0.04);
+  --text-primary: #e6edf3;
+  --text-secondary: #8b949e;
+  --text-tertiary: #484f58;
+  --accent: #818cf8;
+  --accent-hover: #6366f1;
+  --accent-soft: rgba(129,140,248,0.1);
+  --accent-glow: rgba(129,140,248,0.22);
+  --success: #34d399;
+  --success-soft: rgba(52,211,153,0.1);
+  --warning: #fbbf24;
+  --warning-soft: rgba(251,191,36,0.1);
+  --danger: #f87171;
+  --danger-soft: rgba(248,113,113,0.1);
+  --orange: #fb923c;
+  --orange-soft: rgba(251,146,60,0.1);
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.15);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.2),0 1px 2px rgba(0,0,0,0.15);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.25),0 2px 4px -1px rgba(0,0,0,0.15);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.3),0 4px 6px -2px rgba(0,0,0,0.15);
+}
+
+/* ================================================================ */
+/*  Reset                                                           */
+/* ================================================================ */
+*,*::before,*::after{box-sizing:border-box}
+body{
+  margin:0;font-family:var(--font);font-size:.875rem;line-height:1.55;
+  color:var(--text-primary);background:var(--bg-primary);
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+}
+button,input,select,textarea{font:inherit;color:inherit}
+button:disabled{cursor:not-allowed;opacity:.5}
+button{-webkit-tap-highlight-color:transparent}
+
+/* ================================================================ */
+/*  Shell                                                           */
+/* ================================================================ */
+.shell{width:100%;padding:16px;min-height:100vh}
+
+/* ================================================================ */
+/*  Topbar                                                          */
+/* ================================================================ */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:8px;max-width:960px;margin:0 auto 16px;
+  padding:10px 16px;background:var(--bg-secondary);
+  border:1px solid var(--border);border-radius:var(--radius);
+  box-shadow:var(--shadow-sm);
+}
+.brand{display:flex;align-items:center;gap:10px}
+.mark{
+  width:32px;height:32px;border-radius:var(--radius-sm);
+  background:var(--accent);display:grid;place-items:center;
+  overflow:hidden;box-shadow:0 2px 8px var(--accent-glow);
+  flex-shrink:0;
+}
+.mark img{width:100%;height:100%;object-fit:cover}
+.brand h1{
+  font-size:.95rem;font-weight:800;margin:0;
+  background:linear-gradient(135deg,var(--accent),var(--orange));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.brand .subtitle{font-size:.75rem;color:var(--text-secondary);margin-left:4px}
+.badge{
+  font-size:.7rem;padding:3px 10px;border-radius:var(--radius-full);
+  background:var(--accent-soft);color:var(--accent);
+  font-weight:600;white-space:nowrap;border:1px solid transparent;
+}
+.topbar-right{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.theme-toggle{
+  width:32px;height:32px;border:1px solid var(--border);
+  border-radius:var(--radius-sm);background:var(--bg-tertiary);
+  cursor:pointer;display:grid;place-items:center;font-size:.95rem;
+  transition:all var(--transition);line-height:1;padding:0;
+}
+.theme-toggle:hover{background:var(--accent-soft);border-color:var(--accent)}
+
+/* ================================================================ */
+/*  Layout                                                          */
+/* ================================================================ */
+.layout{
+  display:grid;grid-template-columns:minmax(0,280px) minmax(0,1fr);
+  gap:16px;max-width:960px;margin:0 auto;
+}
+
+/* ================================================================ */
+/*  Panel                                                           */
+/* ================================================================ */
+.panel{
+  background:var(--bg-secondary);border:1px solid var(--border);
+  border-radius:var(--radius);padding:16px;box-shadow:var(--shadow-sm);
+  transition:box-shadow var(--transition);
+}
+.panel-title{
+  font-size:.78rem;font-weight:700;margin:0 0 12px;
+  color:var(--text-secondary);text-transform:uppercase;letter-spacing:.05em;
+}
+.stack{display:flex;flex-direction:column;gap:10px}
+.row{display:flex;align-items:center;gap:8px}
+.row.wrap{flex-wrap:wrap}
+.spread{display:flex;justify-content:space-between;align-items:center}
+.meta{font-size:.78rem;color:var(--text-tertiary)}
+
+/* ================================================================ */
+/*  Form                                                            */
+/* ================================================================ */
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:.78rem;font-weight:600;color:var(--text-secondary)}
+.field input,.field select,.field textarea{
+  padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);
+  background:var(--bg-tertiary);color:var(--text-primary);transition:all var(--transition);
+}
+.field input:focus,.field select:focus,.field textarea:focus{
+  outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow);
+}
+
+/* ================================================================ */
+/*  Buttons                                                         */
+/* ================================================================ */
+.button{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  min-height:36px;padding:7px 18px;border:none;border-radius:var(--radius-sm);
+  background:var(--accent);color:#fff;font-weight:650;cursor:pointer;
+  font-size:.82rem;white-space:nowrap;transition:all var(--transition);
+  box-shadow:0 1px 3px var(--accent-glow);
+}
+.button:hover:not(:disabled){
+  background:var(--accent-hover);transform:translateY(-1px);
+  box-shadow:0 4px 12px var(--accent-glow);
+}
+.button:active:not(:disabled){transform:translateY(0)}
+.button.secondary{
+  background:var(--bg-tertiary);color:var(--text-primary);
+  box-shadow:var(--shadow-xs);border:1px solid var(--border);
+}
+.button.secondary:hover:not(:disabled){
+  background:var(--accent-soft);color:var(--accent);
+  border-color:var(--accent);transform:translateY(-1px);
+}
+.button.warn{background:var(--danger);color:#fff;box-shadow:0 1px 3px var(--danger-soft)}
+.button.warn:hover:not(:disabled){filter:brightness(1.1);transform:translateY(-1px)}
+.button.small{min-height:30px;padding:4px 12px;font-size:.78rem}
+.button.full{width:100%}
+
+/* ================================================================ */
+/*  Session card                                                    */
+/* ================================================================ */
+.session{
+  border:1px solid var(--border);border-radius:var(--radius);
+  padding:14px;background:var(--bg-tertiary);transition:all var(--transition);
+}
+.session:hover{border-color:var(--accent)}
+.session.active{
+  border-color:var(--accent);background:var(--accent-soft);
+  box-shadow:inset 0 0 0 1px var(--accent-glow);
+}
+
+/* ================================================================ */
+/*  Progress bar                                                    */
+/* ================================================================ */
+.progress{
+  height:6px;border-radius:var(--radius-full);
+  background:var(--bg-tertiary);overflow:hidden;margin:8px 0;
+}
+.progress span{
+  display:block;height:100%;border-radius:var(--radius-full);
+  background:linear-gradient(90deg,var(--accent),var(--orange));
+  transition:width .5s cubic-bezier(.4,0,.2,1);
+  box-shadow:0 0 8px var(--accent-glow);
+}
+
+/* ================================================================ */
+/*  Skill grid                                                      */
+/* ================================================================ */
+.skill-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
+.skill-grid .skill{
+  border:1px solid var(--border);border-radius:var(--radius);
+  padding:12px 8px;background:var(--bg-tertiary);text-align:center;
+  transition:all var(--transition);
+}
+.skill-grid .skill:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.skill-grid .skill strong{
+  display:block;font-size:.68rem;font-weight:600;color:var(--text-tertiary);
+  margin-bottom:4px;text-transform:uppercase;letter-spacing:.03em;
+}
+.skill-grid .skill b{
+  font-size:1.15rem;font-weight:800;
+  background:linear-gradient(135deg,var(--accent),var(--success));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.metric-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.metric-grid .metric{
+  border:1px solid var(--border);border-radius:var(--radius);
+  padding:12px 8px;background:var(--bg-tertiary);text-align:center;
+}
+.metric-grid .metric strong{display:block;font-size:.68rem;font-weight:600;color:var(--text-tertiary);margin-bottom:4px}
+.metric-grid .metric b{font-size:1rem;font-weight:800;color:var(--text-primary)}
+
+/* ================================================================ */
+/*  Skill category nav                                              */
+/* ================================================================ */
+.skill-category{
+  display:flex;align-items:center;gap:10px;width:100%;padding:12px 14px;
+  border:1px solid var(--border);border-radius:var(--radius);
+  background:var(--bg-tertiary);cursor:pointer;text-align:left;
+  font-size:.86rem;font-weight:650;transition:all var(--transition);
+  color:var(--text-primary);
+}
+.skill-category:hover:not(:disabled){background:var(--accent-soft);border-color:var(--accent)}
+.skill-category.active{
+  background:var(--accent);color:#fff;border-color:var(--accent);
+  box-shadow:0 2px 8px var(--accent-glow);
+}
+.skill-category.completed{border-color:var(--success)}
+.skill-category.review{border-color:var(--warning);background:var(--warning-soft)}
+.skill-category.review.active{background:var(--warning);color:#fff;border-color:var(--warning)}
+.skill-icon{font-size:1.1rem;width:28px;text-align:center;flex-shrink:0}
+.skill-name{flex:1}
+.skill-progress{font-size:.76rem;font-weight:600;color:var(--text-tertiary);flex-shrink:0}
+.skill-category.active .skill-progress{color:rgba(255,255,255,.8)}
+.skill-check{color:var(--success);font-weight:800;flex-shrink:0}
+.skill-category.active .skill-check{color:rgba(255,255,255,.9)}
+
+/* ================================================================ */
+/*  Exercise                                                        */
+/* ================================================================ */
+.exercise{min-height:340px}
+.exercise h2{font-size:1.05rem;font-weight:750;margin:0 0 4px;color:var(--text-primary)}
+.prompt{color:var(--text-secondary);margin-bottom:14px;line-height:1.6}
+.scenario{
+  border-left:3px solid var(--accent);padding:14px 18px;
+  background:var(--accent-soft);border-radius:0 var(--radius-sm) var(--radius-sm) 0;
+  margin-bottom:14px;line-height:1.65;font-size:.9rem;
+}
+.passage{
+  border-left:3px solid var(--orange);padding:14px 18px;
+  background:var(--orange-soft);border-radius:0 var(--radius-sm) var(--radius-sm) 0;
+  margin-bottom:14px;line-height:1.65;font-size:.9rem;
+}
+.transcript{
+  border-left:3px solid var(--success);padding:12px 16px;
+  background:var(--success-soft);border-radius:0 var(--radius-sm) var(--radius-sm) 0;
+  font-size:.86rem;line-height:1.55;
+}
+.token-bank,.answer-bank{
+  display:flex;flex-wrap:wrap;gap:8px;min-height:48px;padding:12px;
+  border:2px dashed var(--border);border-radius:var(--radius);
+  background:var(--bg-tertiary);align-items:flex-start;align-content:flex-start;
+  transition:border-color var(--transition);
+}
+.answer-bank{border-color:var(--accent);border-style:solid;background:var(--accent-soft)}
+.token{
+  display:inline-flex;padding:7px 14px;border-radius:var(--radius-full);
+  background:var(--bg-secondary);color:var(--text-primary);font-weight:650;
+  cursor:pointer;border:1px solid var(--border);font-size:.84rem;
+  transition:all var(--transition);box-shadow:var(--shadow-xs);
+}
+.token:hover:not(.used){
+  border-color:var(--accent);background:var(--accent-soft);
+  color:var(--accent);transform:translateY(-2px);box-shadow:var(--shadow-sm);
+}
+.token.used{opacity:.3;cursor:default;transform:none}
+.choice{
+  width:100%;padding:12px 16px;border:1px solid var(--border);
+  border-radius:var(--radius);background:var(--bg-secondary);
+  cursor:pointer;text-align:left;font-size:.86rem;transition:all var(--transition);
+}
+.choice:hover:not(:disabled){
+  border-color:var(--accent);background:var(--accent-soft);transform:translateX(4px);
+}
+.choice.selected{
+  border-color:var(--accent);background:var(--accent-soft);
+  font-weight:650;box-shadow:0 0 0 2px var(--accent-glow);
+}
+.feedback{
+  border-radius:var(--radius);padding:12px 16px;background:var(--success-soft);
+  font-size:.86rem;margin-top:10px;border:1px solid var(--success);
+}
+
+/* ================================================================ */
+/*  Details                                                         */
+/* ================================================================ */
+details{
+  border:1px solid var(--border);border-radius:var(--radius);
+  padding:12px 16px;background:var(--bg-tertiary);margin-bottom:10px;
+}
+details summary{cursor:pointer;font-weight:650;font-size:.84rem;color:var(--text-secondary)}
+
+/* ================================================================ */
+/*  Toggle                                                          */
+/* ================================================================ */
+.toggle{
+  display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:center;
+  padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);
+  background:var(--bg-tertiary);
+}
+
+/* ================================================================ */
+/*  Toast                                                           */
+/* ================================================================ */
+.toast-bar{
+  max-width:960px;margin:0 auto 12px;padding:10px 16px;
+  background:var(--accent-soft);border:1px solid var(--accent);
+  border-radius:var(--radius);font-size:.84rem;color:var(--text-primary);
+  animation:slideDown .3s ease-out;
+}
+
+/* ================================================================ */
+/*  Empty / OOBE                                                    */
+/* ================================================================ */
+.empty{
+  display:grid;place-items:center;text-align:center;
+  min-height:320px;gap:12px;padding:40px 20px;
+}
+.empty h2{margin:0;font-size:1.2rem;color:var(--text-primary);font-weight:800}
+.empty p{margin:4px 0;color:var(--text-secondary);max-width:400px;line-height:1.65}
+.empty .meta{font-size:.8rem;color:var(--text-tertiary)}
+
+/* ================================================================ */
+/*  Animations                                                      */
+/* ================================================================ */
+@keyframes slideDown{
+  from{opacity:0;transform:translateY(-8px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+.animate-in{animation:fadeIn .3s ease-out}
+.animate-pulse{animation:pulse 1.5s infinite}
+
+/* ================================================================ */
+/*  Responsive                                                      */
+/* ================================================================ */
+@media(max-width:760px){
+  .shell{padding:10px}
+  .topbar{flex-direction:column;align-items:flex-start}
+  .layout{grid-template-columns:1fr}
+  .skill-grid,.metric-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+<div id="app" class="shell"></div>
+<script type="module">
+/* ================================================================ */
+/*  Constants                                                       */
+/* ================================================================ */
+window.onerror = function(msg, url, lineNo, columnNo, error) {
+  const errDiv = document.createElement('div');
+  errDiv.style.background = 'red';
+  errDiv.style.color = 'white';
+  errDiv.style.padding = '20px';
+  errDiv.style.zIndex = '9999';
+  errDiv.style.position = 'fixed';
+  errDiv.style.top = '0';
+  errDiv.style.left = '0';
+  errDiv.style.width = '100%';
+  errDiv.innerHTML = `FATAL ERROR: ${msg} <br> ${error?.stack}`;
+  document.body.prepend(errDiv);
+  return false;
+};
+
+/* ================================================================ */
+/*  Theme management                                                */
+/* ================================================================ */
+function getPreferredTheme() {
+  try {
+    const stored = localStorage.getItem('lingostar-theme');
+    if (stored === 'dark' || stored === 'light') return stored;
+  } catch(e) { /* iframe sandbox may block localStorage */ }
+  if (window.matchMedia?.('(prefers-color-scheme: light)')?.matches) return 'light';
+  return 'dark';
+}
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  try { localStorage.setItem('lingostar-theme', theme); } catch(e) {}
+}
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'light';
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+  render();
+}
+applyTheme(getPreferredTheme());
+
+const hasHost = window.parent !== window;
+const ICON_SRC = "__LINGOSTAR_ICON__";
+const appEl = document.getElementById("app");
+
+/* ================================================================ */
+/*  State                                                           */
+/* ================================================================ */
+let state = {};
+let viewMode = null;
+let currentExerciseIndex = 0;
+let tokenAnswer = [];
+let typedAnswers = new Map();
+let busy = false;
+let toast = "";
+let recognition = null;
+let recognitionActive = false;
+let audioPlayer = null;
+let browserTtsToken = 0;
+let mediaRecorder = null;
+let recordingChunks = [];
+let recordingActive = false;
+let rpcId = 0;
+const pendingRequests = new Map();
+let oobeTriggered = false;
+let autoSectionSessionId = null;
+const DIRECT_GRADE_TYPES = new Set(["language_info", "listening", "reading", "writing"]);
+
+/* ================================================================ */
+/*  I18N                                                            */
+/* ================================================================ */
+let I18N = {
+  en: {
+    appName: "LingoStar",
+    dashboard: "Dashboard",
+    settings: "Settings",
+    newSession: "New Session",
+    startSection: "Start Section",
+    backToDashboard: "Back to Dashboard",
+    currentSection: "Current Section",
+    review: "Review",
+    submit: "Submit",
+    skip: "Skip (no penalty)",
+    listen: "Listen",
+    stop: "Stop",
+    startMic: "Start mic",
+    stopMic: "Stop mic",
+    record: "Record",
+    stopRecord: "Stop & evaluate",
+    resetTokens: "Reset",
+    showText: "Show text",
+    exampleResponse: "Example response",
+    transcript: "Transcript",
+    selectSkill: "Select a skill category to begin",
+    oobeTitle: "Welcome to LingoStar",
+    oobeGuide: "Tell ChatGPT which language you'd like to learn to get started.",
+    oobeExample: "Example: 'I want to learn Japanese' or '스페인어 배우고 싶어'",
+    oobePreviewNote: "In preview mode, use the form below to test the UI.",
+    noSessions: "No sessions yet. Tell ChatGPT to create one!",
+    working: "Working…",
+    localPreview: "Local preview",
+    chatGptApp: "ChatGPT app",
+    speaking: "Speaking",
+    listening: "Listening",
+    writing: "Writing",
+    reading: "Reading",
+    skillProfile: "Skill Profile",
+    levels: "Levels",
+    recentFeedback: "Recent Feedback",
+    sectionHistory: "Section History",
+    exercisesPerSkill: "Exercises per skill",
+    speakingEnabled: "Speaking enabled",
+    levelMode: "Level mode",
+    cefr: "CEFR",
+    freeform: "Free-form",
+    deleteConfirm: (lang) => `Delete ${lang} session?`,
+    tapTokens: "Tap tokens to build the sentence",
+    claimLabel: "I think this also means…",
+    settingsNote: "Ask ChatGPT to change your settings.",
+    completed: "Completed",
+    active: "Active",
+    exerciseN: (n, total) => `Exercise ${n} / ${total}`,
+    sectionComplete: "Section complete! Ask ChatGPT for the next section.",
+    allDoneReview: "All done! Review your mistakes below.",
+    askToStartSection: "Please ask ChatGPT to generate a new section.",
+    promptNextSection: "Please generate a new exercise section.",
+    prev: "Previous",
+    next: "Next",
+    createStart: "Create & Start",
+    noAudioText: "No audio text available",
+    speechSynthesisUnavailable: "Speech synthesis unavailable",
+    speechRecognitionUnavailable: "Speech recognition unavailable",
+    mockBatchGrade: "Mock batch grade in preview.",
+    skippedFeedback: "Skipped.",
+    correctFeedback: "Correct!",
+    notQuiteFeedback: "Not quite.",
+    skippedDetail: "Skipped without penalty.",
+    correctDetail: "Well done!",
+    expectedPrefix: "Expected",
+    targetLanguageLabel: "Target language",
+    nativeLanguageLabel: "Native language",
+  },
+  ko: {
+    appName: "LingoStar",
+    dashboard: "대시보드",
+    settings: "설정",
+    newSession: "새 세션",
+    startSection: "섹션 시작",
+    backToDashboard: "대시보드로 돌아가기",
+    currentSection: "현재 섹션",
+    review: "복습",
+    submit: "제출",
+    skip: "건너뛰기 (감점 없음)",
+    listen: "듣기",
+    stop: "정지",
+    startMic: "마이크 시작",
+    stopMic: "마이크 정지",
+    record: "녹음",
+    stopRecord: "녹음 중지 & 평가",
+    resetTokens: "초기화",
+    showText: "텍스트 보기",
+    exampleResponse: "예시 응답",
+    transcript: "전사",
+    selectSkill: "시작할 스킬 카테고리를 선택하세요",
+    oobeTitle: "LingoStar에 오신 것을 환영합니다",
+    oobeGuide: "ChatGPT에게 배우고 싶은 언어를 말해보세요.",
+    oobeExample: "예: '영어 배우고 싶어' 또는 'I want to learn French'",
+    oobePreviewNote: "미리보기 모드에서는 아래 폼으로 UI를 테스트할 수 있습니다.",
+    noSessions: "아직 세션이 없습니다. ChatGPT에게 만들어 달라고 해보세요!",
+    working: "처리 중…",
+    localPreview: "로컬 미리보기",
+    chatGptApp: "ChatGPT 앱",
+    speaking: "말하기",
+    listening: "듣기",
+    writing: "쓰기",
+    reading: "읽기",
+    skillProfile: "스킬 프로파일",
+    levels: "레벨",
+    recentFeedback: "최근 피드백",
+    sectionHistory: "섹션 히스토리",
+    exercisesPerSkill: "스킬당 문제 수",
+    speakingEnabled: "말하기 포함",
+    levelMode: "레벨 모드",
+    cefr: "CEFR",
+    freeform: "자유 형식",
+    deleteConfirm: (lang) => `${lang} 세션을 삭제할까요?`,
+    tapTokens: "토큰을 탭하여 문장을 만드세요",
+    claimLabel: "이것도 같은 의미라고 생각해요…",
+    settingsNote: "설정을 변경하려면 ChatGPT에게 요청하세요.",
+    completed: "완료",
+    active: "진행 중",
+    exerciseN: (n, total) => `문제 ${n} / ${total}`,
+    sectionComplete: "섹션 완료! ChatGPT에게 다음 섹션을 요청하세요.",
+    allDoneReview: "모두 완료! 아래에서 틀린 문제를 복습하세요.",
+    askToStartSection: "ChatGPT에게 새 섹션을 만들어 달라고 요청하세요.",
+    promptNextSection: "새 섹션 문제를 만들어 주세요.",
+    prev: "이전",
+    next: "다음",
+    createStart: "만들고 시작",
+    noAudioText: "재생할 음성 텍스트가 없습니다.",
+    speechSynthesisUnavailable: "음성 재생을 사용할 수 없습니다.",
+    speechRecognitionUnavailable: "음성 인식을 사용할 수 없습니다.",
+    mockBatchGrade: "미리보기 모드에서 섹션 채점을 시뮬레이션했습니다.",
+    skippedFeedback: "건너뛰었습니다.",
+    correctFeedback: "정답입니다!",
+    notQuiteFeedback: "조금 달라요.",
+    skippedDetail: "감점 없이 건너뛰었습니다.",
+    correctDetail: "잘했습니다!",
+    expectedPrefix: "기대 답안",
+    targetLanguageLabel: "학습 대상 언어",
+    nativeLanguageLabel: "사용자 언어",
+  },
+};
+
+I18N = {
+  en: {
+    appName: "LingoStar",
+    dashboard: "Dashboard",
+    settings: "Settings",
+    newSession: "New Session",
+    startSection: "Start Section",
+    backToDashboard: "Back to dashboard",
+    currentSection: "Current Section",
+    review: "Review",
+    submit: "Submit Section",
+    skip: "Skip (no penalty)",
+    listen: "Listen",
+    stop: "Stop",
+    startMic: "Browser mic",
+    stopMic: "Stop mic",
+    record: "Record fallback",
+    stopRecord: "Stop & transcribe",
+    resetTokens: "Reset",
+    showText: "Show text",
+    exampleResponse: "Example response",
+    transcript: "Transcript",
+    selectSkill: "Select a skill category to begin",
+    oobeTitle: "Welcome to LingoStar",
+    oobeGuide: "Tell ChatGPT which language you'd like to learn to get started.",
+    oobeExample: "Example: 'I want to learn Japanese' or 'I want to learn French'",
+    oobePreviewNote: "In preview mode, use the form below to test the UI.",
+    noSessions: "No sessions yet. Tell ChatGPT to create one.",
+    working: "Working...",
+    localPreview: "Local preview",
+    chatGptApp: "ChatGPT app",
+    language_info: "Language Info",
+    speaking: "Speaking",
+    listening: "Listening",
+    writing: "Writing",
+    reading: "Reading",
+    skillProfile: "Skill Profile",
+    levels: "Levels",
+    recentFeedback: "Recent Feedback",
+    sectionHistory: "Section History",
+    exercisesPerSkill: "Exercises per area",
+    speakingEnabled: "Speaking enabled",
+    levelMode: "Level mode",
+    cefr: "CEFR",
+    freeform: "Free-form",
+    deleteConfirm: (lang) => `Delete ${lang} session?`,
+    tapTokens: "Tap tokens to build the sentence",
+    claimLabel: "I think this also means...",
+    settingsNote: "These settings are stored in the LingoStar state.",
+    completed: "Completed",
+    active: "Active",
+    exerciseN: (n, total) => `Exercise ${n} / ${total}`,
+    sectionComplete: "Section complete.",
+    allDoneReview: "All done. Review your mistakes below.",
+    askToStartSection: "Please ask ChatGPT to generate a new section.",
+    promptNextSection: "Please generate a new exercise section.",
+    prev: "Previous",
+    next: "Next",
+    createStart: "Create & Start",
+    noAudioText: "No audio text available.",
+    speechSynthesisUnavailable: "Speech synthesis unavailable.",
+    speechRecognitionUnavailable: "Speech recognition unavailable.",
+    mockBatchGrade: "Mock batch grade in preview.",
+    skippedFeedback: "Skipped.",
+    correctFeedback: "Correct.",
+    notQuiteFeedback: "Not quite.",
+    skippedDetail: "Skipped without penalty.",
+    correctDetail: "Well done.",
+    expectedPrefix: "Expected",
+    targetLanguageLabel: "Target language",
+    nativeLanguageLabel: "Native language",
+    exerciseCounts: "Exercises by area",
+    passThreshold: "Pass threshold",
+    minSectionsForGoal: "Minimum sections for goal",
+    progressContext: "Progress context",
+    weaknessContext: "Weakness context",
+    ttsRate: "Speech speed",
+    saveSettings: "Save settings",
+    askAi: "Ask AI",
+    askAiPlaceholder: "Ask about this exercise without leaving the section",
+    askAiSend: "Ask",
+    cannotListenNow: "I can't listen now",
+    cannotSpeakNow: "I can't speak now",
+    browserSpeechError: "Browser speech feature error.",
+    passed: "Passed",
+    failed: "Needs review",
+    yes: "Yes",
+    no: "No",
+  },
+  ko: {
+    appName: "LingoStar",
+    dashboard: "대시보드",
+    settings: "설정",
+    newSession: "새 세션",
+    startSection: "섹션 시작",
+    backToDashboard: "대시보드로 돌아가기",
+    currentSection: "현재 섹션",
+    review: "복습",
+    submit: "섹션 완료",
+    skip: "건너뛰기 (감점 없음)",
+    listen: "듣기",
+    stop: "정지",
+    startMic: "브라우저 마이크",
+    stopMic: "마이크 정지",
+    record: "녹음 폴백",
+    stopRecord: "정지 및 변환",
+    resetTokens: "초기화",
+    showText: "텍스트 보기",
+    exampleResponse: "예시 답변",
+    transcript: "전사",
+    selectSkill: "시작할 영역을 선택하세요",
+    oobeTitle: "LingoStar에 오신 것을 환영합니다",
+    oobeGuide: "ChatGPT에게 배우고 싶은 언어를 말해보세요.",
+    oobeExample: "예: '영어 배우고 싶어' 또는 'I want to learn French'",
+    oobePreviewNote: "미리보기 모드에서는 아래 양식으로 UI를 테스트할 수 있습니다.",
+    noSessions: "아직 세션이 없습니다. ChatGPT에게 만들어 달라고 해보세요.",
+    working: "처리 중...",
+    localPreview: "로컬 미리보기",
+    chatGptApp: "ChatGPT 앱",
+    language_info: "언어 정보",
+    speaking: "말하기",
+    listening: "듣기",
+    writing: "쓰기",
+    reading: "읽기",
+    skillProfile: "영역별 숙련도",
+    levels: "레벨",
+    recentFeedback: "최근 피드백",
+    sectionHistory: "섹션 기록",
+    exercisesPerSkill: "영역별 문제 수",
+    speakingEnabled: "말하기 포함",
+    levelMode: "레벨 방식",
+    cefr: "CEFR",
+    freeform: "자유 형식",
+    deleteConfirm: (lang) => `${lang} 세션을 삭제할까요?`,
+    tapTokens: "토큰을 눌러 문장을 만드세요",
+    claimLabel: "이것도 같은 의미라고 알고 있어요",
+    settingsNote: "이 설정은 LingoStar 상태에 저장됩니다.",
+    completed: "완료",
+    active: "진행 중",
+    exerciseN: (n, total) => `문제 ${n} / ${total}`,
+    sectionComplete: "섹션이 완료되었습니다.",
+    allDoneReview: "모두 완료했습니다. 아래에서 오답을 복습하세요.",
+    askToStartSection: "ChatGPT에게 새 섹션 생성을 요청해 주세요.",
+    promptNextSection: "새 섹션 문제를 만들어 주세요.",
+    prev: "이전",
+    next: "다음",
+    createStart: "만들고 시작",
+    noAudioText: "재생할 음성 텍스트가 없습니다.",
+    speechSynthesisUnavailable: "음성 재생을 사용할 수 없습니다.",
+    speechRecognitionUnavailable: "음성 인식을 사용할 수 없습니다.",
+    mockBatchGrade: "미리보기 모드에서 섹션 채점을 시뮬레이션했습니다.",
+    skippedFeedback: "건너뛰었습니다.",
+    correctFeedback: "정답입니다.",
+    notQuiteFeedback: "조금 달라요.",
+    skippedDetail: "감점 없이 건너뛰었습니다.",
+    correctDetail: "잘했습니다.",
+    expectedPrefix: "기대 답안",
+    targetLanguageLabel: "학습 대상 언어",
+    nativeLanguageLabel: "표시 언어",
+    exerciseCounts: "영역별 문제 수",
+    passThreshold: "통과 점수",
+    minSectionsForGoal: "목표 달성 최소 섹션",
+    progressContext: "진행 상황",
+    weaknessContext: "취약점",
+    ttsRate: "발화 속도",
+    saveSettings: "설정 저장",
+    askAi: "Ask AI",
+    askAiPlaceholder: "문제를 유지한 채 AI에게 질문",
+    askAiSend: "질문",
+    cannotListenNow: "지금은 들을 수 없어요",
+    cannotSpeakNow: "지금은 말할 수 없어요",
+    browserSpeechError: "브라우저 내 음성 기능 오류",
+    passed: "통과",
+    failed: "복습 필요",
+    yes: "예",
+    no: "아니요",
+  },
+};
+
+/* ================================================================ */
+/*  Locale helpers                                                  */
+/* ================================================================ */
+function escapeHtml(text) {
+  return String(text ?? "")
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+function hostLocale() {
+  return state?.host?.locale || state?.host?.interfaceLanguage || (typeof window.openai !== "undefined" ? window.openai.locale : null) || navigator.language || "en";
+}
+
+function normalizeWidgetLocale(locale) {
+  const primary = String(locale || "en").split("-")[0].toLowerCase();
+  return primary === "ko" ? "ko" : "en";
+}
+
+function uiLang() {
+  const session = getActiveSession();
+  if (!session) return normalizeWidgetLocale(hostLocale());
+  const dl = session.settings?.displayLanguage;
+  if (dl && dl !== "auto") return dl;
+  return session.runtime?.interfaceLanguage || normalizeWidgetLocale(hostLocale());
+}
+
+function copy() {
+  const lang = uiLang();
+  const base = I18N[lang] || I18N.en;
+  const extra = lang === "ko" ? {
+    language_info: "\uc5b8\uc5b4 \uc815\ubcf4",
+    exerciseCounts: "\uc601\uc5ed\ubcc4 \ubb38\uc81c \uc218",
+    passThreshold: "\ud1b5\uacfc \uc810\uc218",
+    minSectionsForGoal: "\ubaa9\ud45c \ub2ec\uc131 \ucd5c\uc18c \uc139\uc158",
+    progressContext: "\uc9c4\ud589 \uc0c1\ud669",
+    weaknessContext: "\ucde8\uc57d\uc810",
+    ttsRate: "\ubc1c\ud654 \uc18d\ub3c4",
+    saveSettings: "\uc124\uc815 \uc800\uc7a5",
+    askAi: "Ask AI",
+    askAiPlaceholder: "\ubb38\uc81c\ub97c \uc720\uc9c0\ud55c \ucc44 AI\uc5d0\uac8c \uc9c8\ubb38",
+    askAiSend: "\uc9c8\ubb38",
+    cannotListenNow: "\uc9c0\uae08\uc740 \ub4e4\uc744 \uc218 \uc5c6\uc5b4\uc694",
+    cannotSpeakNow: "\uc9c0\uae08\uc740 \ub9d0\ud560 \uc218 \uc5c6\uc5b4\uc694",
+    browserSpeechError: "\ube0c\ub77c\uc6b0\uc800 \ub0b4 \uc74c\uc131 \uae30\ub2a5 \uc624\ub958",
+    passed: "\ud1b5\uacfc",
+    failed: "\ubcf5\uc2b5 \ud544\uc694",
+  } : {
+    language_info: "Language Info",
+    exerciseCounts: "Exercises by area",
+    passThreshold: "Pass threshold",
+    minSectionsForGoal: "Minimum sections for goal",
+    progressContext: "Progress context",
+    weaknessContext: "Weakness context",
+    ttsRate: "Speech speed",
+    saveSettings: "Save settings",
+    askAi: "Ask AI",
+    askAiPlaceholder: "Ask about this exercise without leaving the section",
+    askAiSend: "Ask",
+    cannotListenNow: "I can't listen now",
+    cannotSpeakNow: "I can't speak now",
+    browserSpeechError: "Browser speech feature error.",
+    passed: "Passed",
+    failed: "Needs review",
+  };
+  return { ...base, ...extra };
+}
+
+let ENDONYMS = {
+  ja: "日本語",
+  japanese: "日本語",
+  "일본어": "日本語",
+  en: "English",
+  english: "English",
+  "영어": "English",
+  ko: "한국어",
+  korean: "한국어",
+  "한국어": "한국어",
+  es: "Español",
+  spanish: "Español",
+  "스페인어": "Español",
+  fr: "Français",
+  french: "Français",
+  "프랑스어": "Français",
+  de: "Deutsch",
+  german: "Deutsch",
+  "독일어": "Deutsch",
+  zh: "中文",
+  chinese: "中文",
+  "중국어": "中文",
+  it: "Italiano",
+  italian: "Italiano",
+  "이탈리아어": "Italiano"
+};
+
+ENDONYMS = {
+  ja: "日本語",
+  japanese: "日本語",
+  "일본어": "日本語",
+  en: "English",
+  english: "English",
+  "영어": "English",
+  ko: "한국어",
+  korean: "한국어",
+  "한국어": "한국어",
+  es: "Español",
+  spanish: "Español",
+  "스페인어": "Español",
+  fr: "Français",
+  french: "Français",
+  "프랑스어": "Français",
+  de: "Deutsch",
+  german: "Deutsch",
+  "독일어": "Deutsch",
+  zh: "中文",
+  chinese: "中文",
+  "중국어": "中文",
+  it: "Italiano",
+  italian: "Italiano",
+  "이탈리아어": "Italiano",
+};
+
+function getDisplayLanguageName(lang) {
+  if (!lang || lang === "Unknown") return uiLang() === "ko" ? "언어 미지정" : "Unknown Language";
+  const code = String(lang).toLowerCase().trim();
+  const name = ENDONYMS[code];
+  if (name) return name;
+  
+  const primary = code.split("-")[0];
+  const primaryName = ENDONYMS[primary];
+  if (primaryName) return primaryName;
+  
+  return lang.charAt(0).toUpperCase() + lang.slice(1);
+}
+
+function skillEmoji(skill) {
+  if (skill === "language_info") return "i";
+  const map = { speaking: "🗣", listening: "👂", writing: "✍️", reading: "📖" };
+  return map[skill] || "📝";
+}
+
+function skillEmoji(skill) {
+  const map = { language_info: "i", speaking: "S", listening: "L", writing: "W", reading: "R" };
+  return map[skill] || "?";
+}
+
+function skillLabel(skill) {
+  const c = copy();
+  return c[skill] || skill;
+}
+
+function getActiveSession() {
+  if (!state.sessions?.length) return null;
+  return state.sessions.find(s => s.id === state.activeSessionId) || state.sessions[0];
+}
+
+function clampNumber(value, min, max, fallback) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(min, Math.min(max, Math.round(n)));
+}
+
+function exerciseCountsForSession(session) {
+  const fallback = clampNumber(session?.settings?.exercisesPerSkill, 3, 6, 3);
+  const source = session?.settings?.exerciseCounts || {};
+  return {
+    language_info: clampNumber(source.language_info, 3, 6, fallback),
+    listening: clampNumber(source.listening, 3, 6, fallback),
+    reading: clampNumber(source.reading, 3, 6, fallback),
+    writing: clampNumber(source.writing, 3, 6, fallback),
+    speaking: clampNumber(source.speaking, 3, 6, fallback),
+  };
+}
+
+/* ================================================================ */
+/*  RPC layer (ChatGPT host communication)                          */
+/* ================================================================ */
+function rpcNotify(method, params = {}) {
+  window.parent.postMessage({ jsonrpc: "2.0", method, params }, "*");
+}
+
+function rpcRequest(method, params = {}) {
+  return new Promise((resolve, reject) => {
+    const id = ++rpcId;
+    pendingRequests.set(id, { resolve, reject });
+    window.parent.postMessage({ jsonrpc: "2.0", id, method, params }, "*");
+  });
+}
+
+function updateModelContextForHost(text, structuredContent = {}) {
+  if (!hasHost) return Promise.resolve({ isError: true });
+  return rpcRequest("ui/update-model-context", {
+    content: [{ type: "text", text }],
+    structuredContent,
+  }).catch((err) => {
+    console.warn("LingoStar model context update failed", err);
+    return { isError: true };
+  });
+}
+
+function visibleHostPrompt(kind) {
+  const isKo = uiLang() === "ko";
+  if (isKo && kind === "section") return "\ub2e4\uc74c LingoStar \uc139\uc158\uc744 \uc0dd\uc131\ud574 \uc8fc\uc138\uc694.";
+  if (isKo && kind === "answer") return "\ud604\uc7ac LingoStar \ub2f5\uc548\uc744 \ucc44\uc810\ud574 \uc8fc\uc138\uc694.";
+  if (isKo && kind === "section-submit") return "\ud604\uc7ac LingoStar \uc139\uc158 \uc804\uccb4\ub97c \ucc44\uc810\ud574 \uc8fc\uc138\uc694.";
+  if (isKo) return "LingoStar\ub97c \uc2dc\uc791\ud560 \uc218 \uc788\ub3c4\ub85d \ud559\uc2b5 \uc815\ubcf4\ub97c \ubb3c\uc5b4\ubd10 \uc8fc\uc138\uc694.";
+  const ko = uiLang() === "ko";
+  if (kind === "section") {
+    return ko
+      ? "LingoStar에서 현재 세션의 다음 섹션을 생성해 주세요. 세부 조건은 앱 컨텍스트를 참고하고, 문제는 채팅에 출력하지 말고 앱에 저장해 주세요."
+      : "Please generate the next LingoStar section for the current session. Use the app context for details, do not print exercises in chat, and store them in the app.";
+  }
+  if (kind === "answer") {
+    return ko
+      ? "LingoStar에서 현재 답안을 채점해 주세요. 세부 답안은 앱 컨텍스트를 참고하고, 결과는 앱에 저장해 주세요."
+      : "Please grade the current LingoStar answer. Use the app context for details and save the result in the app.";
+  }
+  if (kind === "section-submit") {
+    return ko
+      ? "LingoStar에서 현재 섹션 전체 답안을 채점해 주세요. 세부 답안은 앱 컨텍스트를 참고하고, 결과는 앱에 저장해 주세요."
+      : "Please grade the full current LingoStar section. Use the app context for the answers and save the results in the app.";
+  }
+  return ko
+    ? "LingoStar를 시작할게요. 필요한 학습 정보를 물어봐 주세요."
+    : "I want to start LingoStar. Please ask for the learning details you need.";
+}
+
+function visibleHostPrompt(kind) {
+  const ko = uiLang() === "ko";
+  if (kind === "section") {
+    return ko
+      ? "다음 LingoStar 섹션을 생성해 주세요. 문제는 채팅에 출력하지 말고 앱에 저장해 주세요."
+      : "Please generate the next LingoStar section. Do not print exercises in chat; store them in the app.";
+  }
+  if (kind === "answer") {
+    return ko
+      ? "현재 LingoStar 답안을 채점하고 결과를 앱에 저장해 주세요."
+      : "Please grade the current LingoStar answer and save the result in the app.";
+  }
+  if (kind === "section-submit") {
+    return ko
+      ? "현재 LingoStar 말하기 답안을 채점하고 결과를 앱에 저장해 주세요."
+      : "Please grade the current LingoStar speaking answers and save the result in the app.";
+  }
+  if (kind === "ask-ai") {
+    return ko
+      ? "현재 LingoStar 문제에 대해 질문하고 싶습니다."
+      : "I have a question about the current LingoStar exercise.";
+  }
+  return ko
+    ? "LingoStar 학습 정보를 확인해 주세요."
+    : "Please continue LingoStar.";
+}
+
+function sendFollowUpToHost(prompt, options = {}) {
+  if (!hasHost) return false;
+  const visiblePrompt = options.visiblePrompt || prompt;
+  const contextText = options.modelContext || prompt;
+  const contextPayload = options.structuredContent || {};
+  toast = copy().working;
+  render();
+
+  const contextPromise = options.skipModelContext
+    ? Promise.resolve({})
+    : updateModelContextForHost(contextText, contextPayload);
+
+  contextPromise.then(() => rpcRequest("ui/message", {
+    role: "user",
+    content: [{ type: "text", text: visiblePrompt }],
+  })).then((result) => {
+    if (result?.isError) {
+      toast = copy().messageRejected || "ChatGPT could not receive the message.";
+      render();
+    }
+  }).catch((err) => {
+    toast = String(err?.message || err);
+    render();
+  });
+  return true;
+}
+
+window.addEventListener("message", (event) => {
+  const msg = event.data;
+  if (!msg || typeof msg !== "object") return;
+  if (msg.id && pendingRequests.has(msg.id)) {
+    const { resolve, reject } = pendingRequests.get(msg.id);
+    pendingRequests.delete(msg.id);
+    if (msg.error) reject(msg.error);
+    else resolve(msg.result);
+    return;
+  }
+  if (msg.method === "ui/notifications/tool-result") {
+    updateFromResponse(msg.params);
+    render();
+  }
+});
+
+/* ================================================================ */
+/*  Bridge init                                                     */
+/* ================================================================ */
+if (hasHost) {
+  rpcNotify("ui/initialize", {
+    appInfo: { name: "lingostar-studio", version: "0.6.1" },
+    appCapabilities: { tools: { listChanged: true } },
+    protocolVersion: "2026-01-26",
+  });
+  rpcNotify("ui/notifications/initialized", {});
+}
+
+/* ================================================================ */
+/*  Tool calls                                                      */
+/* ================================================================ */
+async function callTool(name, args = {}) {
+  busy = true;
+  render();
+  let response = null;
+  try {
+    if (!hasHost) {
+      response = await runPreviewTool(name, args);
+    } else {
+      response = await rpcRequest("tools/call", { name, arguments: args });
+    }
+    updateFromResponse(response);
+  } catch (err) {
+    toast = String(err.message || err);
+  } finally {
+    busy = false;
+    render();
+  }
+  return response;
+}
+
+function updateFromResponse(response) {
+  const actual = response?.result || response;
+  const sc = actual?.structuredContent || actual;
+  
+  toast = ""; // Clear active "Working..." toast on response receipt
+  
+  if (sc?.state) {
+    const prevState = state;
+    state = sc.state;
+    const prevSectionId = prevState?.currentSection?.id;
+    const newSectionId = state.currentSection?.id;
+
+    if (newSectionId && (newSectionId !== prevSectionId || !viewMode) && viewMode !== "settings") {
+      viewMode = "lesson";
+      currentExerciseIndex = 0;
+    }
+    // OOBE auto-trigger
+    if (hasHost && !state.sessions?.length && !oobeTriggered) {
+      oobeTriggered = true;
+      updateModelContextForHost(
+        "LingoStar: [OOBE] If the user has not yet specified a target language and goal, greet them briefly and ask for target language, native/interface language, goal, level, interests, exercises per skill, and speaking availability. Do not print exercises in chat.",
+        { lingostar: { command: "oobe" } }
+      );
+    }
+
+    // Auto-section trigger: fires once per session ID.
+    // When a new session is created (activeSessionId changes) and there's no section,
+    // automatically request section generation. Won't re-trigger for the same session
+    // (e.g., after a validation failure — user must manually click "Start Section").
+    if (hasHost && state.activeSessionId && !state.currentSection) {
+      if (state.activeSessionId !== autoSectionSessionId) {
+        autoSectionSessionId = state.activeSessionId;
+        sendSectionGenerationRequest();
+      }
+    }
+  }
+  if (sc?.transcript) {
+    // Fill transcript into current speaking exercise
+    const section = state.currentSection;
+    if (section) {
+      const ex = getCurrentExercise();
+      if (ex && ex.type === "speaking") {
+        typedAnswers.set(ex.id, sc.transcript);
+      }
+    }
+  }
+  if (sc?.correction) {
+    toast = sc.correction.feedback?.short || "";
+  }
+  if (actual?.content?.[0]?.text && !toast) {
+    toast = actual.content[0].text;
+  }
+}
+
+function buildSectionGenerationPrompt() {
+  const session = getActiveSession();
+  const c = copy();
+  if (!session) return c.promptNextSection;
+  const counts = exerciseCountsForSession(session);
+  const areas = session.settings?.speakingEnabled === false
+    ? ["language_info", "listening", "reading", "writing"]
+    : ["language_info", "listening", "reading", "writing", "speaking"];
+  const total = areas.reduce((sum, area) => sum + (counts[area] || 0), 0);
+  const level = session.levels?.find(l => l.status === "active") || session.levels?.[0] || null;
+  return [
+    "LingoStar: [COMMAND] Generate a new section for the active session.",
+    "Do not print exercises in chat text.",
+    "Call create_lesson_exercises immediately.",
+    `Target language: ${session.targetLanguage}.`,
+    `Native/interface language: ${session.nativeLanguage || uiLang()}.`,
+    `Goal: ${session.goal?.type || "conversation"} ${session.goal?.detail || ""}`.trim(),
+    `Learner stage: ${session.stage || "foundation"}. Assess the user's context and use one of foundation, intro, intermediate, advanced.`,
+    `Progress context: ${session.progressContext || "(none yet)"}.`,
+    `Weakness context: ${session.weaknessContext || "(none yet)"}.`,
+    `Active level: ${level?.name || level?.cefr || "current"}.`,
+    `Generate exactly these per-area counts: ${areas.map(area => `${area}=${counts[area]}`).join(", ")}.`,
+    `Total exercises required: ${total}.`,
+    "Language-info exercises are a separate structured output type with skill='language_info' and type='language_info'. They must include payload.topic, payload.explanation, payload.targetExamples, payload.question, payload.choices, payload.correctChoiceId, payload.difficultyStage.",
+    "For foundation learners, language-info should teach symbols, pronunciation, writing system, or core language-specific facts before normal problem solving.",
+    "Listening exercises must include audioText, question, exactly 5 choices, and correctChoiceId.",
+    "Reading exercises must include passage, question, 3-5 choices, and correctChoiceId.",
+    "Writing exercises must include targetSentence and shuffled tokens.",
+    "Speaking exercises must include scenario, exampleResponse, speechLang, and skippable=true when speaking is enabled.",
+    "Set section.exerciseCounts to the exact per-area count object. Do not use optional fields to represent language-info; use the separate language_info exercise variant.",
+  ].join("\n");
+}
+
+function buildSectionGenerationContext() {
+  const session = getActiveSession();
+  if (!session) return { lingostar: { command: "create_lesson_exercises" } };
+  const counts = exerciseCountsForSession(session);
+  const areas = session.settings?.speakingEnabled === false
+    ? ["language_info", "listening", "reading", "writing"]
+    : ["language_info", "listening", "reading", "writing", "speaking"];
+  const level = session.levels?.find(l => l.status === "active") || session.levels?.[0] || null;
+  return {
+    lingostar: {
+      command: "create_lesson_exercises",
+      sessionId: session.id,
+      targetLanguage: session.targetLanguage,
+      nativeLanguage: session.nativeLanguage || uiLang(),
+      goal: session.goal || { type: session.goalType || "conversation" },
+      learnerStage: session.stage || "foundation",
+      progressContext: session.progressContext || "",
+      weaknessContext: session.weaknessContext || "",
+      activeLevel: level,
+      exerciseCounts: counts,
+      enabledAreas: areas,
+      totalExercises: areas.reduce((sum, area) => sum + (counts[area] || 0), 0),
+      requirements: {
+        language_info: "type=language_info, skill=language_info, topic, explanation, targetExamples, question, 3-5 choices, correctChoiceId, difficultyStage",
+        speaking: "scenario, exampleResponse, speechLang, skippable=true",
+        listening: "audioText, speechLang, question, exactly 5 choices, correctChoiceId",
+        writing: "targetSentence and shuffled tokens",
+        reading: "passage, question, 3-5 choices, correctChoiceId",
+      },
+    },
+  };
+}
+
+function sendSectionGenerationRequest() {
+  const hiddenPrompt = buildSectionGenerationPrompt();
+  return sendFollowUpToHost(hiddenPrompt, {
+    visiblePrompt: visibleHostPrompt("section"),
+    modelContext: hiddenPrompt,
+    structuredContent: buildSectionGenerationContext(),
+  });
+}
+
+/* ================================================================ */
+/*  Send follow-up message to GPT                                   */
+/* ================================================================ */
+function sendAnswerToGPT(exercise, answerText, claim) {
+  const section = state.currentSection;
+  if (!section) return;
+  const msg = `[LingoStar Exercise Answer]\nSection: ${section.id}\nExercise: ${exercise.id}\nType: ${exercise.type}\nUser Answer: ${answerText}${claim ? `\nLearner Claim: ${claim}` : ""}\nInstruction: Evaluate this answer and call grade_section_answers with one evaluation item to save the result. Scores must be 0-100. If User Answer is [SKIPPED], set skipped=true and needsReview=true.`;
+
+  if (hasHost) {
+    sendFollowUpToHost(msg, {
+      visiblePrompt: visibleHostPrompt("answer"),
+      modelContext: msg,
+      structuredContent: {
+        lingostar: {
+          command: "grade_single_answer",
+          sectionId: section.id,
+          exerciseId: exercise.id,
+          exerciseType: exercise.type,
+          answer: answerText,
+          learnerClaim: claim || null,
+        },
+      },
+    });
+  } else {
+    // Preview mode: mock grading
+    mockGradeAnswer(exercise, answerText, claim);
+  }
+}
+
+/* ================================================================ */
+/*  Audio: browser speechSynthesis first, OpenAI TTS fallback        */
+/* ================================================================ */
+async function playListeningAudio(exercise) {
+  const text = exercise?.payload?.audioText;
+  if (!text) {
+    toast = copy().noAudioText;
+    render();
+    return;
+  }
+
+  if (playBrowserListeningAudio(exercise)) return;
+  await playServerListeningAudio(exercise);
+}
+
+function playBrowserListeningAudio(exercise) {
+  const text = exercise?.payload?.audioText;
+  if (!text || !window.speechSynthesis || typeof SpeechSynthesisUtterance === "undefined") return false;
+
+  stopAudio();
+  const token = ++browserTtsToken;
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = exercise.payload?.speechLang || getActiveSession()?.runtime?.speechLang || "en-US";
+  utterance.rate = Math.max(0.6, Math.min(1.4, Number(getActiveSession()?.settings?.ttsRate) || 1));
+  utterance.onerror = () => {
+    if (token === browserTtsToken) {
+      if (state.gui?.audio?.aiFallbackEnabled) playServerListeningAudio(exercise);
+      else { toast = copy().browserSpeechError; render(); }
+    }
+  };
+  window.speechSynthesis.speak(utterance);
+  return true;
+}
+
+async function playServerListeningAudio(exercise) {
+  const text = exercise?.payload?.audioText;
+  if (!state.gui?.audio?.aiFallbackEnabled) {
+    toast = copy().browserSpeechError;
+    render();
+    return;
+  }
+  if (hasHost && state.gui?.audio?.openAiTtsConfigured) {
+    try {
+      toast = copy().working;
+      render();
+      const response = await callTool("synthesize_speech", {
+        text,
+        speechLang: exercise.payload?.speechLang || getActiveSession()?.runtime?.speechLang || "",
+        format: "mp3",
+        speed: Math.max(0.6, Math.min(1.4, Number(getActiveSession()?.settings?.ttsRate) || 1)),
+      });
+      const actual = response?.result || response;
+      const sc = actual?.structuredContent || actual;
+      if (sc?.audioDataUrl) {
+        playAudioDataUrl(sc.audioDataUrl);
+        toast = "";
+        render();
+        return;
+      }
+    } catch (_error) {
+      // The visible fallback message is handled below.
+    }
+  }
+
+  toast = copy().speechSynthesisUnavailable;
+  render();
+}
+
+function stopAudio() {
+  browserTtsToken++;
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  if (audioPlayer) { audioPlayer.pause(); audioPlayer = null; }
+}
+
+function playAudioDataUrl(dataUrl) {
+  stopAudio();
+  audioPlayer = new Audio(dataUrl);
+  audioPlayer.play();
+}
+
+/* ================================================================ */
+/*  Audio: speech recognition                                       */
+/* ================================================================ */
+function startSpeechRecognition(exercise) {
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRec) { toast = state.gui?.audio?.aiFallbackEnabled ? copy().speechRecognitionUnavailable : copy().browserSpeechError; render(); return; }
+  if (recognitionActive) return;
+  recognition = new SpeechRec();
+  recognition.lang = exercise?.payload?.speechLang || "en-US";
+  recognition.interimResults = true;
+  recognition.continuous = false;
+  recognition.onresult = (e) => {
+    let text = "";
+    for (let i = 0; i < e.results.length; i++) text += e.results[i][0].transcript;
+    if (exercise) typedAnswers.set(exercise.id, text);
+    const el = document.getElementById("speaking-transcript");
+    if (el) el.value = text;
+  };
+  recognition.onerror = () => { recognitionActive = false; toast = copy().browserSpeechError; render(); };
+  recognition.onend = () => { recognitionActive = false; render(); };
+  recognition.start();
+  recognitionActive = true;
+  render();
+}
+
+function stopSpeechRecognition() {
+  if (recognition) { recognition.stop(); recognition = null; }
+  recognitionActive = false;
+  render();
+}
+
+/* ================================================================ */
+/*  Audio: recording (MediaRecorder)                                */
+/* ================================================================ */
+async function startRecording() {
+  if (recordingActive) return;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    recordingChunks = [];
+    mediaRecorder = new MediaRecorder(stream);
+    mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordingChunks.push(e.data); };
+    mediaRecorder.onstop = () => { stream.getTracks().forEach(t => t.stop()); };
+    mediaRecorder.start();
+    recordingActive = true;
+    render();
+  } catch (err) {
+    toast = "Microphone access denied";
+    render();
+  }
+}
+
+async function stopRecordingAndTranscribe(exercise) {
+  if (!mediaRecorder || !recordingActive) return;
+  mediaRecorder.stop();
+  recordingActive = false;
+  render();
+
+  await new Promise(resolve => { mediaRecorder.addEventListener("stop", resolve, { once: true }); });
+  const blob = new Blob(recordingChunks, { type: mediaRecorder.mimeType || "audio/webm" });
+  recordingChunks = [];
+
+  const base64 = await blobToBase64(blob);
+  const mimeType = blob.type || "audio/webm";
+  const speechLang = exercise?.payload?.speechLang || "";
+
+  if (!state.gui?.audio?.aiFallbackEnabled) {
+    toast = copy().browserSpeechError;
+    render();
+    return;
+  }
+  await callTool("transcribe_audio", { audioBase64: base64, mimeType, speechLang });
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result || "";
+      resolve(result.includes(",") ? result.split(",")[1] : result);
+    };
+    reader.readAsDataURL(blob);
+  });
+}
+
+/* ================================================================ */
+/*  Exercise navigation helpers                                     */
+/* ================================================================ */
+function getSection() { return state.currentSection; }
+
+function getSkillExercises(skill) {
+  const section = getSection();
+  if (!section) return [];
+  if (skill === "review") return section.reviewExercises || [];
+  return (section.exercises || []).filter(e => e.type === skill);
+}
+
+function getResultForExercise(exerciseId) {
+  const section = getSection();
+  if (!section) return null;
+  return (section.results || []).find(r => r.exerciseId === exerciseId);
+}
+
+function normalizeAnswerText(value) {
+  return String(value || "").toLowerCase().normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[.,!?;:()[\]{}"'`]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function correctChoiceId(exercise) {
+  return String(exercise?.payload?.correctChoiceId ?? "");
+}
+
+function buildDirectEvaluation(exercise, answer) {
+  const isSkip = answer === "[SKIPPED]";
+  let isCorrect = false;
+  let expected = "";
+  if (!isSkip) {
+    if (exercise.type === "writing") {
+      expected = exercise.payload?.targetSentence || exercise.payload?.text || "";
+      isCorrect = normalizeAnswerText(answer) === normalizeAnswerText(expected);
+    } else {
+      expected = correctChoiceId(exercise);
+      isCorrect = String(answer).toLowerCase() === expected.toLowerCase();
+    }
+  }
+  return {
+    exerciseId: exercise.id,
+    score: isSkip ? 0 : (isCorrect ? 100 : 30),
+    skill: exercise.skill || exercise.type,
+    skipped: isSkip,
+    needsReview: isSkip || !isCorrect,
+    feedback: {
+      short: isSkip ? copy().skippedFeedback : (isCorrect ? copy().correctFeedback : copy().notQuiteFeedback),
+      detail: isSkip ? copy().skippedDetail : (isCorrect ? copy().correctDetail : `${copy().expectedPrefix}: ${expected}`),
+    },
+  };
+}
+
+async function gradeDirectExercise(exercise, answer) {
+  if (!exercise || !DIRECT_GRADE_TYPES.has(exercise.type) || getResultForExercise(exercise.id)) return;
+  const evaluation = buildDirectEvaluation(exercise, answer);
+  if (hasHost) {
+    await callTool("grade_section_answers", {
+      sessionId: getActiveSession()?.id,
+      sectionId: getSection()?.id,
+      evaluations: [evaluation],
+      sectionFeedback: "Auto-graded objective exercise.",
+    });
+  } else {
+    mockGradeAnswer(exercise, answer, "");
+  }
+}
+
+function getCompletedCount(skill) {
+  const exercises = getSkillExercises(skill);
+  return exercises.filter(e => getResultForExercise(e.id)).length;
+}
+
+function getNextIncomplete(skill) {
+  const exercises = getSkillExercises(skill);
+  return exercises.find(e => !getResultForExercise(e.id)) || exercises[0];
+}
+
+function getCurrentExercise() {
+  const section = getSection();
+  if (!section) return null;
+  const allExercises = [...(section.exercises || []), ...(section.reviewExercises || [])];
+  if (currentExerciseIndex >= 0 && currentExerciseIndex < allExercises.length) {
+    return allExercises[currentExerciseIndex];
+  }
+  return null;
+}
+
+function allExercisesDone() {
+  const section = getSection();
+  if (!section) return false;
+  return section.exercises.every(e => getResultForExercise(e.id));
+}
+
+function hasReviewItems() {
+  const section = getSection();
+  return section?.reviewExercises?.length > 0;
+}
+
+/* ================================================================ */
+/*  Render: main                                                    */
+/* ================================================================ */
+function render() {
+  const c = copy();
+  const session = getActiveSession();
+  const section = getSection();
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+
+  // Topbar
+  let html = `<header class="topbar">
+    <div class="brand">
+      <div class="mark">${ICON_SRC ? `<img src="${escapeHtml(ICON_SRC)}" alt=""/>` : "LS"}</div>
+      <h1>${c.appName}</h1>
+      ${session ? `<span class="subtitle">${escapeHtml(getDisplayLanguageName(session.targetLanguage))}</span>` : ""}
+    </div>
+    <div class="topbar-right">
+      ${session ? `<span class="badge">${escapeHtml(getDisplayLanguageName(session.targetLanguage))}</span>` : ""}
+      <span class="badge">${hasHost ? c.chatGptApp : c.localPreview}</span>
+      ${busy ? `<span class="badge animate-pulse">${c.working}</span>` : ""}
+      <button class="theme-toggle" data-action="toggle-theme" aria-label="Toggle theme">${isDark ? '☀️' : '🌙'}</button>
+    </div>
+  </header>`;
+
+  if (toast) {
+    html += `<div class="toast-bar">${escapeHtml(toast)}</div>`;
+  }
+
+  // Screen routing
+  if (!state.sessions?.length && viewMode !== "new-session") {
+    html += renderOobe();
+  } else if (viewMode === "lesson" && section) {
+    html += renderLesson();
+  } else if (viewMode === "settings" && session) {
+    html += renderSettings();
+  } else if (state.sessions?.length) {
+    html += renderDashboard();
+  } else {
+    html += renderOobe();
+  }
+
+  appEl.innerHTML = html;
+
+  // Restore draft inputs
+  for (const [key, val] of typedAnswers) {
+    const el = appEl.querySelector(`[data-draft-key="${key}"]`);
+    if (el) el.value = val;
+  }
+}
+
+/* ================================================================ */
+/*  Render: OOBE                                                    */
+/* ================================================================ */
+function renderOobe() {
+  const c = copy();
+  let html = `<div class="empty animate-in">
+    <div class="mark" style="width:56px;height:56px;border-radius:var(--radius-lg);font-size:1.4rem">
+      ${ICON_SRC ? `<img src="${escapeHtml(ICON_SRC)}" alt=""/>` : "LS"}
+    </div>
+    <h2>${c.oobeTitle}</h2>
+    <p>${c.oobeGuide}</p>
+    <p class="meta">${c.oobeExample}</p>`;
+
+  if (!hasHost) {
+    // Preview mode: show form
+    html += `
+    <p class="meta">${c.oobePreviewNote}</p>
+    <form id="session-form" class="stack" style="width:100%;max-width:380px;text-align:left">
+      <div class="field">
+        <label for="oobe-target">${c.targetLanguageLabel}</label>
+        <input id="oobe-target" name="targetLanguage" value="Spanish" required/>
+      </div>
+      <div class="field">
+        <label for="oobe-native">${c.nativeLanguageLabel}</label>
+        <input id="oobe-native" name="nativeLanguage" value="English"/>
+      </div>
+      <button type="submit" class="button full" ${busy ? "disabled" : ""}>${c.createStart}</button>
+    </form>`;
+  }
+
+  html += `</div>`;
+  return html;
+}
+
+/* ================================================================ */
+/*  Render: Dashboard                                               */
+/* ================================================================ */
+function renderDashboard() {
+  const c = copy();
+  const session = getActiveSession();
+  let left = `<nav class="panel"><div class="panel-title">${c.dashboard}</div><div class="stack">`;
+
+  for (const s of state.sessions || []) {
+    const isActive = s.id === state.activeSessionId;
+    const levelName = s.levels?.[s.levels.length - 1]?.name || "";
+    left += `<article class="session ${isActive ? "active" : ""}">
+      <div class="spread">
+        <strong>${escapeHtml(getDisplayLanguageName(s.targetLanguage))}</strong>
+        ${levelName ? `<span class="badge">${escapeHtml(levelName)}</span>` : ""}
+      </div>
+      <div class="meta">${escapeHtml(s.goal?.detail || s.goal?.type || "")}</div>
+      <div class="row wrap" style="margin-top:8px">
+        ${!isActive ? `<button class="button small secondary" data-action="select" data-session-id="${s.id}">${c.dashboard}</button>` : ""}
+        <button class="button small warn" data-action="delete" data-session-id="${s.id}" data-language="${escapeHtml(getDisplayLanguageName(s.targetLanguage))}">&times;</button>
+      </div>
+    </article>`;
+  }
+
+  left += `</div>
+    <button class="button secondary full" style="margin-top:10px" data-action="settings">${c.settings}</button>
+  </nav>`;
+
+  let right = "";
+  if (session) {
+    right = `<main class="panel"><div class="stack">`;
+    // Skill profile
+    right += `<div class="panel-title">${c.skillProfile}</div>
+      <div class="skill-grid">
+        ${["language_info", "listening", "reading", "writing", "speaking"].map(sk => {
+          const val = Number(session.skillProfile?.[sk]);
+          return `<div class="skill"><strong>${skillLabel(sk)}</strong><b>${Number.isFinite(val) ? Math.round(val) : 0}</b></div>`;
+        }).join("")}
+      </div>`;
+
+    // Levels
+    if (session.levels?.length) {
+      right += `<div class="panel-title" style="margin-top:12px">${c.levels}</div>`;
+      for (const lvl of session.levels) {
+        const statusLabel = lvl.status === "completed" ? c.completed : c.active;
+        right += `<div class="row spread"><span>${escapeHtml(lvl.name)}</span><span class="badge">${statusLabel}</span></div>`;
+      }
+    }
+
+    // Start section button
+    right += `<button class="button full" data-action="prompt-section" ${busy ? "disabled" : ""}>${c.startSection}</button>`;
+
+    // Section history
+    if (session.sectionHistory?.length) {
+      right += `<div class="panel-title" style="margin-top:12px">${c.sectionHistory}</div>`;
+      for (const sh of session.sectionHistory.slice(0, 5)) {
+        right += `<div class="meta">${escapeHtml(sh.title || sh.sectionId)} — ${sh.exerciseCount} exercises</div>`;
+      }
+    }
+
+    // Recent feedback
+    if (state.recentFeedback?.length) {
+      right += `<div class="panel-title" style="margin-top:12px">${c.recentFeedback}</div>`;
+      for (const fb of state.recentFeedback.slice(0, 5)) {
+        right += `<div class="meta">${escapeHtml(fb.text || fb.skill || "")}</div>`;
+      }
+    }
+
+    right += `</div></main>`;
+  }
+
+  return `<div class="layout">${left}${right}</div>`;
+}
+
+/* ================================================================ */
+/*  Render: Settings (read-only, change via GPT)                    */
+/* ================================================================ */
+function renderSettings() {
+  const c = copy();
+  const session = getActiveSession();
+  if (!session) return renderDashboard();
+
+  const s = session.settings || {};
+  return `<div class="layout">
+    <nav class="panel">
+      <div class="panel-title">${c.settings}</div>
+      <div class="stack">
+        <div class="row spread"><span>${c.exercisesPerSkill}</span><b>${s.exercisesPerSkill || 5}</b></div>
+        <div class="row spread"><span>${c.speakingEnabled}</span><b>${s.speakingEnabled !== false ? "✓" : "✗"}</b></div>
+        <div class="row spread"><span>${c.levelMode}</span><b>${s.levelMode === "freeform" ? c.freeform : c.cefr}</b></div>
+        <p class="meta">${c.settingsNote}</p>
+        <button class="button secondary full" data-action="dashboard">${c.backToDashboard}</button>
+      </div>
+    </nav>
+  </div>`;
+}
+
+function renderSettings() {
+  const c = copy();
+  const session = getActiveSession();
+  if (!session) return renderDashboard();
+
+  const s = session.settings || {};
+  const counts = exerciseCountsForSession(session);
+  const passThreshold = clampNumber(s.sectionPassThreshold, 0, 100, 85);
+  const minSections = Math.max(10, clampNumber(s.minSectionsForGoalCompletion, 10, 500, 10));
+  const ttsRate = Math.max(0.6, Math.min(1.4, Number(s.ttsRate) || 1));
+  const checked = s.speakingEnabled !== false ? "checked" : "";
+
+  return `<div class="layout" style="grid-template-columns:1fr;">
+    <form id="settings-form" class="panel stack">
+      <div class="panel-title">${c.settings}</div>
+      <div class="metric-grid" style="grid-template-columns:repeat(2,minmax(0,1fr));">
+        <div class="field">
+          <label for="settings-target">${c.targetLanguageLabel}</label>
+          <input id="settings-target" name="targetLanguage" value="${escapeHtml(session.targetLanguage || "")}" required/>
+        </div>
+        <div class="field">
+          <label for="settings-native">${c.nativeLanguageLabel}</label>
+          <input id="settings-native" name="nativeLanguage" value="${escapeHtml(session.nativeLanguage || "")}"/>
+        </div>
+      </div>
+      <div class="field">
+        <label for="settings-progress">${c.progressContext}</label>
+        <textarea id="settings-progress" name="progressContext" rows="3">${escapeHtml(session.progressContext || "")}</textarea>
+      </div>
+      <div class="field">
+        <label for="settings-weakness">${c.weaknessContext}</label>
+        <textarea id="settings-weakness" name="weaknessContext" rows="3">${escapeHtml(session.weaknessContext || "")}</textarea>
+      </div>
+      <div class="panel-title" style="margin-top:4px">${c.exerciseCounts}</div>
+      <div class="metric-grid" style="grid-template-columns:repeat(5,minmax(0,1fr));">
+        ${["language_info", "listening", "reading", "writing", "speaking"].map(area => `
+          <div class="field">
+            <label for="count-${area}">${skillLabel(area)}</label>
+            <input id="count-${area}" name="count_${area}" type="number" min="3" max="6" value="${counts[area]}"/>
+          </div>`).join("")}
+      </div>
+      <div class="metric-grid" style="grid-template-columns:repeat(3,minmax(0,1fr));">
+        <div class="field">
+          <label for="settings-threshold">${c.passThreshold}</label>
+          <input id="settings-threshold" name="sectionPassThreshold" type="number" min="0" max="100" value="${passThreshold}"/>
+        </div>
+        <div class="field">
+          <label for="settings-min-sections">${c.minSectionsForGoal}</label>
+          <input id="settings-min-sections" name="minSectionsForGoalCompletion" type="number" min="10" max="500" value="${minSections}"/>
+        </div>
+        <div class="field">
+          <label for="settings-tts">${c.ttsRate}</label>
+          <input id="settings-tts" name="ttsRate" type="number" min="0.6" max="1.4" step="0.05" value="${ttsRate}"/>
+        </div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" name="speakingEnabled" ${checked}/>
+        <span>${c.speakingEnabled}</span>
+      </label>
+      <div class="row wrap" style="justify-content:space-between;">
+        <button class="button secondary" type="button" data-action="dashboard">${c.backToDashboard}</button>
+        <button class="button" type="submit" ${busy ? "disabled" : ""}>${c.saveSettings}</button>
+      </div>
+    </form>
+  </div>`;
+}
+
+/* ================================================================ */
+/*  Render: Lesson view (Sequential)                                */
+/* ================================================================ */
+function renderLesson() {
+  const c = copy();
+  const session = getActiveSession();
+  const section = getSection();
+  if (!section) return `<div class="empty"><p>${c.missingContext}</p></div>`;
+
+  const allExercises = [
+    ...(section.exercises || []),
+    ...(section.reviewExercises || [])
+  ];
+
+  if (allExercises.length === 0) {
+    return `<div class="empty animate-in">
+      <h2>🎉</h2><p>${c.sectionComplete || "Section complete!"}</p>
+      <button class="button secondary" data-action="dashboard">${c.backToDashboard}</button>
+    </div>`;
+  }
+
+  // Ensure index bounds
+  if (currentExerciseIndex < 0) currentExerciseIndex = 0;
+  if (currentExerciseIndex >= allExercises.length) currentExerciseIndex = allExercises.length - 1;
+
+  const exercise = allExercises[currentExerciseIndex];
+  const isFirst = currentExerciseIndex === 0;
+  const isLast = currentExerciseIndex === allExercises.length - 1;
+
+  const pct = Math.round(((currentExerciseIndex + 1) / allExercises.length) * 100);
+
+  let topNav = `
+    <nav class="panel" style="display:flex;flex-direction:column;gap:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <strong>${escapeHtml(section.title || "Lesson")}</strong>
+        <span class="badge">${currentExerciseIndex + 1} / ${allExercises.length}</span>
+      </div>
+      <div class="progress" style="margin:0;width:100%;"><span style="width:${pct}%"></span></div>
+    </nav>
+  `;
+
+  let mainContent = `<main class="panel exercise animate-in">
+    ${renderExercise(exercise)}
+    
+    <div class="row wrap" style="margin-top:20px;justify-content:space-between;border-top:1px solid var(--border);padding-top:15px;">
+      <button class="button secondary" data-action="prev-exercise" ${isFirst ? "disabled" : ""}>&laquo; ${c.prev || "Prev"}</button>
+      ${isLast 
+        ? `<button class="button" data-action="submit-section" ${busy ? "disabled" : ""}>${c.submit || "Submit Section"}</button>`
+        : `<button class="button" data-action="next-exercise"> ${c.next || "Next"} &raquo;</button>`
+      }
+    </div>
+  </main>`;
+
+  return `<div class="layout" style="grid-template-columns:1fr;">
+    ${topNav}
+    ${mainContent}
+    <section class="panel stack">
+      <div class="panel-title">${c.askAi}</div>
+      <textarea data-draft-key="ask-ai" rows="2" placeholder="${escapeHtml(c.askAiPlaceholder)}">${escapeHtml(typedAnswers.get("ask-ai") || "")}</textarea>
+      <div class="row wrap" style="justify-content:flex-end;">
+        <button class="button secondary small" data-action="ask-ai">${c.askAiSend}</button>
+      </div>
+    </section>
+    <div style="text-align:center;margin-top:10px;">
+      <button class="button secondary small" data-action="dashboard">${c.backToDashboard}</button>
+    </div>
+  </div>`;
+}
+
+/* ================================================================ */
+/*  Render: exercise dispatch                                       */
+/* ================================================================ */
+function renderExercise(exercise) {
+  if (exercise.type === "language_info") return renderLanguageInfo(exercise);
+  if (exercise.type === "writing") return renderWriting(exercise);
+  if (exercise.type === "reading") return renderReading(exercise);
+  if (exercise.type === "listening") return renderListening(exercise);
+  return renderSpeaking(exercise);
+}
+
+function renderLanguageInfo(exercise) {
+  const choices = exercise.payload?.choices || [];
+  const draftKey = exercise.id;
+  const draft = typedAnswers.get(draftKey) || "";
+  const examples = (exercise.payload?.targetExamples || []).map(item =>
+    `<span class="token">${escapeHtml(item)}</span>`
+  ).join("");
+
+  return `${renderExerciseHeading(exercise)}
+  <div class="passage" style="margin-bottom:15px;">
+    <strong>${escapeHtml(exercise.payload?.topic || "")}</strong>
+    <p>${escapeHtml(exercise.payload?.explanation || "")}</p>
+    <div class="token-bank">${examples}</div>
+  </div>
+  <div class="stack">
+    <strong>${escapeHtml(exercise.payload?.question || "")}</strong>
+    ${choices.map((ch, idx) => {
+      const isStr = typeof ch === 'string';
+      const id = isStr ? String(idx) : escapeHtml(ch.id);
+      const text = isStr ? ch : (ch.text || ch.en || ch.ko || ch.id);
+      const isSelected = draft === id;
+      return `<button class="choice ${isSelected ? "selected" : ""}" data-action="select-choice" data-choice-id="${id}" data-draft-key="${draftKey}">${escapeHtml(text)}</button>`;
+    }).join("")}
+  </div>`;
+}
+
+function renderExerciseHeading(exercise) {
+  const c = copy();
+  return `<div class="spread" style="margin-bottom:10px;">
+    <h2>${skillEmoji(exercise.skill)} ${skillLabel(exercise.skill)}</h2>
+  </div>
+  <p class="prompt" style="font-size:1.05em;font-weight:500;">${escapeHtml(exercise.prompt)}</p>
+  <p class="meta" style="margin-top:5px;">${escapeHtml(exercise.instructions)}</p>`;
+}
+
+function renderClaimField(exercise) {
+  const c = copy();
+  const key = `${exercise.id}:claim`;
+  const val = typedAnswers.get(key) || "";
+  const fieldId = `input-${exercise.id}-claim`;
+  return `<div class="field">
+    <label for="${fieldId}">${c.claimLabel}</label>
+    <input id="${fieldId}" name="${fieldId}" type="text" data-draft-key="${key}" value="${escapeHtml(val)}" placeholder="…"/>
+  </div>`;
+}
+
+/* ================================================================ */
+/*  Render: Speaking (conversational scenario)                      */
+/* ================================================================ */
+function renderSpeaking(exercise) {
+  const c = copy();
+  const draftKey = exercise.id;
+  const draft = typedAnswers.get(draftKey) || "";
+  const speechLang = exercise.payload?.speechLang || "";
+
+  return `${renderExerciseHeading(exercise)}
+  <div class="scenario">${escapeHtml(exercise.payload?.scenario || "")}</div>
+  ${exercise.payload?.exampleResponse ? `<details>
+    <summary>${c.exampleResponse || "Example"}</summary>
+    <div class="transcript">${escapeHtml(exercise.payload.exampleResponse)}</div>
+  </details>` : ""}
+  <div class="row wrap" style="margin-top:15px;">
+    <button class="button secondary small" data-action="start-speaking" ${recognitionActive ? "disabled" : ""}>${c.startMic || "Browser mic"}</button>
+    <button class="button secondary small" data-action="stop-speaking" ${!recognitionActive ? "disabled" : ""}>${c.stopMic || "Stop mic"}</button>
+    <button class="button secondary small" data-action="start-recording" ${recordingActive ? "disabled" : ""}>${c.record || "Start Recording"}</button>
+    <button class="button secondary small" data-action="stop-recording" ${!recordingActive ? "disabled" : ""}>${c.stopRecord || "Stop Recording"}</button>
+    <button class="button secondary small" data-action="skip-skill" data-skill="speaking">${c.cannotSpeakNow || c.skip || "Skip"}</button>
+    ${speechLang ? `<span class="badge">${escapeHtml(speechLang)}</span>` : ""}
+  </div>
+  <div class="stack" style="margin-top:15px">
+    <div class="field">
+      <label for="textarea-${exercise.id}">${c.transcript || "Transcript"}</label>
+      <textarea id="textarea-${exercise.id}" name="textarea-${exercise.id}" data-draft-key="${draftKey}" rows="3" placeholder="…">${escapeHtml(draft)}</textarea>
+    </div>
+    ${renderClaimField(exercise)}
+  </div>`;
+}
+
+/* ================================================================ */
+/*  Render: Listening (browser TTS only)                            */
+/* ================================================================ */
+function renderListening(exercise) {
+  const c = copy();
+  const draftKey = exercise.id;
+  const draft = typedAnswers.get(draftKey) || "";
+  const speechLang = exercise.payload?.speechLang || "";
+  const question = exercise.payload?.question || "";
+
+  const choices = exercise.payload?.choices || [];
+  
+  return `${renderExerciseHeading(exercise)}
+  <div class="row wrap" style="margin-bottom:15px;">
+    <button class="button secondary" data-action="play-audio">🔊 ${c.listen || "Listen"}</button>
+    <button class="button secondary small" data-action="stop-audio">⏹ ${c.stop || "Stop"}</button>
+    ${speechLang ? `<span class="badge">${escapeHtml(speechLang)}</span>` : ""}
+  </div>
+  <details>
+    <summary>${c.showText || "Show Text"}</summary>
+    <div class="transcript">${escapeHtml(exercise.payload?.audioText || "")}</div>
+  </details>
+  <div class="stack" style="margin-top:15px;">
+    <strong>${escapeHtml(question)}</strong>
+    ${choices.map((ch, idx) => {
+      const isStr = typeof ch === 'string';
+      const id = isStr ? String(idx) : escapeHtml(ch.id);
+      const text = isStr ? ch : (ch.text || ch.en || ch.ko || ch.id);
+      const isSelected = draft === id;
+      return `<button class="choice ${isSelected ? "selected" : ""}" data-action="select-choice" data-choice-id="${id}" data-draft-key="${draftKey}">${escapeHtml(text)}</button>`;
+    }).join("")}
+    ${renderClaimField(exercise)}
+  </div>`;
+}
+
+function renderListening(exercise) {
+  const c = copy();
+  const draftKey = exercise.id;
+  const draft = typedAnswers.get(draftKey) || "";
+  const speechLang = exercise.payload?.speechLang || "";
+  const question = exercise.payload?.question || "";
+  const choices = exercise.payload?.choices || [];
+
+  return `${renderExerciseHeading(exercise)}
+  <div class="row wrap" style="margin-bottom:15px;">
+    <button class="button secondary" data-action="play-audio">${c.listen || "Listen"}</button>
+    <button class="button secondary small" data-action="stop-audio">${c.stop || "Stop"}</button>
+    <button class="button secondary small" data-action="skip-skill" data-skill="listening">${c.cannotListenNow || c.skip || "Skip"}</button>
+    ${speechLang ? `<span class="badge">${escapeHtml(speechLang)}</span>` : ""}
+  </div>
+  <details>
+    <summary>${c.showText || "Show Text"}</summary>
+    <div class="transcript">${escapeHtml(exercise.payload?.audioText || "")}</div>
+  </details>
+  <div class="stack" style="margin-top:15px;">
+    <strong>${escapeHtml(question)}</strong>
+    ${choices.map((ch, idx) => {
+      const isStr = typeof ch === "string";
+      const id = isStr ? String(idx) : escapeHtml(ch.id);
+      const text = isStr ? ch : (ch.text || ch.en || ch.ko || ch.id);
+      const isSelected = draft === id;
+      return `<button class="choice ${isSelected ? "selected" : ""}" data-action="select-choice" data-choice-id="${id}" data-draft-key="${draftKey}">${escapeHtml(text)}</button>`;
+    }).join("")}
+    ${renderClaimField(exercise)}
+  </div>`;
+}
+
+/* ================================================================ */
+/*  Render: Writing (token reorder)                                 */
+/* ================================================================ */
+function renderWriting(exercise) {
+  const c = copy();
+  const tokens = exercise.payload?.tokens || [];
+
+  const answerBank = tokenAnswer.map((t, i) =>
+    `<button class="token" data-action="remove-token" data-token-answer-index="${i}">${escapeHtml(t.text)}</button>`
+  ).join("");
+
+  const tokenBank = tokens.map((t, i) => {
+    const used = tokenAnswer.some(a => a.index === i);
+    return `<button class="token ${used ? "used" : ""}" data-action="add-token" data-token-index="${i}" data-token-text="${escapeHtml(t)}" ${used ? "disabled" : ""}>${escapeHtml(t)}</button>`;
+  }).join("");
+
+  return `${renderExerciseHeading(exercise)}
+  <div class="stack">
+    <div class="answer-bank">${answerBank || `<span class="meta">${c.tapTokens || "Tap tokens to build sentence"}</span>`}</div>
+    <div class="token-bank">${tokenBank}</div>
+    ${renderClaimField(exercise)}
+    <div class="row wrap">
+      <button class="button secondary" data-action="reset-writing">${c.resetTokens || "Reset"}</button>
+    </div>
+  </div>`;
+}
+
+/* ================================================================ */
+/*  Render: Reading (passage + choices)                             */
+/* ================================================================ */
+function renderReading(exercise) {
+  const c = copy();
+  const choices = exercise.payload?.choices || [];
+
+  const draftKey = exercise.id;
+  const draft = typedAnswers.get(draftKey) || "";
+
+  return `${renderExerciseHeading(exercise)}
+  <div class="passage" style="margin-bottom:15px;">${escapeHtml(exercise.payload?.passage || "")}</div>
+  <div class="stack">
+    <strong>${escapeHtml(exercise.payload?.question || "")}</strong>
+    ${choices.map((ch, idx) => {
+      const isStr = typeof ch === 'string';
+      const id = isStr ? String(idx) : escapeHtml(ch.id);
+      const text = isStr ? ch : (ch.text || ch.en || ch.ko || ch.id);
+      const isSelected = draft === id;
+      return `<button class="choice ${isSelected ? "selected" : ""}" data-action="select-choice" data-choice-id="${id}" data-draft-key="${draftKey}">${escapeHtml(text)}</button>`;
+    }).join("")}
+    ${renderClaimField(exercise)}
+  </div>`;
+}
+
+/* ================================================================ */
+/*  Event: input drafts                                             */
+/* ================================================================ */
+appEl.addEventListener("input", (e) => {
+  const key = e.target.dataset?.draftKey;
+  if (key) typedAnswers.set(key, e.target.value);
+});
+
+/* ================================================================ */
+/*  Event: form submit                                              */
+/* ================================================================ */
+appEl.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const form = e.target;
+
+  if (form.id === "session-form") {
+    const fd = new FormData(form);
+    const defaultCounts = { language_info: 3, listening: 3, reading: 3, writing: 3, speaking: 3 };
+    await callTool("manage_learning_session", {
+      session: {
+        targetLanguage: fd.get("targetLanguage"),
+        nativeLanguage: fd.get("nativeLanguage"),
+        status: "active",
+        goal: { type: "conversation", detail: "General practice" },
+        interests: [],
+        avoidTopics: [],
+        stage: "foundation",
+        progressContext: "",
+        weaknessContext: "",
+        settings: {
+          displayLanguage: "auto",
+          exercisesPerSkill: 3,
+          exerciseCounts: defaultCounts,
+          sectionPassThreshold: 85,
+          minSectionsForGoalCompletion: 10,
+          ttsRate: 1,
+          speakingEnabled: true,
+          levelMode: "cefr",
+        },
+        runtime: { interfaceLanguage: uiLang(), speechLang: "" },
+        levels: [{ id: "level-init", name: "A1 — Basics", cefr: "A1", status: "active", sections: [], completionJudgment: null, createdAt: new Date().toISOString() }],
+        skillProfile: { language_info: 0, speaking: 3, writing: 3, listening: 3, reading: 3 },
+        feedbackMemory: [],
+        sectionHistory: [],
+      },
+    });
+    return;
+  }
+
+  if (form.id === "settings-form") {
+    const session = getActiveSession();
+    if (!session) return;
+    const fd = new FormData(form);
+    const updated = JSON.parse(JSON.stringify(session));
+    updated.targetLanguage = String(fd.get("targetLanguage") || session.targetLanguage || "").trim();
+    updated.nativeLanguage = String(fd.get("nativeLanguage") || session.nativeLanguage || "").trim();
+    updated.progressContext = String(fd.get("progressContext") || "").trim();
+    updated.weaknessContext = String(fd.get("weaknessContext") || "").trim();
+    updated.settings = {
+      ...(updated.settings || {}),
+      exerciseCounts: {
+        language_info: clampNumber(fd.get("count_language_info"), 3, 6, 3),
+        listening: clampNumber(fd.get("count_listening"), 3, 6, 3),
+        reading: clampNumber(fd.get("count_reading"), 3, 6, 3),
+        writing: clampNumber(fd.get("count_writing"), 3, 6, 3),
+        speaking: clampNumber(fd.get("count_speaking"), 3, 6, 3),
+      },
+      exercisesPerSkill: clampNumber(fd.get("count_reading"), 3, 6, 3),
+      sectionPassThreshold: clampNumber(fd.get("sectionPassThreshold"), 0, 100, 85),
+      minSectionsForGoalCompletion: Math.max(10, clampNumber(fd.get("minSectionsForGoalCompletion"), 10, 500, 10)),
+      ttsRate: Math.max(0.6, Math.min(1.4, Number(fd.get("ttsRate")) || 1)),
+      speakingEnabled: fd.get("speakingEnabled") === "on",
+    };
+    await callTool("manage_learning_session", { session: updated });
+    viewMode = state.currentSection ? "lesson" : "dashboard";
+    return;
+  }
+
+  if (form.id === "listening-form") {
+    const exercise = getCurrentExercise();
+    if (!exercise) return;
+    const answer = typedAnswers.get(exercise.id) || "";
+    const claim = typedAnswers.get(`${exercise.id}:claim`) || "";
+    sendAnswerToGPT(exercise, answer, claim);
+    return;
+  }
+
+  if (form.id === "speaking-form") {
+    const exercise = getCurrentExercise();
+    if (!exercise) return;
+    const answer = typedAnswers.get(exercise.id) || "";
+    const claim = typedAnswers.get(`${exercise.id}:claim`) || "";
+    sendAnswerToGPT(exercise, answer, claim);
+    return;
+  }
+});
+
+/* ================================================================ */
+/*  Event: click delegation                                         */
+/* ================================================================ */
+appEl.addEventListener("click", async (e) => {
+  const btn = e.target.closest("[data-action]");
+  if (!btn) return;
+  const action = btn.dataset.action;
+
+  if (action === "toggle-theme") { toggleTheme(); return; }
+  if (action === "dashboard") { viewMode = "dashboard"; tokenAnswer = []; render(); return; }
+  if (action === "settings") { viewMode = "settings"; render(); return; }
+  if (action === "select") { state.activeSessionId = btn.dataset.sessionId; viewMode = "dashboard"; render(); return; }
+  if (action === "delete") {
+    const lang = btn.dataset.language || "";
+    if (!confirm(copy().deleteConfirm(lang))) return;
+    callTool("delete_session", { sessionId: btn.dataset.sessionId });
+    return;
+  }
+
+  if (action === "prompt-section") {
+    const section = getSection();
+    if (section) {
+      viewMode = "lesson";
+      currentExerciseIndex = 0;
+      tokenAnswer = [];
+      render();
+    } else {
+      if (hasHost) {
+        sendSectionGenerationRequest();
+      } else {
+        // Preview mode: generate mock section
+        generatePreviewSection();
+      }
+    }
+    return;
+  }
+
+  if (action === "ask-ai") {
+    const question = String(typedAnswers.get("ask-ai") || "").trim();
+    const section = getSection();
+    const exercise = getCurrentExercise();
+    if (!question || !section || !exercise) return;
+    const msg = [
+      "[LingoStar Ask AI]",
+      `Section: ${section.id}`,
+      `Exercise: ${exercise.id}`,
+      `Type: ${exercise.type}`,
+      `Target language: ${getActiveSession()?.targetLanguage || ""}`,
+      `Question: ${question}`,
+      "Instruction: Answer the learner's question concisely using the exercise context. Do not clear or replace the current app section.",
+    ].join("\n");
+    if (hasHost) {
+      sendFollowUpToHost(msg, {
+        visiblePrompt: visibleHostPrompt("ask-ai"),
+        modelContext: msg,
+        structuredContent: {
+          lingostar: {
+            command: "ask_ai",
+            sectionId: section.id,
+            exercise,
+            question,
+          },
+        },
+      });
+    } else {
+      toast = question;
+      render();
+    }
+    return;
+  }
+
+  // Token operations
+  if (action === "add-token") {
+    const idx = Number(btn.dataset.tokenIndex);
+    const text = btn.dataset.tokenText;
+    if (!tokenAnswer.some(t => t.index === idx)) {
+      tokenAnswer.push({ index: idx, text });
+      render();
+    }
+    return;
+  }
+  if (action === "remove-token") {
+    tokenAnswer.splice(Number(btn.dataset.tokenAnswerIndex), 1);
+    render();
+    return;
+  }
+  if (action === "reset-writing") { tokenAnswer = []; render(); return; }
+
+  if (action === "skip-exercise") {
+    const exercise = getCurrentExercise();
+    if (exercise) {
+      typedAnswers.set(exercise.id, "[SKIPPED]");
+      await gradeDirectExercise(exercise, "[SKIPPED]");
+    }
+    const section = getSection();
+    const allExercises = [...(section?.exercises || []), ...(section?.reviewExercises || [])];
+    if (currentExerciseIndex < allExercises.length - 1) currentExerciseIndex++;
+    tokenAnswer = [];
+    render();
+    return;
+  }
+
+  if (action === "skip-skill") {
+    const skill = btn.dataset.skill;
+    const section = getSection();
+    if (!skill || !section) return;
+    const skipped = (section.exercises || [])
+      .filter(ex => ex.type === skill && !getResultForExercise(ex.id))
+      .map(ex => buildDirectEvaluation(ex, "[SKIPPED]"));
+    for (const ex of section.exercises || []) {
+      if (ex.type === skill && !getResultForExercise(ex.id)) typedAnswers.set(ex.id, "[SKIPPED]");
+    }
+    if (skipped.length) {
+      if (hasHost) {
+        await callTool("grade_section_answers", {
+          sessionId: getActiveSession()?.id,
+          sectionId: section.id,
+          evaluations: skipped,
+          sectionFeedback: `${skill} skipped by learner.`,
+        });
+      } else {
+        for (const ex of section.exercises || []) {
+          if (ex.type === skill && !getResultForExercise(ex.id)) mockGradeAnswer(ex, "[SKIPPED]", "");
+        }
+      }
+    }
+    const allExercises = [...(getSection()?.exercises || []), ...(getSection()?.reviewExercises || [])];
+    const nextIndex = allExercises.findIndex(ex => !getResultForExercise(ex.id));
+    currentExerciseIndex = nextIndex >= 0 ? nextIndex : Math.min(currentExerciseIndex, Math.max(0, allExercises.length - 1));
+    tokenAnswer = [];
+    render();
+    return;
+  }
+
+  if (action === "select-choice") {
+    const draftKey = btn.dataset.draftKey;
+    typedAnswers.set(draftKey, btn.dataset.choiceId);
+    const exercise = getCurrentExercise();
+    if (exercise?.id === draftKey && DIRECT_GRADE_TYPES.has(exercise.type)) {
+      await gradeDirectExercise(exercise, btn.dataset.choiceId);
+    }
+    render();
+    return;
+  }
+
+  if (action === "prev-exercise") {
+    if (currentExerciseIndex > 0) currentExerciseIndex--;
+    render();
+    return;
+  }
+
+  if (action === "next-exercise") {
+    const exercise = getCurrentExercise();
+    if (exercise && exercise.type === "writing" && tokenAnswer.length > 0) {
+      const answer = tokenAnswer.map(t => t.text).join(" ");
+      typedAnswers.set(exercise.id, answer);
+      await gradeDirectExercise(exercise, answer);
+    }
+    
+    const section = getSection();
+    const allExercises = [...(section?.exercises || []), ...(section?.reviewExercises || [])];
+    if (currentExerciseIndex < allExercises.length - 1) currentExerciseIndex++;
+    
+    tokenAnswer = [];
+    render();
+    return;
+  }
+
+  if (action === "submit-section") {
+    const exercise = getCurrentExercise();
+    if (exercise && exercise.type === "writing" && tokenAnswer.length > 0) {
+      const answer = tokenAnswer.map(t => t.text).join(" ");
+      typedAnswers.set(exercise.id, answer);
+      await gradeDirectExercise(exercise, answer);
+    }
+
+    const section = getSection();
+    if (!section) return;
+
+    const allExercises = [...(section.exercises || []), ...(section.reviewExercises || [])];
+    const missingDirect = allExercises
+      .filter(ex => DIRECT_GRADE_TYPES.has(ex.type) && !getResultForExercise(ex.id))
+      .map(ex => {
+        typedAnswers.set(ex.id, "[SKIPPED]");
+        return buildDirectEvaluation(ex, "[SKIPPED]");
+      });
+    if (missingDirect.length) {
+      if (hasHost) {
+        await callTool("grade_section_answers", {
+          sessionId: getActiveSession()?.id,
+          sectionId: section.id,
+          evaluations: missingDirect,
+          sectionFeedback: "Unanswered objective items were skipped.",
+        });
+      } else {
+        for (const item of missingDirect) {
+          const ex = allExercises.find(candidate => candidate.id === item.exerciseId);
+          if (ex) mockGradeAnswer(ex, "[SKIPPED]", "");
+        }
+      }
+    }
+
+    const speakingExercises = allExercises.filter(ex => ex.type === "speaking");
+    
+    const lines = speakingExercises.map(ex => {
+      const ans = typedAnswers.get(ex.id) || "[NO ANSWER]";
+      const claim = typedAnswers.get(`${ex.id}:claim`) || "";
+      let out = `- ${ex.id} (${ex.type}): "${ans}"`;
+      if (claim) out += ` (Learner Claim: ${claim})`;
+      return out;
+    });
+
+    if (!speakingExercises.length) {
+      toast = copy().sectionComplete;
+      render();
+      return;
+    }
+
+    const msg = `[LingoStar Speaking Submit]\nSection: ${section.id}\nSpeaking Answers:\n${lines.join("\n")}\nInstruction: Evaluate ONLY the speaking answers, call grade_section_answers, and show concise feedback. Objective language_info/listening/reading/writing items are already auto-graded by the app. Scores must be 0-100. For any [SKIPPED] answer, set skipped=true and needsReview=true so the MCP server does not lower the skill profile for a deliberate skip.`;
+
+    if (hasHost) {
+      sendFollowUpToHost(msg, {
+        visiblePrompt: visibleHostPrompt("section-submit"),
+        modelContext: msg,
+        structuredContent: {
+          lingostar: {
+            command: "grade_section_answers",
+            sectionId: section.id,
+            answers: speakingExercises.map(ex => ({
+              exerciseId: ex.id,
+              type: ex.type,
+              answer: typedAnswers.get(ex.id) || "[NO ANSWER]",
+              learnerClaim: typedAnswers.get(`${ex.id}:claim`) || null,
+            })),
+          },
+        },
+      });
+    } else {
+      toast = copy().mockBatchGrade;
+      render();
+    }
+    return;
+  }
+
+  // Audio
+  if (action === "play-audio") { playListeningAudio(getCurrentExercise()); return; }
+  if (action === "stop-audio") { stopAudio(); return; }
+
+  // Speech recognition
+  if (action === "start-speaking") { startSpeechRecognition(getCurrentExercise()); return; }
+  if (action === "stop-speaking") { stopSpeechRecognition(); return; }
+
+  // Recording
+  if (action === "start-recording") { startRecording(); return; }
+  if (action === "stop-recording") { stopRecordingAndTranscribe(getCurrentExercise()); return; }
+});
+
+/* ================================================================ */
+/*  Preview mode: mock tools                                        */
+/* ================================================================ */
+async function runPreviewTool(name, args) {
+  await new Promise(r => setTimeout(r, 200));
+
+  if (name === "get_lingostar_state") {
+    return { structuredContent: { state } };
+  }
+
+  if (name === "manage_learning_session") {
+    const session = typeof args.session === "string" ? JSON.parse(args.session) : args.session;
+    if (!session.id) session.id = "session-" + Math.random().toString(36).slice(2, 10);
+    session.createdAt ??= new Date().toISOString();
+    session.updatedAt = new Date().toISOString();
+    const idx = state.sessions.findIndex(s => s.id === session.id);
+    if (idx >= 0) state.sessions[idx] = session;
+    else state.sessions.push(session);
+    state.activeSessionId = session.id;
+    state.currentSection = null;
+    return { structuredContent: { state }, content: [{ type: "text", text: "Session stored." }] };
+  }
+
+  if (name === "delete_session") {
+    state.sessions = state.sessions.filter(s => s.id !== args.sessionId);
+    if (state.activeSessionId === args.sessionId) state.activeSessionId = state.sessions[0]?.id || null;
+    if (state.currentSection?.sessionId === args.sessionId) state.currentSection = null;
+    return { structuredContent: { state }, content: [{ type: "text", text: "Session deleted." }] };
+  }
+
+  if (name === "transcribe_audio") {
+    return { structuredContent: { state, transcript: "(Preview: transcription not available)" } };
+  }
+
+  return { structuredContent: { state } };
+}
+
+function generatePreviewSection() {
+  const session = getActiveSession();
+  if (!session) return;
+  const n = session.settings?.exercisesPerSkill || 5;
+  const exercises = [];
+  let seq = 1;
+
+  // Language info
+  for (let i = 0; i < n; i++) {
+    exercises.push({
+      id: `ex-info-${i + 1}`, type: "language_info", skill: "language_info", sequence: seq++,
+      prompt: "Study the language fact and choose the correct answer.",
+      instructions: "Foundation learners should master these facts before full problem solving.",
+      payload: {
+        topic: ["Spanish vowels", "Question punctuation", "Gendered nouns"][i % 3],
+        explanation: ["Spanish vowels are usually pronounced consistently.", "Spanish questions use an opening and closing question mark.", "Many Spanish nouns are grammatically masculine or feminine."][i % 3],
+        targetExamples: [["a, e, i, o, u"], ["¿Cómo estás?"], ["el libro", "la casa"]][i % 3],
+        question: ["Which vowel set is used in Spanish?", "Which sentence is punctuated as a Spanish question?", "Which pair shows noun gender?"][i % 3],
+        choices: [
+          [{ id: "a", text: "a, e, i, o, u" }, { id: "b", text: "a, e, i only" }, { id: "c", text: "No written vowels" }],
+          [{ id: "a", text: "¿Cómo estás?" }, { id: "b", text: "Como estas." }, { id: "c", text: "Cómo estás!" }],
+          [{ id: "a", text: "el libro / la casa" }, { id: "b", text: "yo / tú" }, { id: "c", text: "uno / dos" }],
+        ][i % 3],
+        correctChoiceId: "a",
+        difficultyStage: "foundation",
+      },
+    });
+  }
+
+  // Speaking
+  for (let i = 0; i < n; i++) {
+    exercises.push({
+      id: `ex-speak-${i + 1}`, type: "speaking", skill: "speaking", sequence: seq++,
+      prompt: "Respond naturally in the scenario below.",
+      instructions: "Use the microphone or type your response.",
+      payload: {
+        scenario: [`You are at a café. The waiter asks "¿Qué desea?" Order a drink.`, `You meet a friend on the street. Greet them and ask how they are.`, `You are at a bookstore. Ask the clerk for a recommendation.`][i % 3],
+        exampleResponse: [`Un café con leche, por favor.`, `¡Hola! ¿Cómo estás?`, `¿Me puede recomendar un buen libro?`][i % 3],
+        speechLang: "es-ES", skippable: true,
+      },
+    });
+  }
+
+  // Listening
+  for (let i = 0; i < n; i++) {
+    exercises.push({
+      id: `ex-listen-${i + 1}`, type: "listening", skill: "listening", sequence: seq++,
+      prompt: "Listen and answer the question.",
+      instructions: "Press Listen, then answer.",
+      payload: {
+        audioText: [`Me gustaría un café con leche y un croissant.`, `El museo abre a las nueve de la mañana.`, `Necesito comprar frutas y verduras en el mercado.`][i % 3],
+        speechLang: "es-ES",
+        question: [`What was ordered?`, `When does the museum open?`, `What needs to be bought?`][i % 3],
+        choices: [
+          ["Coffee with milk and a croissant", "Tea and bread", "Water and soup", "Juice and fruit", "Black coffee only"],
+          ["At nine in the morning", "At noon", "At six in the evening", "On Sunday", "At midnight"],
+          ["Fruit and vegetables", "Books and pens", "Tickets and maps", "Coffee and bread", "Shoes and socks"],
+        ][i % 3],
+        correctChoiceId: ["0", "0", "0"][i % 3],
+        expectedKeywords: [["café", "croissant"], ["nueve", "nine", "9"], ["frutas", "verduras", "fruits"]][i % 3],
+      },
+    });
+  }
+
+  // Writing
+  for (let i = 0; i < n; i++) {
+    const sentences = ["Me gustaría un café con leche.", "El museo abre a las nueve.", "Necesito comprar frutas frescas."];
+    const s = sentences[i % 3];
+    const tokens = s.split(" ").sort(() => Math.random() - 0.5);
+    exercises.push({
+      id: `ex-write-${i + 1}`, type: "writing", skill: "writing", sequence: seq++,
+      prompt: "Reorder the tokens to form the correct sentence.",
+      instructions: "Tap tokens in the correct order.",
+      payload: { targetSentence: s, tokens, dragMode: "token_reorder" },
+    });
+  }
+
+  // Reading
+  for (let i = 0; i < n; i++) {
+    exercises.push({
+      id: `ex-read-${i + 1}`, type: "reading", skill: "reading", sequence: seq++,
+      prompt: "Read the passage and answer.",
+      instructions: "Select the best answer.",
+      payload: {
+        passage: [`En el café Central los clientes piden café, té y jugos. El café con leche es el más popular.`, `El museo de arte moderno tiene tres pisos. La entrada cuesta cinco euros.`, `María compra frutas en el mercado todos los sábados. Sus favoritas son las fresas.`][i % 3],
+        question: [`What is the most popular drink?`, `How much does entry cost?`, `What are María's favorite fruits?`][i % 3],
+        choices: [
+          ["Café con leche", "Tea", "Juice"],
+          ["Three euros", "Five euros", "Ten euros"],
+          ["Apples", "Strawberries", "Oranges"],
+        ][i % 3],
+        correctChoiceId: ["0", "1", "1"][i % 3],
+      },
+    });
+  }
+
+  const sectionId = "section-" + Math.random().toString(36).slice(2, 10);
+  state.currentSection = {
+    id: sectionId, sessionId: session.id, levelId: session.levels?.[0]?.id || "level-init",
+    title: "Preview Section: Daily Life", status: "active", exercisesPerSkill: n,
+    exerciseCounts: { language_info: n, listening: n, reading: n, writing: n, speaking: n },
+    exercises, reviewExercises: [], results: [],
+    completedAt: null, createdAt: new Date().toISOString(),
+  };
+  viewMode = "lesson";
+  currentExerciseIndex = 0;
+  render();
+}
+
+function mockGradeAnswer(exercise, answer, claim) {
+  const section = getSection();
+  if (!section) return;
+
+  const isSkip = answer === "[SKIPPED]";
+  let isCorrect = false;
+  let expected = "";
+
+  if (!isSkip) {
+    if (exercise.type === "writing") {
+      expected = exercise.payload?.targetSentence || "";
+      const norm = s => s.toLowerCase().replace(/[.,!?]/g, "").trim();
+      isCorrect = norm(answer) === norm(expected);
+    } else if (exercise.type === "language_info" || exercise.type === "reading") {
+      expected = exercise.payload?.correctChoiceId || "";
+      isCorrect = answer.toLowerCase() === expected.toLowerCase();
+    } else if (exercise.type === "listening") {
+      expected = exercise.payload?.correctChoiceId || "";
+      isCorrect = answer.toLowerCase() === expected.toLowerCase();
+    } else {
+      isCorrect = answer.trim().length >= 5;
+      expected = exercise.payload?.exampleResponse || "";
+    }
+  }
+
+  const result = {
+    exerciseId: exercise.id,
+    isCorrect: isSkip ? false : isCorrect,
+    skipped: isSkip,
+    score: isSkip ? 0 : (isCorrect ? 100 : 30),
+    userAnswer: answer,
+    expectedAnswer: expected,
+    feedback: {
+      short: isSkip ? copy().skippedFeedback : (isCorrect ? copy().correctFeedback : copy().notQuiteFeedback),
+      detail: isSkip ? copy().skippedDetail : (isCorrect ? copy().correctDetail : `${copy().expectedPrefix}: ${expected}`),
+    },
+    skill: exercise.skill,
+    needsReview: isSkip || !isCorrect,
+    gradedAt: new Date().toISOString(),
+  };
+
+  section.results.push(result);
+
+  // Check if all exercises done → generate review
+  if (allExercisesDone() && section.reviewExercises.length === 0) {
+    const needsReview = section.results.filter(r => r.needsReview);
+    for (const r of needsReview) {
+      const orig = section.exercises.find(e => e.id === r.exerciseId);
+      if (orig) {
+        section.reviewExercises.push({ ...orig, id: `review-${orig.id}` });
+      }
+    }
+  }
+
+  toast = result.feedback.short;
+  render();
+}
+
+/* ================================================================ */
+/*  Init                                                            */
+/* ================================================================ */
+callTool("get_lingostar_state");
+</script>
+</body>
+</html>
