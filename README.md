@@ -1,5 +1,9 @@
 # LingoStar
 
+---
+
+- (c) 2026 Jeongwoo Kim
+
 LingoStar는 ChatGPT Apps용 외국어 학습 MCP 앱입니다. ChatGPT가 학습 계획, 문제 생성, 말하기 평가, 목표 달성 판단을 수행하고, MCP 서버는 구조화된 도구, GUI 상태, 검증, 음성 폴백, OAuth, 영속 상태 저장을 담당합니다.
 
 ## 주요 파일
