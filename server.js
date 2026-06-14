@@ -9,6 +9,7 @@ import {
   RESOURCE_MIME_TYPE,
 } from "@modelcontextprotocol/ext-apps/server";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { z } from "zod";
 
@@ -2758,8 +2759,46 @@ function createLingoStarServer() {
 const port = Number(process.env.PORT ?? 8787);
 const MCP_PATH = "/mcp";
 const MCP_METHODS = new Set(["POST", "GET", "DELETE"]);
+const MCP_ALLOWED_HEADERS = "authorization, accept, content-type, mcp-session-id, Mcp-Session-Id, x-openai-subject, x-openai-user-id, x-openai-session-id, x-openai-conversation-id";
 
 const mcpActiveSessions = new Map();
+
+function setMcpResponseHeaders(req, res) {
+  const origin = req.headers.origin || "*";
+  const allowedOrigin = allowedCorsOrigin(origin);
+  res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
+  res.setHeader("Access-Control-Expose-Headers", "Mcp-Session-Id, WWW-Authenticate");
+  res.setHeader("X-Accel-Buffering", "no");
+  return allowedOrigin;
+}
+
+async function handleStatelessMcpRequest(req, res) {
+  const server = createLingoStarServer();
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: undefined,
+    enableJsonResponse: true,
+  });
+  let closed = false;
+  const closeTransport = async () => {
+    if (closed) return;
+    closed = true;
+    try {
+      await transport.close();
+    } catch (error) {
+      console.error("Error closing stateless MCP transport:", error);
+    }
+    try {
+      await server.close();
+    } catch (error) {
+      console.error("Error closing stateless MCP server:", error);
+    }
+  };
+
+  res.on("finish", closeTransport);
+  res.on("close", closeTransport);
+  await server.connect(transport);
+  await transport.handleRequest(req, res);
+}
 
 const httpServer = createServer(async (req, res) => {
   if (!req.url) {
@@ -2770,13 +2809,13 @@ const httpServer = createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host ?? "localhost"}`);
 
   if (req.method === "OPTIONS" && url.pathname === MCP_PATH) {
-    const origin = req.headers.origin || "*";
-    const allowedOrigin = allowedCorsOrigin(origin);
+    const allowedOrigin = setMcpResponseHeaders(req, res);
     res.writeHead(204, {
       "Access-Control-Allow-Origin": allowedOrigin,
       "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-      "Access-Control-Allow-Headers": "authorization, accept, content-type, mcp-session-id, x-openai-subject, x-openai-user-id, x-openai-session-id, x-openai-conversation-id",
+      "Access-Control-Allow-Headers": MCP_ALLOWED_HEADERS,
       "Access-Control-Expose-Headers": "Mcp-Session-Id, WWW-Authenticate",
+      "X-Accel-Buffering": "no",
     });
     res.end();
     return;
@@ -2881,15 +2920,14 @@ const httpServer = createServer(async (req, res) => {
   }
 
   if (url.pathname === MCP_PATH && req.method && MCP_METHODS.has(req.method)) {
-    const origin = req.headers.origin || "*";
-    const allowedOrigin = allowedCorsOrigin(origin);
-    res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
-    res.setHeader("Access-Control-Expose-Headers", "Mcp-Session-Id, WWW-Authenticate");
+    setMcpResponseHeaders(req, res);
 
     if (req.method === "GET") {
       const server = createLingoStarServer();
       const transport = new SSEServerTransport(MCP_PATH, res, { enableDnsRebindingProtection: false });
-      
+      res.setHeader("Cache-Control", "no-cache, no-transform");
+      res.setHeader("Connection", "keep-alive");
+
       res.on("close", () => {
         mcpActiveSessions.delete(transport.sessionId);
         transport.close();
@@ -2899,7 +2937,6 @@ const httpServer = createServer(async (req, res) => {
       try {
         await server.connect(transport);
         mcpActiveSessions.set(transport.sessionId, { server, transport });
-        await transport.start();
       } catch (error) {
         console.error("Error starting SSE:", error);
         if (!res.headersSent) res.writeHead(500).end("Internal server error");
@@ -2912,7 +2949,12 @@ const httpServer = createServer(async (req, res) => {
       const active = mcpActiveSessions.get(sessionId);
 
       if (!active) {
-        res.writeHead(404).end("Session not found");
+        try {
+          await handleStatelessMcpRequest(req, res);
+        } catch (error) {
+          console.error("Error handling stateless MCP POST:", error);
+          if (!res.headersSent) res.writeHead(500).end("Internal server error");
+        }
         return;
       }
 

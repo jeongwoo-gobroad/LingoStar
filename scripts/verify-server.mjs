@@ -214,10 +214,28 @@ const corsResponse = await fetch(`http://localhost:${PORT}/mcp`, {
   },
 });
 assert("mcp preflight allows authorization header", corsResponse.headers.get("access-control-allow-headers")?.includes("authorization"));
+assert("mcp preflight disables proxy buffering", corsResponse.headers.get("x-accel-buffering") === "no");
+
+const sseResponse = await fetch(`http://localhost:${PORT}/mcp`, {
+  method: "GET",
+  headers: { Accept: "text/event-stream" },
+});
+assert("legacy SSE endpoint opens", sseResponse.ok && sseResponse.headers.get("content-type")?.includes("text/event-stream"));
+assert("legacy SSE disables proxy buffering", sseResponse.headers.get("x-accel-buffering") === "no");
+await sseResponse.body?.cancel();
 
 const toolsResult = await rpc("tools/list", { _meta: meta });
 const toolNames = toolsResult.tools.map((tool) => tool.name);
 console.log("Tools:", toolNames.join(", "));
+
+const resourceResult = await rpc("resources/read", {
+  uri: "ui://widget/lingostar-studio-v0-6-2.html",
+});
+const widgetResource = resourceResult.contents?.[0];
+assert("widget resource template can be read", widgetResource?.uri === "ui://widget/lingostar-studio-v0-6-2.html");
+assert("widget resource has MCP app MIME type", widgetResource?.mimeType?.includes("text/html") && widgetResource?.mimeType?.includes("mcp-app"));
+assert("widget resource includes app HTML", widgetResource?.text?.includes("LingoStar"));
+assert("widget resource includes CSP metadata", Boolean(widgetResource?._meta?.ui?.csp));
 
 assert("manage_learning_session tool exists", toolNames.includes("manage_learning_session"));
 assert("create_lesson_exercises tool exists", toolNames.includes("create_lesson_exercises"));
