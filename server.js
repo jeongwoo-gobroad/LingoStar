@@ -9,7 +9,7 @@ import {
   RESOURCE_MIME_TYPE,
 } from "@modelcontextprotocol/ext-apps/server";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
 
 /* ------------------------------------------------------------------ */
@@ -2759,8 +2759,6 @@ const port = Number(process.env.PORT ?? 8787);
 const MCP_PATH = "/mcp";
 const MCP_METHODS = new Set(["POST", "GET", "DELETE"]);
 
-const mcpActiveSessions = new Map();
-
 const httpServer = createServer(async (req, res) => {
   if (!req.url) {
     res.writeHead(400).end("Missing URL");
@@ -2880,52 +2878,31 @@ const httpServer = createServer(async (req, res) => {
     return;
   }
 
-  if (url.pathname === MCP_PATH && req.method && MCP_METHODS.has(req.method)) {
+  if ((url.pathname === MCP_PATH || (req.method === "POST" && url.pathname === "/")) && req.method && MCP_METHODS.has(req.method)) {
     const origin = req.headers.origin || "*";
     const allowedOrigin = allowedCorsOrigin(origin);
     res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
     res.setHeader("Access-Control-Expose-Headers", "Mcp-Session-Id, WWW-Authenticate");
+    const server = createLingoStarServer();
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: undefined,
+      enableJsonResponse: true,
+    });
 
-    if (req.method === "GET") {
-      const server = createLingoStarServer();
-      const transport = new SSEServerTransport(MCP_PATH, res, { enableDnsRebindingProtection: false });
-      
-      res.on("close", () => {
-        mcpActiveSessions.delete(transport.sessionId);
-        transport.close();
-        server.close();
-      });
+    res.on("close", () => {
+      transport.close();
+      server.close();
+    });
 
-      try {
-        await server.connect(transport);
-        mcpActiveSessions.set(transport.sessionId, { server, transport });
-        await transport.start();
-      } catch (error) {
-        console.error("Error starting SSE:", error);
-        if (!res.headersSent) res.writeHead(500).end("Internal server error");
+    try {
+      await server.connect(transport);
+      await transport.handleRequest(req, res);
+    } catch (error) {
+      console.error("Error handling MCP request:", error);
+      if (!res.headersSent) {
+        res.writeHead(500).end("Internal server error");
       }
-      return;
     }
-
-    if (req.method === "POST") {
-      const sessionId = url.searchParams.get("sessionId");
-      const active = mcpActiveSessions.get(sessionId);
-
-      if (!active) {
-        res.writeHead(404).end("Session not found");
-        return;
-      }
-
-      try {
-        await active.transport.handlePostMessage(req, res);
-      } catch (error) {
-        console.error("Error handling MCP POST:", error);
-        if (!res.headersSent) res.writeHead(500).end("Internal server error");
-      }
-      return;
-    }
-
-    res.writeHead(405).end("Method Not Allowed");
     return;
   }
 
