@@ -82,8 +82,7 @@ const CORS_ALLOWED_ORIGINS_ARRAY = CORS_ALLOWED_ORIGINS_ENV ? CORS_ALLOWED_ORIGI
 const APP_ORIGIN_RAW =
   process.env.APP_ORIGIN ??
   ENV_FILE.APP_ORIGIN ??
-  ALLOWED_DOMAINS_ARRAY[0] ??
-  "https://novella-lappeted-september.ngrok-free.dev";
+  ALLOWED_DOMAINS_ARRAY[0];
 const APP_ORIGIN = APP_ORIGIN_RAW.replace(/\/+$/, "");
 const WIDGET_CONNECT_DOMAINS = [...new Set([APP_ORIGIN, ...ALLOWED_DOMAINS_ARRAY, ...WIDGET_CONNECT_DOMAINS_ARRAY].filter(Boolean))];
 const WIDGET_RESOURCE_DOMAINS = [...new Set([APP_ORIGIN, ...WIDGET_RESOURCE_DOMAINS_ARRAY].filter(Boolean))];
@@ -119,6 +118,7 @@ const OAUTH_SCOPES = (
   .split(/[,\s]+/)
   .map((item) => item.trim())
   .filter(Boolean);
+const OAUTH_CLIENT_ID = cleanEnvValue(process.env.OAUTH_CLIENT_ID ?? ENVFILE.OAUTH_CLIENT_ID ?? '');
 const OAUTH_RESOURCE_METADATA_URL = `${APP_ORIGIN}/.well-known/oauth-protected-resource`;
 const OAUTH_RESOURCE_DOCUMENTATION =
   process.env.OAUTH_RESOURCE_DOCUMENTATION ??
@@ -498,6 +498,7 @@ function oauthProtectedResourceMetadata() {
     scopes_supported: OAUTH_SCOPES,
     bearer_methods_supported: ["header"],
     resource_documentation: OAUTH_RESOURCE_DOCUMENTATION,
+    client_id = OAUTH_CLIENT_ID
   };
 }
 

@@ -5,3 +5,4 @@ dist/
 coverage/
 *.log
 npm-debug.log*
+client_secret.json
