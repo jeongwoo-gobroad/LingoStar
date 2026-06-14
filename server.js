@@ -2878,7 +2878,7 @@ const httpServer = createServer(async (req, res) => {
     return;
   }
 
-  if (url.pathname === MCP_PATH && req.method && MCP_METHODS.has(req.method)) {
+  if ((url.pathname === MCP_PATH || (req.method === "POST" && url.pathname === "/")) && req.method && MCP_METHODS.has(req.method)) {
     const origin = req.headers.origin || "*";
     const allowedOrigin = allowedCorsOrigin(origin);
     res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
