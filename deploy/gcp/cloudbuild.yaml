@@ -1,7 +1,7 @@
 substitutions:
   _REGION: asia-northeast3
   _SERVICE: lingostar
-  _APP_ORIGIN: https://lingostar-859181361542.asia-northeast3.run.app
+  _APP_ORIGIN: https://lingostar-859181361542.asia-northeast3.run.app/mcp
   _CORS_ALLOWED_ORIGINS: https://lingostar-859181361542.asia-northeast3.run.app,https://chatgpt.com
   _WIDGET_CONNECT_DOMAINS: https://lingostar-859181361542.asia-northeast3.run.app
   _WIDGET_RESOURCE_DOMAINS: https://lingostar-859181361542.asia-northeast3.run.app
