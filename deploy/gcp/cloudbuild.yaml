@@ -8,7 +8,7 @@ substitutions:
   _OPENAI_SECRET: openai-api-key:latest
   _IS_AI_FALLBACK: "false"
   _STATE_STORE: firestore
-  _FIRESTORE_PROJECT_ID: ""
+  _FIRESTORE_PROJECT_ID: "lingostar-499311"
   _FIRESTORE_DATABASE_ID: "(default)"
   _FIRESTORE_COLLECTION: lingostar_states
   _AUTH_REQUIRED: "1"
