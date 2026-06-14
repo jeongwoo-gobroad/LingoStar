@@ -4,6 +4,7 @@ process.env.LINGOSTAR_AUTH_REQUIRED = "1";
 process.env.OAUTH_ISSUER = "https://auth.example.test";
 process.env.OAUTH_AUDIENCE = "https://lingostar.example.test";
 process.env.OAUTH_CLIENT_ID = "auth-verify-client";
+process.env.OAUTH_SCOPE_MODE = "strict";
 process.env.APP_ORIGIN = "https://lingostar.example.test";
 process.env.CORS_ALLOWED_ORIGINS = "https://lingostar.example.test,https://chatgpt.com";
 process.env.WIDGET_CONNECT_DOMAINS = "https://lingostar.example.test";

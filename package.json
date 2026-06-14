@@ -8,6 +8,7 @@
     "check": "node --check server.js && node scripts/check-widget.mjs",
     "verify": "node scripts/verify-server.mjs",
     "verify:auth": "node scripts/verify-auth.mjs",
+    "verify:auth-scope-none": "node scripts/verify-auth-scope-none.mjs",
     "verify:developer-mode": "node scripts/verify-developer-mode.mjs"
   },
   "dependencies": {

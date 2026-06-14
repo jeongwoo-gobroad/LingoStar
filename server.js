@@ -131,6 +131,17 @@ const OAUTH_REQUEST_SCOPES = (
   .map((item) => item.trim())
   .filter(Boolean);
 const OAUTH_CLIENT_ID = firstCleanValue(process.env.OAUTH_CLIENT_ID, ENV_FILE.OAUTH_CLIENT_ID);
+const OAUTH_SCOPE_MODE_RAW = cleanEnvValue(process.env.OAUTH_SCOPE_MODE ?? ENV_FILE.OAUTH_SCOPE_MODE ?? "strict").toLowerCase();
+const OAUTH_SCOPE_MODE = ["strict", "optional", "none"].includes(OAUTH_SCOPE_MODE_RAW)
+  ? OAUTH_SCOPE_MODE_RAW
+  : "strict";
+const OAUTH_VALIDATE_CLIENT_ID = !["0", "false", "no", "off"].includes(
+  cleanEnvValue(
+    process.env.OAUTH_VALIDATE_CLIENT_ID ??
+    ENV_FILE.OAUTH_VALIDATE_CLIENT_ID ??
+    (OAUTH_CLIENT_ID ? "true" : "false")
+  ).toLowerCase()
+);
 const OAUTH_ALLOW_SCOPELESS_TOKENS = ["1", "true", "yes", "on"].includes(
   cleanEnvValue(process.env.OAUTH_ALLOW_SCOPELESS_TOKENS ?? ENV_FILE.OAUTH_ALLOW_SCOPELESS_TOKENS ?? "false").toLowerCase()
 );
@@ -571,14 +582,24 @@ function oauthProtectedResourceMetadata() {
   const metadata = {
     resource: APP_ORIGIN,
     authorization_servers: OAUTH_AUTHORIZATION_SERVERS,
-    scopes_supported: OAUTH_SCOPES,
     bearer_methods_supported: ["header"],
     resource_documentation: OAUTH_RESOURCE_DOCUMENTATION,
   };
+  if (shouldAdvertiseOAuthScopes()) {
+    metadata.scopes_supported = OAUTH_SCOPES;
+  }
   if (OAUTH_CLIENT_ID) {
     metadata.client_id = OAUTH_CLIENT_ID;
   }
   return metadata;
+}
+
+function shouldAdvertiseOAuthScopes() {
+  return OAUTH_SCOPE_MODE !== "none" && OAUTH_SCOPES.length > 0;
+}
+
+function shouldEnforceOAuthScopes() {
+  return OAUTH_SCOPE_MODE === "strict";
 }
 
 function scopeValuesFromClaim(value) {
@@ -595,6 +616,7 @@ function tokenScopes(payload) {
 }
 
 function missingRequiredScopes(requiredScopes, availableScopes) {
+  if (!shouldEnforceOAuthScopes()) return [];
   if (!requiredScopes.length) return [];
   if (!availableScopes.size && OAUTH_ALLOW_SCOPELESS_TOKENS) {
     return [];
@@ -603,7 +625,26 @@ function missingRequiredScopes(requiredScopes, availableScopes) {
 }
 
 function scopesForOAuthRequest(requiredScopes = []) {
+  if (OAUTH_SCOPE_MODE === "none") return [];
   return [...new Set([...OAUTH_REQUEST_SCOPES, ...requiredScopes].filter(Boolean))];
+}
+
+function tokenClientIds(payload) {
+  return [
+    payload?.azp,
+    payload?.client_id,
+    payload?.clientId,
+    payload?.cid,
+  ]
+    .flatMap((value) => Array.isArray(value) ? value : [value])
+    .map(cleanText)
+    .filter(Boolean);
+}
+
+function tokenClientMatches(payload) {
+  if (!OAUTH_CLIENT_ID) return true;
+  const clientIds = tokenClientIds(payload);
+  return clientIds.length === 0 || clientIds.includes(OAUTH_CLIENT_ID);
 }
 
 function describeScopeClaims(payload) {
@@ -675,6 +716,12 @@ async function authorizeContext(context, scopes = []) {
       return {
         ok: false,
         response: authErrorResponse(scopes, "invalid_token", "The access token audience does not match this MCP server."),
+      };
+    }
+    if (OAUTH_VALIDATE_CLIENT_ID && !tokenClientMatches(payload)) {
+      return {
+        ok: false,
+        response: authErrorResponse(scopes, "invalid_token", "The access token client does not match this MCP server."),
       };
     }
 
@@ -2751,8 +2798,12 @@ const httpServer = createServer(async (req, res) => {
         oauthIssuerConfigured: Boolean(OAUTH_ISSUER),
         oauthJwksConfigured: Boolean(OAUTH_JWKS_URL || OAUTH_ISSUER),
         oauthClientIdConfigured: Boolean(OAUTH_CLIENT_ID),
+        oauthScopeMode: OAUTH_SCOPE_MODE,
+        oauthScopesAdvertised: shouldAdvertiseOAuthScopes(),
+        oauthScopesEnforced: shouldEnforceOAuthScopes(),
         oauthScopes: OAUTH_SCOPES,
         oauthRequestScopes: OAUTH_REQUEST_SCOPES,
+        oauthValidateClientId: OAUTH_VALIDATE_CLIENT_ID,
         oauthAllowScopelessTokens: OAUTH_ALLOW_SCOPELESS_TOKENS,
         feedbackAdminConfigured: Boolean(FEEDBACK_ADMIN_ID && FEEDBACK_ADMIN_PASSWORD),
       }));

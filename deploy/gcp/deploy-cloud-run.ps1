@@ -21,6 +21,9 @@ param(
   [string] $OAuthScopes = "lingostar.read lingostar.write lingostar.audio",
   [string] $OAuthRequestScopes = "lingostar.read lingostar.write lingostar.audio",
   [string] $OAuthClientId = "",
+  [ValidateSet("strict", "optional", "none")]
+  [string] $OAuthScopeMode = "none",
+  [string] $OAuthValidateClientId = "true",
   [string] $OAuthAllowScopelessTokens = "false",
   [string] $FeedbackAdminIdSecret = "feedback-id:latest",
   [string] $FeedbackAdminPasswordSecret = "feedback-pw:latest"
@@ -65,6 +68,8 @@ function Get-EnvVars {
     "OAUTH_SCOPES=$OAuthScopes",
     "OAUTH_REQUEST_SCOPES=$OAuthRequestScopes",
     "OAUTH_CLIENT_ID=$OAuthClientId",
+    "OAUTH_SCOPE_MODE=$OAuthScopeMode",
+    "OAUTH_VALIDATE_CLIENT_ID=$OAuthValidateClientId",
     "OAUTH_ALLOW_SCOPELESS_TOKENS=$OAuthAllowScopelessTokens",
     "OAUTH_RESOURCE_DOCUMENTATION=$AppOrigin/privacy-poilcy.html"
   )

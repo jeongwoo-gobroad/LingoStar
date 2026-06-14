@@ -82,6 +82,8 @@ OAUTH_AUDIENCE=https://YOUR_ORIGIN
 OAUTH_SCOPES=lingostar.read lingostar.write lingostar.audio
 OAUTH_REQUEST_SCOPES=lingostar.read lingostar.write lingostar.audio
 OAUTH_CLIENT_ID=YOUR_AUTH0_CLIENT_ID
+OAUTH_SCOPE_MODE=none
+OAUTH_VALIDATE_CLIENT_ID=true
 OAUTH_ALLOW_SCOPELESS_TOKENS=false
 OAUTH_RESOURCE_DOCUMENTATION=https://YOUR_ORIGIN/privacy-poilcy.html
 ```
@@ -195,7 +197,7 @@ Your IdP must provide:
 - Authorization-code + PKCE support.
 - CIMD or DCR support, or a predefined client accepted by ChatGPT.
 - A token whose `aud` or `resource` claim matches `APP_ORIGIN`.
-- Scopes matching `lingostar.read`, `lingostar.write`, and `lingostar.audio`.
+- Either app-level authorization by issuer/audience/client-id, or custom scopes matching `lingostar.read`, `lingostar.write`, and `lingostar.audio`.
 
 ### Auth0 Checklist
 
@@ -203,19 +205,20 @@ For Auth0, configure the API and application this way:
 
 1. Applications > APIs: create or open the LingoStar API.
 2. Set the API Identifier to exactly `https://YOUR_ORIGIN`.
-3. Add permissions named `lingostar.read`, `lingostar.write`, and `lingostar.audio`.
-4. Enable RBAC for the API.
-5. Enable "Add Permissions in the Access Token" if you want Auth0 to emit a `permissions` claim. LingoStar accepts both `scope` and `permissions`.
-6. Applications > LingoStar app: confirm the token endpoint authentication method matches the ChatGPT app setting, for example `client_secret_post`.
-7. In the ChatGPT Apps OAuth settings, set Default scopes to:
+3. Add permissions named `lingostar.read`, `lingostar.write`, and `lingostar.audio` if you plan to run `OAUTH_SCOPE_MODE=strict`.
+4. For ChatGPT Apps with Auth0, start with `OAUTH_SCOPE_MODE=none`. ChatGPT may complete the authorization-code flow with Auth0 logging `scope: null`; in this mode LingoStar does not advertise or require custom API scopes.
+5. Keep `OAUTH_CLIENT_ID` set to the Auth0 application client id and `OAUTH_VALIDATE_CLIENT_ID=true`. LingoStar verifies JWT signature, issuer, audience/resource, and rejects mismatched `azp`/`client_id`/`cid` claims when Auth0 includes them.
+6. If your Auth0 flow reliably emits custom API scopes and you want tool-level scope enforcement, switch to `OAUTH_SCOPE_MODE=strict`, enable RBAC if needed, and enable "Add Permissions in the Access Token" if you want Auth0 to emit a `permissions` claim. LingoStar accepts both `scope` and `permissions`.
+7. Applications > LingoStar app: confirm the token endpoint authentication method matches the ChatGPT app setting, for example `client_secret_post`.
+8. In the ChatGPT Apps OAuth settings, leave Default scopes empty for `OAUTH_SCOPE_MODE=none`. For `OAUTH_SCOPE_MODE=strict`, set Default scopes to:
 
 ```text
 lingostar.read lingostar.write lingostar.audio
 ```
 
-If Auth0 logs show `scope: null`, ChatGPT may show "not all requested permissions granted." Fix the Auth0 API permissions and ChatGPT default scopes first. `OAUTH_ALLOW_SCOPELESS_TOKENS=true` exists only as a temporary emergency compatibility switch; it allows a valid-audience token with no scope/permissions claim, but it is not recommended for submission.
+If Auth0 logs still show `scope: null` in `OAUTH_SCOPE_MODE=none`, that is acceptable. The server omits `scopes_supported`, publishes OAuth tool descriptors with an empty scope list, and returns `WWW-Authenticate` challenges without a `scope="..."` parameter. ChatGPT should stop treating missing custom scopes as a failed grant after you redeploy and reconnect the app.
 
-LingoStar also advertises `OAUTH_REQUEST_SCOPES` in every OAuth tool descriptor and every `WWW-Authenticate` challenge. This makes refresh/reconnect/query-triggered OAuth flows ask for the full app scope bundle, even when the immediate tool call is read-only. If an Auth0 Authorization Code log still shows `scope: null` after redeploying this change, the request reached Auth0 but the user was not granted the requested API permissions. With Auth0 RBAC enabled, the access-token `scope` is the intersection of requested permissions and permissions assigned to the user.
+`OAUTH_ALLOW_SCOPELESS_TOKENS=true` exists only as a legacy emergency compatibility switch for `OAUTH_SCOPE_MODE=strict`. Prefer `OAUTH_SCOPE_MODE=none` for Auth0 + ChatGPT Apps because it makes the advertised contract match the tokens Auth0 is actually returning in this flow.
 
 Deploy with OAuth enabled:
 
@@ -225,7 +228,8 @@ Deploy with OAuth enabled:
   -Region asia-northeast3 `
   -AuthRequired `
   -OAuthIssuer "https://YOUR_IDP_ISSUER" `
-  -OAuthJwksUrl "https://YOUR_IDP_ISSUER/.well-known/jwks.json"
+  -OAuthJwksUrl "https://YOUR_IDP_ISSUER/.well-known/jwks.json" `
+  -OAuthScopeMode none
 ```
 
 If you use a custom domain, pass it explicitly:
@@ -238,7 +242,8 @@ If you use a custom domain, pass it explicitly:
   -AuthRequired `
   -OAuthIssuer "https://YOUR_IDP_ISSUER" `
   -OAuthJwksUrl "https://YOUR_IDP_ISSUER/.well-known/jwks.json" `
-  -OAuthAudience "https://lingostar.example.com"
+  -OAuthAudience "https://lingostar.example.com" `
+  -OAuthScopeMode none
 ```
 
 ## ChatGPT Apps Checklist
@@ -312,7 +317,7 @@ curl "$origin/terms-of-service.html" -I
 curl "$origin/.well-known/oauth-protected-resource"
 ```
 
-`/healthz` also reports `widgetVersion`, `widgetUri`, `oauthScopes`, `oauthRequestScopes`, `oauthClientIdConfigured`, `oauthAllowScopelessTokens`, and `feedbackAdminConfigured` for deployment diagnostics.
+`/healthz` also reports `widgetVersion`, `widgetUri`, `oauthScopeMode`, `oauthScopesAdvertised`, `oauthScopesEnforced`, `oauthScopes`, `oauthRequestScopes`, `oauthClientIdConfigured`, `oauthValidateClientId`, `oauthAllowScopelessTokens`, and `feedbackAdminConfigured` for deployment diagnostics.
 
 ## Notes
 
