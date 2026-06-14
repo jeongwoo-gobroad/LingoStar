@@ -18,7 +18,11 @@ param(
   [string] $OAuthAuthorizationServers = "",
   [string] $OAuthJwksUrl = "",
   [string] $OAuthAudience = "",
-  [string] $OAuthScopes = "lingostar.read lingostar.write lingostar.audio"
+  [string] $OAuthScopes = "lingostar.read lingostar.write lingostar.audio",
+  [string] $OAuthClientId = "",
+  [string] $OAuthAllowScopelessTokens = "false",
+  [string] $FeedbackAdminId = "",
+  [string] $FeedbackAdminPassword = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -42,7 +46,7 @@ if (-not $FirestoreProjectId) {
 
 function Get-EnvVars {
   $authFlag = if ($AuthRequired) { "1" } else { "0" }
-  return @(
+  $vars = @(
     "APP_ORIGIN=$AppOrigin",
     "CORS_ALLOWED_ORIGINS=$CorsAllowedOrigins",
     "WIDGET_CONNECT_DOMAINS=$WidgetConnectDomains",
@@ -58,8 +62,13 @@ function Get-EnvVars {
     "OAUTH_JWKS_URL=$OAuthJwksUrl",
     "OAUTH_AUDIENCE=$OAuthAudience",
     "OAUTH_SCOPES=$OAuthScopes",
-    "OAUTH_RESOURCE_DOCUMENTATION=$AppOrigin/privacy-poilcy.html"
-  ) -join ","
+    "OAUTH_CLIENT_ID=$OAuthClientId",
+    "OAUTH_ALLOW_SCOPELESS_TOKENS=$OAuthAllowScopelessTokens",
+    "OAUTH_RESOURCE_DOCUMENTATION=$AppOrigin/privacy-poilcy.html",
+    "FEEDBACK_ADMIN_ID=$FeedbackAdminId",
+    "FEEDBACK_ADMIN_PASSWORD=$FeedbackAdminPassword"
+  )
+  return "^##^" + ($vars -join "##")
 }
 
 gcloud config set project $ProjectId

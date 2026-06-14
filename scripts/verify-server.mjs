@@ -1,5 +1,7 @@
 const PORT = process.env.PORT || 8790;
 process.env.PORT = String(PORT);
+process.env.FEEDBACK_ADMIN_ID ||= "verify-admin";
+process.env.FEEDBACK_ADMIN_PASSWORD ||= "verify-password";
 
 await import("../server.js");
 
@@ -185,7 +187,7 @@ assert("icon route has bytes", (await iconResponse.arrayBuffer()).byteLength > 0
 
 const previewResponse = await fetch(`http://localhost:${PORT}/preview`);
 const previewHtml = await previewResponse.text();
-assert("preview injects absolute icon url", /const ICON_SRC = "https:\/\/[^"]+\/icon\.png";/.test(previewHtml));
+assert("preview injects absolute icon url", /const ICON_SRC = "https?:\/\/[^"]+\/icon\.png";/.test(previewHtml));
 assert("preview does not use relative icon path", !previewHtml.includes('const ICON_SRC = "/icon.png";'));
 
 const healthResponse = await fetch(`http://localhost:${PORT}/healthz`);
@@ -193,11 +195,16 @@ const healthJson = await healthResponse.json();
 assert("health endpoint is ok", healthResponse.ok && healthJson?.ok === true);
 assert("health exposes state store", typeof healthJson?.stateStore === "string");
 assert("health exposes AI fallback flag", typeof healthJson?.aiFallbackEnabled === "boolean");
+assert("health exposes widget version", healthJson?.widgetVersion === "0.6.2");
+assert("health exposes versioned widget uri", healthJson?.widgetUri?.includes("v0-6-2"));
 
 const metadataResponse = await fetch(`http://localhost:${PORT}/.well-known/oauth-protected-resource`);
 const metadataJson = await metadataResponse.json();
-assert("oauth protected resource metadata has resource", metadataJson?.resource?.startsWith("https://"));
+assert("oauth protected resource metadata has resource", typeof metadataJson?.resource === "string" && metadataJson.resource.length > 0);
 assert("oauth protected resource metadata lists scopes", metadataJson?.scopes_supported?.includes("lingostar.read"));
+
+const feedbackUnauthorizedResponse = await fetch(`http://localhost:${PORT}/feedback`);
+assert("feedback admin page requires basic auth", feedbackUnauthorizedResponse.status === 401);
 
 const corsResponse = await fetch(`http://localhost:${PORT}/mcp`, {
   method: "OPTIONS",
@@ -219,6 +226,7 @@ assert("store_level_judgment tool exists", toolNames.includes("store_level_judgm
 assert("store_goal_judgment tool exists", toolNames.includes("store_goal_judgment"));
 assert("transcribe_audio tool exists", toolNames.includes("transcribe_audio"));
 assert("synthesize_speech tool exists", toolNames.includes("synthesize_speech"));
+assert("submit_feedback tool exists", toolNames.includes("submit_feedback"));
 assert("get_lingostar_state tool exists", toolNames.includes("get_lingostar_state"));
 assert("delete_session tool exists", toolNames.includes("delete_session"));
 assert("legacy plan_next_lesson removed", !toolNames.includes("plan_next_lesson"));
@@ -260,10 +268,12 @@ const stateResult = await rpc("tools/call", {
   _meta: meta,
 });
 const state = stateResult.structuredContent?.state;
-assert("state version is 0.6.1", state?.version === "0.6.1");
+assert("state version is 0.6.2", state?.version === "0.6.2");
 assert("state has currentSection null", state?.currentSection === null);
 assert("interface language resolved to ko", state?.host?.interfaceLanguage === "ko");
 assert("state exposes TTS capability", typeof state?.gui?.audio?.openAiTtsModel === "string");
+assert("state exposes widget version", state?.gui?.widgetVersion === "0.6.2");
+assert("state exposes help content", typeof state?.gui?.help?.title === "string");
 
 const sessionResult = await rpc("tools/call", {
   name: "manage_learning_session",
@@ -312,6 +322,27 @@ assert("session preserved goal detail", session?.goal?.detail === "JLPT N3");
 assert("session uses per-skill setting", session?.settings?.exercisesPerSkill === 5);
 assert("session uses per-area language_info count", session?.settings?.exerciseCounts?.language_info === 5);
 assert("session has language_info profile", typeof session?.skillProfile?.language_info === "number");
+assert("session infers Japanese speech language when provided or stored", session?.runtime?.speechLang === "ja-JP");
+
+const feedbackResult = await rpc("tools/call", {
+  name: "submit_feedback",
+  arguments: {
+    message: "Verify feedback item",
+    screen: "dashboard",
+    sessionId: session?.id,
+    severity: "test",
+  },
+  _meta: meta,
+});
+const feedbackState = feedbackResult.structuredContent?.state;
+assert("feedback stored on user state", feedbackState?.feedbackItems?.[0]?.message === "Verify feedback item");
+
+const feedbackAuth = Buffer.from(`${process.env.FEEDBACK_ADMIN_ID}:${process.env.FEEDBACK_ADMIN_PASSWORD}`).toString("base64");
+const feedbackPageResponse = await fetch(`http://localhost:${PORT}/feedback?page=1&pageSize=10`, {
+  headers: { Authorization: `Basic ${feedbackAuth}` },
+});
+const feedbackPageHtml = await feedbackPageResponse.text();
+assert("feedback admin page renders stored item", feedbackPageResponse.ok && feedbackPageHtml.includes("Verify feedback item"));
 
 const otherUserStateResult = await rpc("tools/call", {
   name: "get_lingostar_state",

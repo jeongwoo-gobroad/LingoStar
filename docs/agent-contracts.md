@@ -14,17 +14,20 @@ This document describes the structural-output contract between ChatGPT, the Ling
 | `store_goal_judgment` | GPT | Record rigorous goal completion judgment after the minimum section threshold | Yes |
 | `transcribe_audio` | Widget | Server OpenAI STT fallback only | No |
 | `synthesize_speech` | Widget | Server OpenAI TTS fallback only | No |
+| `submit_feedback` | Widget | Store product feedback with a sequential admin-review ID | Yes |
 | `delete_session` | GPT / Widget | Delete an explicitly requested session | Yes |
 
 ## App State
 
 ```ts
 type AppState = {
-  version: "0.6.1";
+  version: "0.6.2";
   activeSessionId: string | null;
   sessions: LanguageSession[];
   currentSection: Section | null;
   recentFeedback: FeedbackEvent[];
+  feedbackItems: FeedbackEvent[];
+  translationCache: { widgetVersion: string; locales: Record<string, unknown>; clearedAt: string };
   agentContexts: {
     userAgent: { stableUserId: string; note: string; updatedAt: string };
     languageSelection: { activeSessionId: string | null; languages: unknown[]; updatedAt: string };
@@ -35,6 +38,8 @@ type AppState = {
   host: { locale: string; interfaceLanguage: "en" | "ko"; developerMode: boolean };
   gui: {
     screen: "oobe" | "dashboard" | "lesson";
+    widgetVersion: string;
+    help: { title: string; intro: string; features: string[]; footer?: string };
     icon: "embedded" | "fallback";
     audio: {
       browserSpeechSynthesis: boolean;

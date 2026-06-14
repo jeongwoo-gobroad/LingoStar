@@ -2,7 +2,7 @@ substitutions:
   _REGION: asia-northeast3
   _SERVICE: lingostar
   _APP_ORIGIN: https://lingostar-859181361542.asia-northeast3.run.app
-  _CORS_ALLOWED_ORIGINS: ^##^https://lingostar-859181361542.asia-northeast3.run.app##https://chatgpt.com
+  _CORS_ALLOWED_ORIGINS: https://lingostar-859181361542.asia-northeast3.run.app,https://chatgpt.com
   _WIDGET_CONNECT_DOMAINS: https://lingostar-859181361542.asia-northeast3.run.app
   _WIDGET_RESOURCE_DOMAINS: https://lingostar-859181361542.asia-northeast3.run.app
   _OPENAI_SECRET: openai-api-key:latest
@@ -18,6 +18,9 @@ substitutions:
   _OAUTH_AUDIENCE: https://lingostar-859181361542.asia-northeast3.run.app
   _OAUTH_SCOPES: lingostar.read lingostar.write lingostar.audio
   _OAUTH_CLIENT_ID: "b41ABh6RcTz3s7R9uIX4fFYCqDjakj3X"
+  _OAUTH_ALLOW_SCOPELESS_TOKENS: "false"
+  _FEEDBACK_ADMIN_ID: ""
+  _FEEDBACK_ADMIN_PASSWORD: ""
 
 steps:
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
@@ -57,9 +60,15 @@ steps:
       - --set-env-vars
       - OAUTH_CLIENT_ID=${_OAUTH_CLIENT_ID}
       - --set-env-vars
+      - OAUTH_ALLOW_SCOPELESS_TOKENS=${_OAUTH_ALLOW_SCOPELESS_TOKENS}
+      - --set-env-vars
+      - FEEDBACK_ADMIN_ID=${_FEEDBACK_ADMIN_ID}
+      - --set-env-vars
+      - FEEDBACK_ADMIN_PASSWORD=${_FEEDBACK_ADMIN_PASSWORD}
+      - --set-env-vars
       - APP_ORIGIN=${_APP_ORIGIN}
       - --set-env-vars
-      - CORS_ALLOWED_ORIGINS=${_CORS_ALLOWED_ORIGINS}
+      - ^@^CORS_ALLOWED_ORIGINS=${_CORS_ALLOWED_ORIGINS}
       - --set-env-vars
       - WIDGET_CONNECT_DOMAINS=${_WIDGET_CONNECT_DOMAINS}
       - --set-env-vars

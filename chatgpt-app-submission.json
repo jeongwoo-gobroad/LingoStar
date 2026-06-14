@@ -104,6 +104,18 @@
         "destructive_justification": "Does not delete, overwrite, revoke, or perform irreversible actions."
       }
     },
+    "submit_feedback": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Stores private product feedback and UI context for operator review.",
+        "open_world_justification": "Only writes feedback to LingoStar server state and does not publish it publicly or send it to third parties.",
+        "destructive_justification": "Does not delete, overwrite, revoke, or perform irreversible actions."
+      }
+    },
     "delete_session": {
       "annotations": {
         "readOnlyHint": false,
@@ -172,6 +184,14 @@
       "file_attachment_urls": null,
       "tools_triggered": "synthesize_speech",
       "expected_output": "Returns a playable audio data URL when AI fallback is enabled and configured, or a browser speech error message when disabled.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Submit product feedback from the widget.",
+      "user_prompt": "The listening button did not work in my current LingoStar lesson.",
+      "file_attachment_urls": null,
+      "tools_triggered": "submit_feedback",
+      "expected_output": "Stores feedback with session/screen context and a sequential admin-review ID without deleting or publishing learner data.",
       "expected_output_url": null
     },
     {

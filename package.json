@@ -1,6 +1,6 @@
 {
   "name": "lingostar",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "AI-powered language learning GPT App prototype using the OpenAI Apps SDK and MCP.",
   "type": "module",
   "scripts": {

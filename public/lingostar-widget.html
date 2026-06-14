@@ -359,6 +359,29 @@ details summary{cursor:pointer;font-weight:650;font-size:.84rem;color:var(--text
 }
 
 /* ================================================================ */
+/*  Modal                                                           */
+/* ================================================================ */
+.modal-backdrop{
+  position:fixed;inset:0;z-index:40;background:rgba(2,6,23,.54);
+  display:grid;place-items:center;padding:16px;animation:fadeIn .2s ease-out;
+}
+.modal{
+  width:min(560px,100%);max-height:88vh;overflow:auto;
+  background:var(--bg-secondary);border:1px solid var(--border);
+  border-radius:var(--radius);box-shadow:var(--shadow-lg);padding:18px;
+}
+.modal header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.modal h2{font-size:1rem;margin:0;font-weight:800}
+.modal ul{margin:10px 0 0;padding-left:20px;color:var(--text-secondary)}
+.modal li{margin:7px 0}
+.icon-button{
+  width:32px;height:32px;padding:0;border:1px solid var(--border);
+  border-radius:var(--radius-sm);background:var(--bg-tertiary);
+  display:grid;place-items:center;cursor:pointer;font-weight:800;
+}
+.icon-button:hover{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+
+/* ================================================================ */
 /*  Empty / OOBE                                                    */
 /* ================================================================ */
 .empty{
@@ -460,6 +483,9 @@ let rpcId = 0;
 const pendingRequests = new Map();
 let oobeTriggered = false;
 let autoSectionSessionId = null;
+let helpOpen = false;
+let feedbackOpen = false;
+let helpAutoOpened = false;
 const DIRECT_GRADE_TYPES = new Set(["language_info", "listening", "reading", "writing"]);
 
 /* ================================================================ */
@@ -696,6 +722,16 @@ I18N = {
     failed: "Needs review",
     yes: "Yes",
     no: "No",
+    help: "Help",
+    feedbackButton: "Feedback",
+    close: "Close",
+    feedbackTitle: "Send feedback",
+    feedbackPlaceholder: "Describe the issue or suggestion",
+    feedbackSubmit: "Send feedback",
+    feedbackSubmitted: "Feedback submitted.",
+    feedbackEmpty: "Please enter feedback first.",
+    helpTitle: "How LingoStar works",
+    helpIntro: "LingoStar keeps your language sessions and lessons inside this widget.",
   },
   ko: {
     appName: "LingoStar",
@@ -784,6 +820,16 @@ I18N = {
     failed: "복습 필요",
     yes: "예",
     no: "아니요",
+    help: "도움말",
+    feedbackButton: "피드백",
+    close: "닫기",
+    feedbackTitle: "피드백 보내기",
+    feedbackPlaceholder: "문제나 개선 의견을 적어 주세요",
+    feedbackSubmit: "피드백 보내기",
+    feedbackSubmitted: "피드백을 접수했습니다.",
+    feedbackEmpty: "피드백 내용을 먼저 입력해 주세요.",
+    helpTitle: "LingoStar 이용 안내",
+    helpIntro: "LingoStar는 언어 세션과 문제 풀이를 이 위젯 안에서 유지합니다.",
   },
 };
 
@@ -852,6 +898,25 @@ function copy() {
     failed: "Needs review",
   };
   return { ...base, ...extra };
+}
+
+function helpStorageKey() {
+  const help = state.gui?.help || {};
+  return `lingostar-help-seen:${help.widgetVersion || state.gui?.widgetVersion || "unknown"}:${uiLang()}`;
+}
+
+function maybeOpenFirstHelp() {
+  if (helpAutoOpened) return;
+  helpAutoOpened = true;
+  try {
+    const key = helpStorageKey();
+    if (!localStorage.getItem(key)) {
+      helpOpen = true;
+      localStorage.setItem(key, "1");
+    }
+  } catch {
+    if (!state.sessions?.length) helpOpen = true;
+  }
 }
 
 let ENDONYMS = {
@@ -1088,7 +1153,7 @@ window.addEventListener("message", (event) => {
 /* ================================================================ */
 if (hasHost) {
   rpcNotify("ui/initialize", {
-    appInfo: { name: "lingostar-studio", version: "0.6.1" },
+    appInfo: { name: "lingostar-studio", version: "0.6.2" },
     appCapabilities: { tools: { listChanged: true } },
     protocolVersion: "2026-01-26",
   });
@@ -1547,6 +1612,7 @@ function hasReviewItems() {
 /* ================================================================ */
 function render() {
   const c = copy();
+  maybeOpenFirstHelp();
   const session = getActiveSession();
   const section = getSection();
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -1562,6 +1628,8 @@ function render() {
       ${session ? `<span class="badge">${escapeHtml(getDisplayLanguageName(session.targetLanguage))}</span>` : ""}
       <span class="badge">${hasHost ? c.chatGptApp : c.localPreview}</span>
       ${busy ? `<span class="badge animate-pulse">${c.working}</span>` : ""}
+      <button class="icon-button" data-action="open-help" aria-label="${escapeHtml(c.help)}" title="${escapeHtml(c.help)}">?</button>
+      <button class="icon-button" data-action="open-feedback" aria-label="${escapeHtml(c.feedbackButton)}" title="${escapeHtml(c.feedbackButton)}">!</button>
       <button class="theme-toggle" data-action="toggle-theme" aria-label="Toggle theme">${isDark ? '☀️' : '🌙'}</button>
     </div>
   </header>`;
@@ -1583,6 +1651,9 @@ function render() {
     html += renderOobe();
   }
 
+  if (helpOpen) html += renderHelpModal();
+  if (feedbackOpen) html += renderFeedbackModal();
+
   appEl.innerHTML = html;
 
   // Restore draft inputs
@@ -1590,6 +1661,55 @@ function render() {
     const el = appEl.querySelector(`[data-draft-key="${key}"]`);
     if (el) el.value = val;
   }
+}
+
+function renderHelpModal() {
+  const c = copy();
+  const help = state.gui?.help || {};
+  const title = help.title || c.helpTitle;
+  const intro = help.intro || c.helpIntro;
+  const features = Array.isArray(help.features) && help.features.length
+    ? help.features
+    : [
+      c.oobeGuide,
+      c.settingsNote,
+      c.askAiPlaceholder,
+    ];
+  const footer = help.footer || "";
+  return `<div class="modal-backdrop" role="dialog" aria-modal="true" aria-label="${escapeHtml(c.help)}">
+    <section class="modal">
+      <header>
+        <h2>${escapeHtml(title)}</h2>
+        <button class="icon-button" data-action="close-help" aria-label="${escapeHtml(c.close)}">x</button>
+      </header>
+      <p class="prompt">${escapeHtml(intro)}</p>
+      <ul>${features.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+      ${footer ? `<p class="meta" style="margin-top:14px">${escapeHtml(footer)}</p>` : ""}
+      <div class="row wrap" style="justify-content:flex-end;margin-top:16px">
+        <button class="button secondary" data-action="close-help">${c.close}</button>
+      </div>
+    </section>
+  </div>`;
+}
+
+function renderFeedbackModal() {
+  const c = copy();
+  const draft = typedAnswers.get("feedback-message") || "";
+  return `<div class="modal-backdrop" role="dialog" aria-modal="true" aria-label="${escapeHtml(c.feedbackTitle)}">
+    <form id="feedback-form" class="modal stack">
+      <header>
+        <h2>${escapeHtml(c.feedbackTitle)}</h2>
+        <button class="icon-button" type="button" data-action="close-feedback" aria-label="${escapeHtml(c.close)}">x</button>
+      </header>
+      <div class="field">
+        <textarea data-draft-key="feedback-message" rows="5" maxlength="4000" placeholder="${escapeHtml(c.feedbackPlaceholder)}">${escapeHtml(draft)}</textarea>
+      </div>
+      <div class="row wrap" style="justify-content:flex-end">
+        <button class="button secondary" type="button" data-action="close-feedback">${c.close}</button>
+        <button class="button" type="submit" ${busy ? "disabled" : ""}>${c.feedbackSubmit}</button>
+      </div>
+    </form>
+  </div>`;
 }
 
 /* ================================================================ */
@@ -2082,6 +2202,32 @@ appEl.addEventListener("submit", async (e) => {
   e.preventDefault();
   const form = e.target;
 
+  if (form.id === "feedback-form") {
+    const c = copy();
+    const message = String(typedAnswers.get("feedback-message") || "").trim();
+    if (!message) {
+      toast = c.feedbackEmpty;
+      render();
+      return;
+    }
+    const session = getActiveSession();
+    const section = getSection();
+    const exercise = getCurrentExercise();
+    await callTool("submit_feedback", {
+      message,
+      screen: viewMode || state.gui?.screen || "unknown",
+      sessionId: session?.id || "",
+      sectionId: section?.id || "",
+      exerciseId: exercise?.id || "",
+      severity: "feedback",
+    });
+    typedAnswers.delete("feedback-message");
+    feedbackOpen = false;
+    toast = c.feedbackSubmitted;
+    render();
+    return;
+  }
+
   if (form.id === "session-form") {
     const fd = new FormData(form);
     const defaultCounts = { language_info: 3, listening: 3, reading: 3, writing: 3, speaking: 3 };
@@ -2173,6 +2319,10 @@ appEl.addEventListener("click", async (e) => {
   const action = btn.dataset.action;
 
   if (action === "toggle-theme") { toggleTheme(); return; }
+  if (action === "open-help") { helpOpen = true; render(); return; }
+  if (action === "close-help") { helpOpen = false; render(); return; }
+  if (action === "open-feedback") { feedbackOpen = true; render(); return; }
+  if (action === "close-feedback") { feedbackOpen = false; render(); return; }
   if (action === "dashboard") { viewMode = "dashboard"; tokenAnswer = []; render(); return; }
   if (action === "settings") { viewMode = "settings"; render(); return; }
   if (action === "select") { state.activeSessionId = btn.dataset.sessionId; viewMode = "dashboard"; render(); return; }

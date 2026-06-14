@@ -3,6 +3,7 @@ process.env.PORT = String(PORT);
 process.env.LINGOSTAR_AUTH_REQUIRED = "1";
 process.env.OAUTH_ISSUER = "https://auth.example.test";
 process.env.OAUTH_AUDIENCE = "https://lingostar.example.test";
+process.env.OAUTH_CLIENT_ID = "auth-verify-client";
 process.env.APP_ORIGIN = "https://lingostar.example.test";
 process.env.CORS_ALLOWED_ORIGINS = "https://lingostar.example.test,https://chatgpt.com";
 process.env.WIDGET_CONNECT_DOMAINS = "https://lingostar.example.test";
@@ -65,6 +66,7 @@ const metadata = await metadataResponse.json();
 assert("auth metadata resource is APP_ORIGIN", metadata.resource === "https://lingostar.example.test");
 assert("auth metadata lists authorization server", metadata.authorization_servers?.[0] === "https://auth.example.test");
 assert("auth metadata lists read scope", metadata.scopes_supported?.includes("lingostar.read"));
+assert("auth metadata includes configured client id", metadata.client_id === "auth-verify-client");
 
 await rpc("initialize", {
   protocolVersion: "2026-01-26",
