@@ -9,7 +9,7 @@ import {
   RESOURCE_MIME_TYPE,
 } from "@modelcontextprotocol/ext-apps/server";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { z } from "zod";
 
 /* ------------------------------------------------------------------ */
@@ -2758,6 +2758,8 @@ function createLingoStarServer() {
 const port = Number(process.env.PORT ?? 8787);
 const MCP_PATH = "/mcp";
 const MCP_METHODS = new Set(["POST", "GET", "DELETE"]);
+
+const mcpActiveSessions = new Map();
 
 const httpServer = createServer(async (req, res) => {
   if (!req.url) {
