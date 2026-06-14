@@ -498,7 +498,7 @@ function oauthProtectedResourceMetadata() {
     scopes_supported: OAUTH_SCOPES,
     bearer_methods_supported: ["header"],
     resource_documentation: OAUTH_RESOURCE_DOCUMENTATION,
-    client_id = OAUTH_CLIENT_ID
+    client_id: OAUTH_CLIENT_ID
   };
 }
 
