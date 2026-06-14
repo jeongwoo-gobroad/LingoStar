@@ -2885,26 +2885,47 @@ const httpServer = createServer(async (req, res) => {
     const allowedOrigin = allowedCorsOrigin(origin);
     res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
     res.setHeader("Access-Control-Expose-Headers", "Mcp-Session-Id, WWW-Authenticate");
-    const server = createLingoStarServer();
-    const transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: undefined,
-      enableJsonResponse: true,
-    });
 
-    res.on("close", () => {
-      transport.close();
-      server.close();
-    });
+    if (req.method === "GET") {
+      const server = createLingoStarServer();
+      const transport = new SSEServerTransport(MCP_PATH, res, { enableDnsRebindingProtection: false });
+      
+      res.on("close", () => {
+        mcpActiveSessions.delete(transport.sessionId);
+        transport.close();
+        server.close();
+      });
 
-    try {
-      await server.connect(transport);
-      await transport.handleRequest(req, res);
-    } catch (error) {
-      console.error("Error handling MCP request:", error);
-      if (!res.headersSent) {
-        res.writeHead(500).end("Internal server error");
+      try {
+        await server.connect(transport);
+        mcpActiveSessions.set(transport.sessionId, { server, transport });
+        await transport.start();
+      } catch (error) {
+        console.error("Error starting SSE:", error);
+        if (!res.headersSent) res.writeHead(500).end("Internal server error");
       }
+      return;
     }
+
+    if (req.method === "POST") {
+      const sessionId = url.searchParams.get("sessionId") || req.headers["mcp-session-id"];
+      const active = mcpActiveSessions.get(sessionId);
+
+      if (!active) {
+        res.writeHead(404).end("Session not found");
+        return;
+      }
+
+      try {
+        await active.transport.handlePostMessage(req, res);
+      } catch (error) {
+        console.error("Error handling MCP POST:", error);
+        if (!res.headersSent) res.writeHead(500).end("Internal server error");
+      }
+      return;
+    }
+
+    res.writeHead(405).end("Method Not Allowed");
     return;
   }
 
