@@ -2760,6 +2760,7 @@ const port = Number(process.env.PORT ?? 8787);
 const MCP_PATH = "/mcp";
 const MCP_METHODS = new Set(["POST", "GET", "DELETE"]);
 const MCP_ALLOWED_HEADERS = "authorization, accept, content-type, mcp-session-id, Mcp-Session-Id, x-openai-subject, x-openai-user-id, x-openai-session-id, x-openai-conversation-id";
+const MCP_COMPAT_PATHS = new Set([MCP_PATH, "/"]);
 
 const mcpActiveSessions = new Map();
 
@@ -2770,6 +2771,41 @@ function setMcpResponseHeaders(req, res) {
   res.setHeader("Access-Control-Expose-Headers", "Mcp-Session-Id, WWW-Authenticate");
   res.setHeader("X-Accel-Buffering", "no");
   return allowedOrigin;
+}
+
+function upsertRawHeader(req, name, value) {
+  if (!Array.isArray(req.rawHeaders)) return;
+  const lowerName = name.toLowerCase();
+  const index = req.rawHeaders.findIndex((header, headerIndex) =>
+    headerIndex % 2 === 0 && header.toLowerCase() === lowerName
+  );
+  if (index >= 0) {
+    req.rawHeaders[index + 1] = value;
+  } else {
+    req.rawHeaders.push(name, value);
+  }
+}
+
+function normalizeMcpPostHeaders(req) {
+  if (req.method !== "POST") return;
+
+  const accept = String(req.headers.accept ?? "");
+  if (!accept.includes("application/json") || !accept.includes("text/event-stream")) {
+    req.headers.accept = "application/json, text/event-stream";
+    upsertRawHeader(req, "Accept", "application/json, text/event-stream");
+    if (req.headersDistinct) {
+      req.headersDistinct.accept = ["application/json, text/event-stream"];
+    }
+  }
+
+  const contentType = String(req.headers["content-type"] ?? "");
+  if (!contentType.includes("application/json")) {
+    req.headers["content-type"] = "application/json";
+    upsertRawHeader(req, "Content-Type", "application/json");
+    if (req.headersDistinct) {
+      req.headersDistinct["content-type"] = ["application/json"];
+    }
+  }
 }
 
 async function handleStatelessMcpRequest(req, res) {
@@ -2808,7 +2844,7 @@ const httpServer = createServer(async (req, res) => {
 
   const url = new URL(req.url, `http://${req.headers.host ?? "localhost"}`);
 
-  if (req.method === "OPTIONS" && url.pathname === MCP_PATH) {
+  if (req.method === "OPTIONS" && MCP_COMPAT_PATHS.has(url.pathname)) {
     const allowedOrigin = setMcpResponseHeaders(req, res);
     res.writeHead(204, {
       "Access-Control-Allow-Origin": allowedOrigin,
@@ -2821,7 +2857,7 @@ const httpServer = createServer(async (req, res) => {
     return;
   }
 
-  if (req.method === "GET" && url.pathname === "/healthz") {
+  if (req.method === "GET" && (url.pathname === "/healthz" || url.pathname === "/status.json")) {
     res
       .writeHead(200, { "content-type": "application/json; charset=utf-8" })
       .end(JSON.stringify({
@@ -2836,6 +2872,8 @@ const httpServer = createServer(async (req, res) => {
         stateStore: STATE_STORE,
         firestoreConfigured: Boolean(FIRESTORE_PROJECT_ID),
         appOrigin: APP_ORIGIN,
+        mcpEndpoint: MCP_PATH,
+        mcpCompatibilityPaths: [...MCP_COMPAT_PATHS],
         oauthIssuerConfigured: Boolean(OAUTH_ISSUER),
         oauthJwksConfigured: Boolean(OAUTH_JWKS_URL || OAUTH_ISSUER),
         oauthClientIdConfigured: Boolean(OAUTH_CLIENT_ID),
@@ -2919,8 +2957,13 @@ const httpServer = createServer(async (req, res) => {
     return;
   }
 
-  if (url.pathname === MCP_PATH && req.method && MCP_METHODS.has(req.method)) {
+  const isMcpRequest =
+    url.pathname === MCP_PATH ||
+    (url.pathname === "/" && req.method !== "GET");
+
+  if (isMcpRequest && req.method && MCP_METHODS.has(req.method)) {
     setMcpResponseHeaders(req, res);
+    normalizeMcpPostHeaders(req);
 
     if (req.method === "GET") {
       const server = createLingoStarServer();

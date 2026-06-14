@@ -11,7 +11,7 @@ substitutions:
   _FIRESTORE_PROJECT_ID: "lingostar-499311"
   _FIRESTORE_DATABASE_ID: "(default)"
   _FIRESTORE_COLLECTION: lingostar_states
-  _AUTH_REQUIRED: "1"
+  _AUTH_REQUIRED: "0"
   _OAUTH_ISSUER: "dev-xeh0uw73dwpc4hpk.us.auth0.com"
   _OAUTH_AUTHORIZATION_SERVERS: "dev-xeh0uw73dwpc4hpk.us.auth0.com"
   _OAUTH_JWKS_URL: "dev-xeh0uw73dwpc4hpk.us.auth0.com/.well-known/jwks.json"
@@ -35,12 +35,12 @@ steps:
     args:
       - build
       - -t
-      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/${_SERVICE}:$SHORT_SHA
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/${_SERVICE}:$BUILD_ID
       - .
   - name: gcr.io/cloud-builders/docker
     args:
       - push
-      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/${_SERVICE}:$SHORT_SHA
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/${_SERVICE}:$BUILD_ID
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: gcloud
     args:
@@ -48,12 +48,13 @@ steps:
       - deploy
       - ${_SERVICE}
       - --image
-      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/${_SERVICE}:$SHORT_SHA
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/${_SERVICE}:$BUILD_ID
       - --region
       - ${_REGION}
       - --allow-unauthenticated
       - --port
       - "8080"
+      - --no-use-http2
       - --memory
       - 512Mi
       - --cpu
@@ -106,7 +107,7 @@ steps:
       - OPENAI_API_KEY=${_OPENAI_SECRET},FEEDBACK_ADMIN_ID=${_FEEDBACK_ID_SECRET},FEEDBACK_ADMIN_PASSWORD=${_FEEDBACK_PW_SECRET}
 
 images:
-  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/${_SERVICE}:$SHORT_SHA
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/${_SERVICE}:$BUILD_ID
 
 options:
   logging: CLOUD_LOGGING_ONLY

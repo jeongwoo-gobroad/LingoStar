@@ -41,6 +41,7 @@ deploy_service() {
     --region "${REGION}" \
     --allow-unauthenticated \
     --port 8080 \
+    --no-use-http2 \
     --memory 512Mi \
     --cpu 1 \
     --timeout 300 \

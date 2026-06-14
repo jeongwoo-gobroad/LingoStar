@@ -19,8 +19,8 @@ async function waitForServer() {
   throw new Error("Server did not start.");
 }
 
-async function rpc(method, params = {}) {
-  const response = await fetch(`http://localhost:${PORT}/mcp`, {
+async function rpcAt(path, method, params = {}) {
+  const response = await fetch(`http://localhost:${PORT}${path}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -41,6 +41,10 @@ async function rpc(method, params = {}) {
     throw new Error(`RPC error: ${JSON.stringify(data.error)}`);
   }
   return data.result;
+}
+
+async function rpc(method, params = {}) {
+  return rpcAt("/mcp", method, params);
 }
 
 function assert(label, condition) {
@@ -198,6 +202,11 @@ assert("health exposes AI fallback flag", typeof healthJson?.aiFallbackEnabled =
 assert("health exposes widget version", healthJson?.widgetVersion === "0.6.2");
 assert("health exposes versioned widget uri", healthJson?.widgetUri?.includes("v0-6-2"));
 
+const statusResponse = await fetch(`http://localhost:${PORT}/status.json`);
+const statusJson = await statusResponse.json();
+assert("status diagnostics endpoint is ok", statusResponse.ok && statusJson?.ok === true);
+assert("status diagnostics endpoint reports MCP canonical path", statusJson?.mcpEndpoint === "/mcp");
+
 const metadataResponse = await fetch(`http://localhost:${PORT}/.well-known/oauth-protected-resource`);
 const metadataJson = await metadataResponse.json();
 assert("oauth protected resource metadata has resource", typeof metadataJson?.resource === "string" && metadataJson.resource.length > 0);
@@ -215,6 +224,16 @@ const corsResponse = await fetch(`http://localhost:${PORT}/mcp`, {
 });
 assert("mcp preflight allows authorization header", corsResponse.headers.get("access-control-allow-headers")?.includes("authorization"));
 assert("mcp preflight disables proxy buffering", corsResponse.headers.get("x-accel-buffering") === "no");
+
+const rootCorsResponse = await fetch(`http://localhost:${PORT}/`, {
+  method: "OPTIONS",
+  headers: {
+    Origin: "https://chatgpt.com",
+    "Access-Control-Request-Headers": "authorization, content-type",
+  },
+});
+assert("root MCP compatibility preflight succeeds", rootCorsResponse.status === 204);
+assert("root MCP compatibility preflight disables proxy buffering", rootCorsResponse.headers.get("x-accel-buffering") === "no");
 
 const sseResponse = await fetch(`http://localhost:${PORT}/mcp`, {
   method: "GET",
@@ -236,6 +255,63 @@ assert("widget resource template can be read", widgetResource?.uri === "ui://wid
 assert("widget resource has MCP app MIME type", widgetResource?.mimeType?.includes("text/html") && widgetResource?.mimeType?.includes("mcp-app"));
 assert("widget resource includes app HTML", widgetResource?.text?.includes("LingoStar"));
 assert("widget resource includes CSP metadata", Boolean(widgetResource?._meta?.ui?.csp));
+
+const rootResourceResult = await rpcAt("/", "resources/read", {
+  uri: "ui://widget/lingostar-studio-v0-6-2.html",
+});
+assert("root POST compatibility reads widget resource", rootResourceResult.contents?.[0]?.uri === "ui://widget/lingostar-studio-v0-6-2.html");
+
+const looseAcceptBody = JSON.stringify({
+  jsonrpc: "2.0",
+  id: ++requestId,
+  method: "tools/list",
+  params: {},
+});
+const looseRootAcceptResponse = await fetch(`http://localhost:${PORT}/`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: looseAcceptBody,
+});
+assert("root POST compatibility tolerates missing Accept header", looseRootAcceptResponse.ok);
+
+const looseMcpAcceptResponse = await fetch(`http://localhost:${PORT}/mcp`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json", Accept: "*/*" },
+  body: JSON.stringify({
+    jsonrpc: "2.0",
+    id: ++requestId,
+    method: "tools/list",
+    params: {},
+  }),
+});
+assert("mcp POST tolerates loose Accept header", looseMcpAcceptResponse.ok);
+
+const looseRootContentTypeResponse = await fetch(`http://localhost:${PORT}/`, {
+  method: "POST",
+  headers: { Accept: "application/json, text/event-stream" },
+  body: JSON.stringify({
+    jsonrpc: "2.0",
+    id: ++requestId,
+    method: "tools/list",
+    params: {},
+  }),
+});
+assert("root POST compatibility tolerates missing JSON content type", looseRootContentTypeResponse.ok);
+
+const looseMcpContentTypeResponse = await fetch(`http://localhost:${PORT}/mcp`, {
+  method: "POST",
+  headers: {
+    Accept: "application/json, text/event-stream",
+    "Content-Type": "text/plain",
+  },
+  body: JSON.stringify({
+    jsonrpc: "2.0",
+    id: ++requestId,
+    method: "tools/list",
+    params: {},
+  }),
+});
+assert("mcp POST tolerates loose Content-Type header", looseMcpContentTypeResponse.ok);
 
 assert("manage_learning_session tool exists", toolNames.includes("manage_learning_session"));
 assert("create_lesson_exercises tool exists", toolNames.includes("create_lesson_exercises"));
