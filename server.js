@@ -123,6 +123,13 @@ const OAUTH_SCOPES = (
   .split(/[,\s]+/)
   .map((item) => item.trim())
   .filter(Boolean);
+const OAUTH_REQUEST_SCOPES = (
+  firstCleanValue(process.env.OAUTH_REQUEST_SCOPES, ENV_FILE.OAUTH_REQUEST_SCOPES) ||
+  OAUTH_SCOPES.join(" ")
+)
+  .split(/[,\s]+/)
+  .map((item) => item.trim())
+  .filter(Boolean);
 const OAUTH_CLIENT_ID = firstCleanValue(process.env.OAUTH_CLIENT_ID, ENV_FILE.OAUTH_CLIENT_ID);
 const OAUTH_ALLOW_SCOPELESS_TOKENS = ["1", "true", "yes", "on"].includes(
   cleanEnvValue(process.env.OAUTH_ALLOW_SCOPELESS_TOKENS ?? ENV_FILE.OAUTH_ALLOW_SCOPELESS_TOKENS ?? "false").toLowerCase()
@@ -595,6 +602,10 @@ function missingRequiredScopes(requiredScopes, availableScopes) {
   return requiredScopes.filter((scope) => !availableScopes.has(scope));
 }
 
+function scopesForOAuthRequest(requiredScopes = []) {
+  return [...new Set([...OAUTH_REQUEST_SCOPES, ...requiredScopes].filter(Boolean))];
+}
+
 function describeScopeClaims(payload) {
   return {
     scope: cleanText(payload?.scope),
@@ -605,7 +616,8 @@ function describeScopeClaims(payload) {
 
 function authChallengeHeader(scopes = OAUTH_SCOPES, error = "invalid_token", description = "Authentication is required.") {
   const safeDescription = cleanText(description).replace(/"/g, "'");
-  const scopeText = scopes.length ? `, scope="${scopes.join(" ")}"` : "";
+  const requestedScopes = scopesForOAuthRequest(scopes);
+  const scopeText = requestedScopes.length ? `, scope="${requestedScopes.join(" ")}"` : "";
   return `Bearer resource_metadata="${OAUTH_RESOURCE_METADATA_URL}"${scopeText}, error="${error}", error_description="${safeDescription}"`;
 }
 
@@ -622,7 +634,7 @@ function authErrorResponse(scopes, error, description) {
 
 function requiredSecuritySchemes(scopes = []) {
   if (!AUTH_REQUIRED) return [{ type: "noauth" }];
-  return [{ type: "oauth2", scopes }];
+  return [{ type: "oauth2", scopes: scopesForOAuthRequest(scopes) }];
 }
 
 function audienceMatches(payload, expectedAudience) {
@@ -2740,6 +2752,7 @@ const httpServer = createServer(async (req, res) => {
         oauthJwksConfigured: Boolean(OAUTH_JWKS_URL || OAUTH_ISSUER),
         oauthClientIdConfigured: Boolean(OAUTH_CLIENT_ID),
         oauthScopes: OAUTH_SCOPES,
+        oauthRequestScopes: OAUTH_REQUEST_SCOPES,
         oauthAllowScopelessTokens: OAUTH_ALLOW_SCOPELESS_TOKENS,
         feedbackAdminConfigured: Boolean(FEEDBACK_ADMIN_ID && FEEDBACK_ADMIN_PASSWORD),
       }));

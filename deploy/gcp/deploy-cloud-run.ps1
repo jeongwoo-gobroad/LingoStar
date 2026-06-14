@@ -19,10 +19,11 @@ param(
   [string] $OAuthJwksUrl = "",
   [string] $OAuthAudience = "",
   [string] $OAuthScopes = "lingostar.read lingostar.write lingostar.audio",
+  [string] $OAuthRequestScopes = "lingostar.read lingostar.write lingostar.audio",
   [string] $OAuthClientId = "",
   [string] $OAuthAllowScopelessTokens = "false",
-  [string] $FeedbackAdminId = "",
-  [string] $FeedbackAdminPassword = ""
+  [string] $FeedbackAdminIdSecret = "feedback-id:latest",
+  [string] $FeedbackAdminPasswordSecret = "feedback-pw:latest"
 )
 
 $ErrorActionPreference = "Stop"
@@ -62,11 +63,10 @@ function Get-EnvVars {
     "OAUTH_JWKS_URL=$OAuthJwksUrl",
     "OAUTH_AUDIENCE=$OAuthAudience",
     "OAUTH_SCOPES=$OAuthScopes",
+    "OAUTH_REQUEST_SCOPES=$OAuthRequestScopes",
     "OAUTH_CLIENT_ID=$OAuthClientId",
     "OAUTH_ALLOW_SCOPELESS_TOKENS=$OAuthAllowScopelessTokens",
-    "OAUTH_RESOURCE_DOCUMENTATION=$AppOrigin/privacy-poilcy.html",
-    "FEEDBACK_ADMIN_ID=$FeedbackAdminId",
-    "FEEDBACK_ADMIN_PASSWORD=$FeedbackAdminPassword"
+    "OAUTH_RESOURCE_DOCUMENTATION=$AppOrigin/privacy-poilcy.html"
   )
   return "^##^" + ($vars -join "##")
 }
@@ -84,7 +84,7 @@ function Deploy-Service {
     --cpu 1 `
     --timeout 300 `
     --set-env-vars (Get-EnvVars) `
-    --set-secrets "OPENAI_API_KEY=$OpenAiSecret"
+    --set-secrets "OPENAI_API_KEY=$OpenAiSecret,FEEDBACK_ADMIN_ID=$FeedbackAdminIdSecret,FEEDBACK_ADMIN_PASSWORD=$FeedbackAdminPasswordSecret"
 }
 
 Deploy-Service

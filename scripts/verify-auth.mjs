@@ -79,6 +79,11 @@ const stateTool = toolsResult.tools.find((tool) => tool.name === "get_lingostar_
 const manageTool = toolsResult.tools.find((tool) => tool.name === "manage_learning_session");
 assert("auth mode get state advertises oauth2", toolSecuritySchemes(stateTool).some((scheme) => scheme.type === "oauth2"));
 assert("auth mode manage advertises write scope", toolSecuritySchemes(manageTool).some((scheme) => scheme.scopes?.includes("lingostar.write")));
+assert("read tool advertises full OAuth request bundle", toolSecuritySchemes(stateTool).some((scheme) =>
+  scheme.scopes?.includes("lingostar.read") &&
+  scheme.scopes?.includes("lingostar.write") &&
+  scheme.scopes?.includes("lingostar.audio")
+));
 
 const unauthenticatedCall = await rpc("tools/call", {
   name: "get_lingostar_state",
@@ -87,6 +92,7 @@ const unauthenticatedCall = await rpc("tools/call", {
 assert("unauthenticated tool call is an MCP error result", unauthenticatedCall.isError === true);
 assert("unauthenticated tool call includes www authenticate meta", unauthenticatedCall._meta?.["mcp/www_authenticate"]?.[0]?.includes("oauth-protected-resource"));
 assert("unauthenticated tool call includes invalid token error", unauthenticatedCall._meta?.["mcp/www_authenticate"]?.[0]?.includes('error="invalid_token"'));
+assert("unauthenticated challenge requests full scope bundle", unauthenticatedCall._meta?.["mcp/www_authenticate"]?.[0]?.includes('scope="lingostar.read lingostar.write lingostar.audio"'));
 
 const passed = assertions.filter((item) => item.pass).length;
 const failed = assertions.length - passed;

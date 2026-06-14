@@ -80,6 +80,7 @@ OAUTH_AUTHORIZATION_SERVERS=https://YOUR_IDP_ISSUER
 OAUTH_JWKS_URL=https://YOUR_IDP_ISSUER/.well-known/jwks.json
 OAUTH_AUDIENCE=https://YOUR_ORIGIN
 OAUTH_SCOPES=lingostar.read lingostar.write lingostar.audio
+OAUTH_REQUEST_SCOPES=lingostar.read lingostar.write lingostar.audio
 OAUTH_CLIENT_ID=YOUR_AUTH0_CLIENT_ID
 OAUTH_ALLOW_SCOPELESS_TOKENS=false
 OAUTH_RESOURCE_DOCUMENTATION=https://YOUR_ORIGIN/privacy-poilcy.html
@@ -94,7 +95,7 @@ FEEDBACK_ADMIN_ID=admin-user
 FEEDBACK_ADMIN_PASSWORD=strong-password
 ```
 
-The feedback admin page is available at `https://YOUR_ORIGIN/feedback` and uses HTTP Basic authentication. It is disabled until both variables are configured.
+The feedback admin page is available at `https://YOUR_ORIGIN/feedback` and uses HTTP Basic authentication. In Cloud Run, inject those variables from Secret Manager secrets named `feedback-id` and `feedback-pw`; `.env` values are for local development.
 
 ## Deploy: Fast Demo Mode
 
@@ -118,6 +119,14 @@ gcloud projects add-iam-policy-binding YOUR_GCP_PROJECT `
   --role "roles/datastore.user"
 ```
 
+Grant the same runtime service account access to Secret Manager values injected into Cloud Run:
+
+```powershell
+gcloud projects add-iam-policy-binding YOUR_GCP_PROJECT `
+  --member "serviceAccount:$projectNumber-compute@developer.gserviceaccount.com" `
+  --role "roles/secretmanager.secretAccessor"
+```
+
 1. Create an OpenAI API key secret for optional STT/TTS fallback:
 
 ```powershell
@@ -128,6 +137,20 @@ If the secret already exists:
 
 ```powershell
 printf "sk-..." | gcloud secrets versions add openai-api-key --data-file=-
+```
+
+Create feedback admin secrets used by `/feedback`:
+
+```powershell
+printf "admin-id" | gcloud secrets create feedback-id --data-file=-
+printf "strong-password" | gcloud secrets create feedback-pw --data-file=-
+```
+
+If they already exist:
+
+```powershell
+printf "admin-id" | gcloud secrets versions add feedback-id --data-file=-
+printf "strong-password" | gcloud secrets versions add feedback-pw --data-file=-
 ```
 
 2. Deploy from the repository root:
@@ -192,6 +215,8 @@ lingostar.read lingostar.write lingostar.audio
 
 If Auth0 logs show `scope: null`, ChatGPT may show "not all requested permissions granted." Fix the Auth0 API permissions and ChatGPT default scopes first. `OAUTH_ALLOW_SCOPELESS_TOKENS=true` exists only as a temporary emergency compatibility switch; it allows a valid-audience token with no scope/permissions claim, but it is not recommended for submission.
 
+LingoStar also advertises `OAUTH_REQUEST_SCOPES` in every OAuth tool descriptor and every `WWW-Authenticate` challenge. This makes refresh/reconnect/query-triggered OAuth flows ask for the full app scope bundle, even when the immediate tool call is read-only. If an Auth0 Authorization Code log still shows `scope: null` after redeploying this change, the request reached Auth0 but the user was not granted the requested API permissions. With Auth0 RBAC enabled, the access-token `scope` is the intersection of requested permissions and permissions assigned to the user.
+
 Deploy with OAuth enabled:
 
 ```powershell
@@ -247,7 +272,7 @@ The widget resource URI is versioned in `server.js` as `ui://widget/lingostar-st
 1. Open Google Cloud Console and select `YOUR_GCP_PROJECT`.
 2. Enable APIs: Cloud Run, Cloud Build, Artifact Registry, Secret Manager, and Firestore.
 3. Open Firestore and create a Native mode database in the same region family as Cloud Run, for example `asia-northeast3`.
-4. Open Secret Manager and create `openai-api-key`. Leave the value empty only if `IS_AI_FALLBACK=false`.
+4. Open Secret Manager and create `openai-api-key`, `feedback-id`, and `feedback-pw`. Leave `openai-api-key` empty only if `IS_AI_FALLBACK=false`.
 5. Open Cloud Run and verify the `lingostar` service allows unauthenticated requests. ChatGPT must be able to reach `/mcp`; user authorization is handled by OAuth/JWT inside LingoStar when enabled.
 6. In Cloud Run service variables, confirm `APP_ORIGIN`, `WIDGET_CONNECT_DOMAINS`, `WIDGET_RESOURCE_DOMAINS`, `LINGOSTAR_STATE_STORE=firestore`, Firestore variables, OAuth variables, and feedback admin variables.
 7. In ChatGPT Apps developer settings, set the MCP URL to `https://YOUR_ORIGIN/mcp`, then test `get_lingostar_state`, `manage_learning_session`, and `create_lesson_exercises`.
@@ -287,7 +312,7 @@ curl "$origin/terms-of-service.html" -I
 curl "$origin/.well-known/oauth-protected-resource"
 ```
 
-`/healthz` also reports `widgetVersion`, `widgetUri`, `oauthScopes`, `oauthClientIdConfigured`, `oauthAllowScopelessTokens`, and `feedbackAdminConfigured` for deployment diagnostics.
+`/healthz` also reports `widgetVersion`, `widgetUri`, `oauthScopes`, `oauthRequestScopes`, `oauthClientIdConfigured`, `oauthAllowScopelessTokens`, and `feedbackAdminConfigured` for deployment diagnostics.
 
 ## Notes
 
