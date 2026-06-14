@@ -2,6 +2,8 @@ const PORT = process.env.PORT || 8790;
 process.env.PORT = String(PORT);
 process.env.FEEDBACK_ADMIN_ID ||= "verify-admin";
 process.env.FEEDBACK_ADMIN_PASSWORD ||= "verify-password";
+process.env.OAUTH_REQUIRED = "1";
+process.env._AUTH_REQUIRED = "0";
 
 await import("../server.js");
 
@@ -201,6 +203,7 @@ assert("health exposes state store", typeof healthJson?.stateStore === "string")
 assert("health exposes AI fallback flag", typeof healthJson?.aiFallbackEnabled === "boolean");
 assert("health exposes widget version", healthJson?.widgetVersion === "0.6.2");
 assert("health exposes versioned widget uri", healthJson?.widgetUri?.includes("v0-6-2"));
+assert("_AUTH_REQUIRED=0 overrides legacy OAUTH_REQUIRED=1", healthJson?.authRequired === false);
 
 const statusResponse = await fetch(`http://localhost:${PORT}/status.json`);
 const statusJson = await statusResponse.json();
@@ -348,6 +351,9 @@ assert("manage session skillProfile is described", hasDescription(schemaAt(manag
 assert("manage session feedbackMemory is described", hasDescription(schemaAt(manageTool?.inputSchema, "session", "feedbackMemory")));
 assert("manage initialSection schema is described", hasDescription(schemaAt(manageTool?.inputSchema, "initialSection")));
 assert("default get state tool is noauth", toolSecuritySchemes(stateTool).some((scheme) => scheme.type === "noauth"));
+assert("state tool has ChatGPT output template alias", stateTool?._meta?.["openai/outputTemplate"] === healthJson.widgetUri);
+assert("state tool allows app-side tool calls", stateTool?._meta?.["openai/widgetAccessible"] === true);
+assert("state tool is visible to widget app", stateTool?._meta?.ui?.visibility?.includes("app"));
 assert("default manage tool is noauth", toolSecuritySchemes(manageTool).some((scheme) => scheme.type === "noauth"));
 assert("create section schema is described", hasDescription(schemaAt(createTool?.inputSchema, "section")));
 assert("create section id is described", hasDescription(schemaAt(createTool?.inputSchema, "section", "id")));

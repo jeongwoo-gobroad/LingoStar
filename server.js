@@ -57,6 +57,14 @@ function cleanEnvValue(value) {
   return String(value ?? "").trim();
 }
 
+function envFlag(value, defaultValue = false) {
+  const normalized = cleanEnvValue(value).toLowerCase();
+  if (!normalized) return defaultValue;
+  if (["1", "true", "yes", "on"].includes(normalized)) return true;
+  if (["0", "false", "no", "off"].includes(normalized)) return false;
+  return defaultValue;
+}
+
 const ENV_FILE = loadDotEnv();
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY ?? ENV_FILE.OPENAI_API_KEY ?? "";
 const OPENAI_STT_MODEL = process.env.OPENAI_STT_MODEL ?? ENV_FILE.OPENAI_STT_MODEL ?? "gpt-4o-transcribe";
@@ -97,14 +105,18 @@ const DEVELOPER_MODE =
   process.argv.includes("--developer-mode") ||
   ENV_FILE.LINGOSTAR_DEVELOPER_MODE === "1" ||
   process.env.LINGOSTAR_DEVELOPER_MODE === "1";
+const AUTH_REQUIRED_RAW = firstCleanValue(
+  process.env._AUTH_REQUIRED,
+  ENV_FILE._AUTH_REQUIRED,
+  process.env.AUTH_REQUIRED,
+  ENV_FILE.AUTH_REQUIRED,
+  process.env.LINGOSTAR_AUTH_REQUIRED,
+  ENV_FILE.LINGOSTAR_AUTH_REQUIRED,
+  process.env.OAUTH_REQUIRED,
+  ENV_FILE.OAUTH_REQUIRED
+);
 const AUTH_REQUIRED =
-  !DEVELOPER_MODE &&
-  (
-    process.env.LINGOSTAR_AUTH_REQUIRED === "1" ||
-    ENV_FILE.LINGOSTAR_AUTH_REQUIRED === "1" ||
-    process.env.OAUTH_REQUIRED === "1" ||
-    ENV_FILE.OAUTH_REQUIRED === "1"
-  );
+  !DEVELOPER_MODE && envFlag(AUTH_REQUIRED_RAW, false);
 const OAUTH_ISSUER = firstCleanValue(process.env.OAUTH_ISSUER, ENV_FILE.OAUTH_ISSUER).replace(/\/+$/, "");
 const OAUTH_JWKS_URL = firstCleanValue(process.env.OAUTH_JWKS_URL, ENV_FILE.OAUTH_JWKS_URL);
 const OAUTH_AUDIENCE = firstCleanValue(process.env.OAUTH_AUDIENCE, ENV_FILE.OAUTH_AUDIENCE, APP_ORIGIN);
@@ -677,6 +689,21 @@ function authErrorResponse(scopes, error, description) {
 function requiredSecuritySchemes(scopes = []) {
   if (!AUTH_REQUIRED) return [{ type: "noauth" }];
   return [{ type: "oauth2", scopes: scopesForOAuthRequest(scopes) }];
+}
+
+function widgetToolMeta(scopes = [], invoking, invoked) {
+  const securitySchemes = requiredSecuritySchemes(scopes);
+  return {
+    securitySchemes,
+    ui: {
+      resourceUri: WIDGET_URI,
+      visibility: ["model", "app"],
+    },
+    "openai/outputTemplate": WIDGET_URI,
+    "openai/widgetAccessible": true,
+    "openai/toolInvocation/invoking": invoking,
+    "openai/toolInvocation/invoked": invoked,
+  };
 }
 
 function audienceMatches(payload, expectedAudience) {
@@ -1911,12 +1938,7 @@ function createLingoStarServer() {
         destructiveHint: false,
         openWorldHint: false,
       },
-      _meta: {
-        securitySchemes: requiredSecuritySchemes(READ_SCOPES),
-        ui: { resourceUri: WIDGET_URI },
-        "openai/toolInvocation/invoking": "Loading LingoStar",
-        "openai/toolInvocation/invoked": "LingoStar loaded",
-      },
+      _meta: widgetToolMeta(READ_SCOPES, "Loading LingoStar", "LingoStar loaded"),
     },
     async (_args, context) => {
       const auth = await authorizeContext(context, READ_SCOPES);
@@ -1952,12 +1974,7 @@ function createLingoStarServer() {
         destructiveHint: false,
         openWorldHint: false,
       },
-      _meta: {
-        securitySchemes: requiredSecuritySchemes(WRITE_SCOPES),
-        ui: { resourceUri: WIDGET_URI },
-        "openai/toolInvocation/invoking": "Storing session",
-        "openai/toolInvocation/invoked": "Session stored",
-      },
+      _meta: widgetToolMeta(WRITE_SCOPES, "Storing session", "Session stored"),
     },
     async (args, context) => {
       const auth = await authorizeContext(context, WRITE_SCOPES);
@@ -2115,12 +2132,7 @@ function createLingoStarServer() {
         destructiveHint: false,
         openWorldHint: false,
       },
-      _meta: {
-        securitySchemes: requiredSecuritySchemes(WRITE_SCOPES),
-        ui: { resourceUri: WIDGET_URI },
-        "openai/toolInvocation/invoking": "Storing section",
-        "openai/toolInvocation/invoked": "Section stored",
-      },
+      _meta: widgetToolMeta(WRITE_SCOPES, "Storing section", "Section stored"),
     },
     async (args, context) => {
       const auth = await authorizeContext(context, WRITE_SCOPES);
@@ -2225,12 +2237,7 @@ function createLingoStarServer() {
         destructiveHint: false,
         openWorldHint: false,
       },
-      _meta: {
-        securitySchemes: requiredSecuritySchemes(WRITE_SCOPES),
-        ui: { resourceUri: WIDGET_URI },
-        "openai/toolInvocation/invoking": "Grading section",
-        "openai/toolInvocation/invoked": "Grading complete",
-      },
+      _meta: widgetToolMeta(WRITE_SCOPES, "Grading section", "Grading complete"),
     },
     async (args, context) => {
       const auth = await authorizeContext(context, WRITE_SCOPES);
@@ -2389,12 +2396,7 @@ function createLingoStarServer() {
         destructiveHint: false,
         openWorldHint: false,
       },
-      _meta: {
-        securitySchemes: requiredSecuritySchemes(WRITE_SCOPES),
-        ui: { resourceUri: WIDGET_URI },
-        "openai/toolInvocation/invoking": "Judging level",
-        "openai/toolInvocation/invoked": "Level judged",
-      },
+      _meta: widgetToolMeta(WRITE_SCOPES, "Judging level", "Level judged"),
     },
     async (args, context) => {
       const auth = await authorizeContext(context, WRITE_SCOPES);
@@ -2453,12 +2455,7 @@ function createLingoStarServer() {
         destructiveHint: false,
         openWorldHint: false,
       },
-      _meta: {
-        securitySchemes: requiredSecuritySchemes(WRITE_SCOPES),
-        ui: { resourceUri: WIDGET_URI },
-        "openai/toolInvocation/invoking": "Judging goal",
-        "openai/toolInvocation/invoked": "Goal judged",
-      },
+      _meta: widgetToolMeta(WRITE_SCOPES, "Judging goal", "Goal judged"),
     },
     async (args, context) => {
       const auth = await authorizeContext(context, WRITE_SCOPES);
@@ -2522,12 +2519,7 @@ function createLingoStarServer() {
         destructiveHint: false,
         openWorldHint: true,
       },
-      _meta: {
-        securitySchemes: requiredSecuritySchemes(AUDIO_SCOPES),
-        ui: { resourceUri: WIDGET_URI },
-        "openai/toolInvocation/invoking": "Transcribing audio",
-        "openai/toolInvocation/invoked": "Audio transcribed",
-      },
+      _meta: widgetToolMeta(AUDIO_SCOPES, "Transcribing audio", "Audio transcribed"),
     },
     async (args, context) => {
       const auth = await authorizeContext(context, AUDIO_SCOPES);
@@ -2599,12 +2591,7 @@ function createLingoStarServer() {
         destructiveHint: false,
         openWorldHint: true,
       },
-      _meta: {
-        securitySchemes: requiredSecuritySchemes(AUDIO_SCOPES),
-        ui: { resourceUri: WIDGET_URI },
-        "openai/toolInvocation/invoking": "Synthesizing audio",
-        "openai/toolInvocation/invoked": "Audio synthesized",
-      },
+      _meta: widgetToolMeta(AUDIO_SCOPES, "Synthesizing audio", "Audio synthesized"),
     },
     async (args, context) => {
       const auth = await authorizeContext(context, AUDIO_SCOPES);
@@ -2680,12 +2667,7 @@ function createLingoStarServer() {
         destructiveHint: false,
         openWorldHint: false,
       },
-      _meta: {
-        securitySchemes: requiredSecuritySchemes(WRITE_SCOPES),
-        ui: { resourceUri: WIDGET_URI },
-        "openai/toolInvocation/invoking": "Submitting feedback",
-        "openai/toolInvocation/invoked": "Feedback submitted",
-      },
+      _meta: widgetToolMeta(WRITE_SCOPES, "Submitting feedback", "Feedback submitted"),
     },
     async (args, context) => {
       const auth = await authorizeContext(context, WRITE_SCOPES);
@@ -2718,12 +2700,7 @@ function createLingoStarServer() {
         destructiveHint: true,
         openWorldHint: false,
       },
-      _meta: {
-        securitySchemes: requiredSecuritySchemes(WRITE_SCOPES),
-        ui: { resourceUri: WIDGET_URI },
-        "openai/toolInvocation/invoking": "Deleting session",
-        "openai/toolInvocation/invoked": "Session deleted",
-      },
+      _meta: widgetToolMeta(WRITE_SCOPES, "Deleting session", "Session deleted"),
     },
     async (args, context) => {
       const auth = await authorizeContext(context, WRITE_SCOPES);
