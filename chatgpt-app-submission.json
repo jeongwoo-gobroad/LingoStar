@@ -3,8 +3,8 @@
   "schema_version": 1,
   "app_info": {
     "display_name": "LingoStar",
-    "subtitle": "AI 기반 언어 학습 / AI language practice",
-    "description": "LingoStar는 ChatGPT 안의 위젯에서 언어 정보, 듣기, 읽기, 쓰기, 말하기를 영역별로 연습하고 진행 상황을 저장하는 외국어 학습 앱입니다. / LingoStar is a ChatGPT app for practicing language-specific knowledge, listening, reading, writing, and speaking in a widget, with saved progress.",
+    "subtitle": "AI language practice",
+    "description": "LingoStar helps learners practice language knowledge, listening, reading, writing, and speaking in ChatGPT with saved progress.",
     "category": "EDUCATION"
   },
   "tools": {
@@ -163,12 +163,48 @@
         "open_world_justification": "Only changes private app state and does not publish or update external systems.",
         "destructive_justification": "Permanently removes the selected language-learning session when the user explicitly asks for deletion."
       }
+    },
+    "open_lingostar_dashboard": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Renders progress, recent feedback, and session overview without changing learner data.",
+        "open_world_justification": "Does not publish, send, or modify data in public internet or third-party systems.",
+        "destructive_justification": "Does not delete, overwrite, revoke, or perform irreversible actions."
+      }
+    },
+    "open_lingostar_lesson": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Renders the active lesson section without changing learner data.",
+        "open_world_justification": "Does not publish, send, or modify data in public internet or third-party systems.",
+        "destructive_justification": "Does not delete, overwrite, revoke, or perform irreversible actions."
+      }
+    },
+    "open_lingostar_settings": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Renders settings for the active learning session without changing learner data.",
+        "open_world_justification": "Does not publish, send, or modify data in public internet or third-party systems.",
+        "destructive_justification": "Does not delete, overwrite, revoke, or perform irreversible actions."
+      }
     }
   },
   "test_cases": [
     {
       "description": "Create a first Japanese JLPT session and open the first section immediately.",
-      "user_prompt": "JLPT N4를 준비하고 싶어요. 한국어 UI로 일본어 기초부터 시작해 주세요.",
+      "user_prompt": "I want to prepare for JLPT N4. Start a Japanese beginner session.",
       "file_attachment_urls": null,
       "tools_triggered": "manage_learning_session, create_lesson_exercises",
       "expected_output": "Creates a Japanese learning session and stores a first section in the widget with language_info, listening, reading, writing, and speaking items according to exerciseCounts.",
@@ -178,7 +214,7 @@
       "description": "Load learner dashboard and persisted logical contexts.",
       "user_prompt": "Show my LingoStar dashboard and current Japanese progress.",
       "file_attachment_urls": null,
-      "tools_triggered": "get_lingostar_state",
+      "tools_triggered": "get_lingostar_state, open_lingostar_dashboard",
       "expected_output": "Returns saved sessions, active section state, skill profile, recent feedback, dashboard summary, and agentContexts.",
       "expected_output_url": null
     },

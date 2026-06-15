@@ -19,10 +19,10 @@ LingoStar helps you keep several language learning sessions and practice them in
 - Listening uses browser audio when available.
 - Speaking can be limited in some mobile ChatGPT environments. If speech input is unavailable, type the answer or skip the current speaking exercise.
 
-## Ask AI
+## Questions
 
-- Ask AI is for questions about the current exercise.
-- Your current section and draft answers stay in the widget while ChatGPT answers.
+- Ask questions in the ChatGPT composer while the lesson stays open.
+- LingoStar keeps the current exercise context available so ChatGPT can answer without replacing the section.
 
 ## Settings
 

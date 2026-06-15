@@ -186,6 +186,12 @@ await rpc("initialize", {
 const meta = { "openai/locale": "ko-KR", "openai/subject": "verify-user-001" };
 const otherUserMeta = { "openai/locale": "ko-KR", "openai/subject": "verify-user-002" };
 const assertions = [];
+const EXPECTED_VERSION = "0.8.0";
+const EXPECTED_WIDGET_URIS = {
+  dashboard: "ui://widget/lingostar-dashboard-v0-8-0.html",
+  lesson: "ui://widget/lingostar-lesson-v0-8-0.html",
+  settings: "ui://widget/lingostar-settings-v0-8-0.html",
+};
 
 const iconResponse = await fetch(`http://localhost:${PORT}/icon.png`);
 assert("icon route returns png", iconResponse.ok && iconResponse.headers.get("content-type")?.includes("image/png"));
@@ -201,8 +207,10 @@ const healthJson = await healthResponse.json();
 assert("health endpoint is ok", healthResponse.ok && healthJson?.ok === true);
 assert("health exposes state store", typeof healthJson?.stateStore === "string");
 assert("health exposes AI fallback flag", typeof healthJson?.aiFallbackEnabled === "boolean");
-assert("health exposes widget version", healthJson?.widgetVersion === "0.7.0");
-assert("health exposes versioned widget uri", healthJson?.widgetUri?.includes("v0-7-0"));
+assert("health exposes widget version", healthJson?.widgetVersion === EXPECTED_VERSION);
+assert("health exposes default lesson widget uri", healthJson?.widgetUri === EXPECTED_WIDGET_URIS.lesson);
+assert("health exposes dashboard widget uri", healthJson?.widgetUris?.dashboard === EXPECTED_WIDGET_URIS.dashboard);
+assert("health exposes settings widget uri", healthJson?.widgetUris?.settings === EXPECTED_WIDGET_URIS.settings);
 assert("_AUTH_REQUIRED=0 overrides legacy OAUTH_REQUIRED=1", healthJson?.authRequired === false);
 
 const statusResponse = await fetch(`http://localhost:${PORT}/status.json`);
@@ -250,19 +258,20 @@ const toolsResult = await rpc("tools/list", { _meta: meta });
 const toolNames = toolsResult.tools.map((tool) => tool.name);
 console.log("Tools:", toolNames.join(", "));
 
-const resourceResult = await rpc("resources/read", {
-  uri: "ui://widget/lingostar-studio-v0-7-0.html",
-});
-const widgetResource = resourceResult.contents?.[0];
-assert("widget resource template can be read", widgetResource?.uri === "ui://widget/lingostar-studio-v0-7-0.html");
-assert("widget resource has MCP app MIME type", widgetResource?.mimeType?.includes("text/html") && widgetResource?.mimeType?.includes("mcp-app"));
-assert("widget resource includes app HTML", widgetResource?.text?.includes("LingoStar"));
-assert("widget resource includes CSP metadata", Boolean(widgetResource?._meta?.ui?.csp));
+for (const [viewName, uri] of Object.entries(EXPECTED_WIDGET_URIS)) {
+  const resourceResult = await rpc("resources/read", { uri });
+  const widgetResource = resourceResult.contents?.[0];
+  assert(`${viewName} widget resource template can be read`, widgetResource?.uri === uri);
+  assert(`${viewName} widget resource has MCP app MIME type`, widgetResource?.mimeType?.includes("text/html") && widgetResource?.mimeType?.includes("mcp-app"));
+  assert(`${viewName} widget resource includes app HTML`, widgetResource?.text?.includes("LingoStar"));
+  assert(`${viewName} widget resource includes default view`, widgetResource?.text?.includes(`const DEFAULT_VIEW = "${viewName}"`));
+  assert(`${viewName} widget resource includes CSP metadata`, Boolean(widgetResource?._meta?.ui?.csp));
+}
 
 const rootResourceResult = await rpcAt("/", "resources/read", {
-  uri: "ui://widget/lingostar-studio-v0-7-0.html",
+  uri: EXPECTED_WIDGET_URIS.lesson,
 });
-assert("root POST compatibility reads widget resource", rootResourceResult.contents?.[0]?.uri === "ui://widget/lingostar-studio-v0-7-0.html");
+assert("root POST compatibility reads widget resource", rootResourceResult.contents?.[0]?.uri === EXPECTED_WIDGET_URIS.lesson);
 
 const looseAcceptBody = JSON.stringify({
   jsonrpc: "2.0",
@@ -325,6 +334,9 @@ assert("transcribe_audio tool exists", toolNames.includes("transcribe_audio"));
 assert("synthesize_speech tool exists", toolNames.includes("synthesize_speech"));
 assert("submit_feedback tool exists", toolNames.includes("submit_feedback"));
 assert("open_lingostar_app render tool exists", toolNames.includes("open_lingostar_app"));
+assert("open_lingostar_dashboard render tool exists", toolNames.includes("open_lingostar_dashboard"));
+assert("open_lingostar_lesson render tool exists", toolNames.includes("open_lingostar_lesson"));
+assert("open_lingostar_settings render tool exists", toolNames.includes("open_lingostar_settings"));
 assert("get_lingostar_state tool exists", toolNames.includes("get_lingostar_state"));
 assert("search_lingostar_help tool exists", toolNames.includes("search_lingostar_help"));
 assert("select_learning_session tool exists", toolNames.includes("select_learning_session"));
@@ -335,14 +347,20 @@ assert("legacy synthesize_listening_audio removed", !toolNames.includes("synthes
 const manageTool = findTool(toolsResult, "manage_learning_session");
 const createTool = findTool(toolsResult, "create_lesson_exercises");
 const renderTool = findTool(toolsResult, "open_lingostar_app");
+const dashboardRenderTool = findTool(toolsResult, "open_lingostar_dashboard");
+const lessonRenderTool = findTool(toolsResult, "open_lingostar_lesson");
+const settingsRenderTool = findTool(toolsResult, "open_lingostar_settings");
 const stateTool = findTool(toolsResult, "get_lingostar_state");
 const gradeTool = findTool(toolsResult, "grade_section_answers");
 const helpTool = findTool(toolsResult, "search_lingostar_help");
 const selectTool = findTool(toolsResult, "select_learning_session");
 
-assert("render tool has ChatGPT output template alias", renderTool?._meta?.["openai/outputTemplate"] === healthJson.widgetUri);
-assert("render tool has MCP resourceUri", renderTool?._meta?.ui?.resourceUri === healthJson.widgetUri);
+assert("open app tool has dashboard output template alias", renderTool?._meta?.["openai/outputTemplate"] === EXPECTED_WIDGET_URIS.dashboard);
+assert("open app tool has dashboard resourceUri", renderTool?._meta?.ui?.resourceUri === EXPECTED_WIDGET_URIS.dashboard);
 assert("render tool allows app-side tool calls", renderTool?._meta?.["openai/widgetAccessible"] === true);
+assert("dashboard render tool uses dashboard widget uri", dashboardRenderTool?._meta?.ui?.resourceUri === EXPECTED_WIDGET_URIS.dashboard);
+assert("lesson render tool uses lesson widget uri", lessonRenderTool?._meta?.ui?.resourceUri === EXPECTED_WIDGET_URIS.lesson);
+assert("settings render tool uses settings widget uri", settingsRenderTool?._meta?.ui?.resourceUri === EXPECTED_WIDGET_URIS.settings);
 assert("state output schema is described", hasDescription(schemaAt(stateTool?.outputSchema, "state")));
 assert("state sessions output is described", hasDescription(schemaAt(stateTool?.outputSchema, "state", "sessions")));
 assert("manage session schema is described", hasDescription(schemaAt(manageTool?.inputSchema, "session")));
@@ -366,9 +384,10 @@ assert("state tool has no MCP resourceUri", !stateTool?._meta?.ui?.resourceUri);
 assert("state tool allows app-side tool calls", stateTool?._meta?.["openai/widgetAccessible"] === true);
 assert("state tool is visible to widget app", stateTool?._meta?.ui?.visibility?.includes("app"));
 assert("default manage tool is noauth", toolSecuritySchemes(manageTool).some((scheme) => scheme.type === "noauth"));
-assert("manage tool is data-only without output template", !manageTool?._meta?.["openai/outputTemplate"]);
+assert("manage tool renders lesson-capable widget", manageTool?._meta?.["openai/outputTemplate"] === EXPECTED_WIDGET_URIS.lesson);
+assert("create tool renders lesson widget", createTool?._meta?.["openai/outputTemplate"] === EXPECTED_WIDGET_URIS.lesson);
 assert("grade tool is data-only without output template", !gradeTool?._meta?.["openai/outputTemplate"]);
-assert("select tool is data-only without output template", !selectTool?._meta?.["openai/outputTemplate"]);
+assert("select tool renders dashboard widget", selectTool?._meta?.["openai/outputTemplate"] === EXPECTED_WIDGET_URIS.dashboard);
 assert("help tool query is described", hasDescription(schemaAt(helpTool?.inputSchema, "query")));
 assert("create section schema is described", hasDescription(schemaAt(createTool?.inputSchema, "section")));
 assert("create section id is described", hasDescription(schemaAt(createTool?.inputSchema, "section", "id")));
@@ -385,11 +404,11 @@ const stateResult = await rpc("tools/call", {
   _meta: meta,
 });
 const state = stateResult.structuredContent?.state;
-assert("state version is 0.7.0", state?.version === "0.7.0");
+assert("state version is 0.8.0", state?.version === EXPECTED_VERSION);
 assert("state has currentSection null", state?.currentSection === null);
 assert("interface language resolved to ko", state?.host?.interfaceLanguage === "ko");
 assert("state exposes TTS capability", typeof state?.gui?.audio?.openAiTtsModel === "string");
-assert("state exposes widget version", state?.gui?.widgetVersion === "0.7.0");
+assert("state exposes widget version", state?.gui?.widgetVersion === EXPECTED_VERSION);
 assert("state exposes help content", typeof state?.gui?.help?.title === "string");
 
 const sessionResult = await rpc("tools/call", {
@@ -577,6 +596,7 @@ const counts = (section?.exercises ?? []).reduce((acc, exercise) => {
   return acc;
 }, {});
 assert("section stored", section !== null);
+assert("create_lesson_exercises returns lesson initial view", sectionResult.structuredContent?.initialView === "lesson");
 assert("section has 5*n exercises", section?.exercises?.length === 25);
 assert("section has n language_info", counts.language_info === 5);
 assert("section has n speaking", counts.speaking === 5);
@@ -588,6 +608,20 @@ assert(
   section?.exercises?.filter((exercise) => exercise.type === "listening")
     .every((exercise) => exercise.payload.choices.length === 5)
 );
+
+const lessonRenderResult = await rpc("tools/call", {
+  name: "open_lingostar_lesson",
+  arguments: {},
+  _meta: meta,
+});
+assert("lesson render returns lesson initial view", lessonRenderResult.structuredContent?.initialView === "lesson");
+
+const settingsRenderResult = await rpc("tools/call", {
+  name: "open_lingostar_settings",
+  arguments: {},
+  _meta: meta,
+});
+assert("settings render returns settings initial view", settingsRenderResult.structuredContent?.initialView === "settings");
 
 const invalidSectionResult = await rpc("tools/call", {
   name: "create_lesson_exercises",

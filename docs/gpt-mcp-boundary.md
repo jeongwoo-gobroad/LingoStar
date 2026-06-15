@@ -23,7 +23,7 @@ flowchart LR
 - Generate structured exercise sections.
 - Grade speaking answers at section submission.
 - Judge level and goal completion under CEFR or explicit exam standards.
-- Answer Ask AI questions without replacing the active section.
+- Answer learner questions from the native ChatGPT composer without replacing the active section.
 
 ## MCP Server Does
 
@@ -43,7 +43,7 @@ flowchart LR
 - Auto-grade objective answers immediately.
 - Provide listening/speaking skip buttons.
 - Submit speaking answers to ChatGPT for evaluation.
-- Provide Ask AI while preserving the active section.
+- Sync the current exercise context so ChatGPT can answer learner questions while preserving the active section.
 
 ## Multi-Agent Status
 

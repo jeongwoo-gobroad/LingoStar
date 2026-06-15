@@ -75,6 +75,10 @@ if (!html.includes('const ICON_SRC = "__LINGOSTAR_ICON__";')) {
   throw new Error("Widget icon must be injected by the server as an absolute URL.");
 }
 
+if (!html.includes('const DEFAULT_VIEW = "__LINGOSTAR_DEFAULT_VIEW__";')) {
+  throw new Error("Widget default view must be injected by the server for each component template.");
+}
+
 if (!html.includes('rpcRequest("ui/message"')) {
   throw new Error("Widget follow-up messages must use the standard ui/message request.");
 }
@@ -117,6 +121,22 @@ if (!html.includes("setWidgetState") || !html.includes("widgetState")) {
 
 if (!html.includes("sendFollowUpMessage")) {
   throw new Error("Widget should use window.openai.sendFollowUpMessage when available.");
+}
+
+if (!html.includes("requestDisplayMode({ mode: targetMode })")) {
+  throw new Error("Widget should request fullscreen display mode for complex lesson/settings surfaces.");
+}
+
+if (html.includes('data-action="ask-ai"')) {
+  throw new Error("Widget must not duplicate ChatGPT's composer with an in-widget Ask AI action.");
+}
+
+if (!html.includes("pendingDirectEvaluationFor")) {
+  throw new Error("Widget submit flow must recover pending objective answer drafts before marking them skipped.");
+}
+
+if (!html.includes("Objective Results Already Saved")) {
+  throw new Error("Widget speaking submit flow must tell the model objective results are already stored.");
 }
 
 if (html.includes("skip-skill")) {

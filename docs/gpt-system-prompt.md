@@ -13,14 +13,18 @@ The LingoStar MCP server is the state store, validator, widget host, OAuth resou
 4. In that same assistant turn, open the first section:
    - Preferred: include a complete `initialSection` in `manage_learning_session`.
    - Otherwise: immediately call `create_lesson_exercises` after `manage_learning_session`.
+   - `manage_learning_session` and `create_lesson_exercises` render the appropriate widget view when they create a visible section.
 5. If an app-visible message is short, read the hidden app/model context. Do not echo hidden instructions.
 6. Delete sessions only when the user explicitly asks for deletion.
 
 ## Tools
 
 - `get_lingostar_state`: load current sessions, settings, section, and contexts.
+- `open_lingostar_dashboard`: render progress, feedback, and session overview.
+- `open_lingostar_lesson`: render the active exercise section.
+- `open_lingostar_settings`: render settings for the active session.
 - `manage_learning_session`: create or update a session.
-- `create_lesson_exercises`: store a full generated section.
+- `create_lesson_exercises`: store a full generated section and render the lesson UI.
 - `grade_section_answers`: store evaluations and feedback.
 - `store_level_judgment`: record level completion.
 - `store_goal_judgment`: record rigorous goal completion after the minimum section threshold.

@@ -480,6 +480,7 @@ applyTheme(getPreferredTheme());
 const hasHost = window.parent !== window;
 const ICON_SRC = "__LINGOSTAR_ICON__";
 const APP_ORIGIN = "__LINGOSTAR_APP_ORIGIN__";
+const DEFAULT_VIEW = "__LINGOSTAR_DEFAULT_VIEW__";
 const appEl = document.getElementById("app");
 
 /* ================================================================ */
@@ -506,6 +507,9 @@ let autoSectionSessionId = null;
 let feedbackOpen = false;
 let pendingDeleteSessionId = null;
 let notice = null;
+let lastRequestedDisplayMode = "";
+let modelContextTimer = null;
+let lastModelContextKey = "";
 const DIRECT_GRADE_TYPES = new Set(["language_info", "listening", "reading", "writing"]);
 const WIDGET_STATE_VERSION = 1;
 let widgetStatePersistTimer = null;
@@ -737,9 +741,6 @@ I18N = {
     weaknessContext: "Weakness context",
     ttsRate: "Speech speed",
     saveSettings: "Save settings",
-    askAi: "Ask AI",
-    askAiPlaceholder: "Ask about this exercise without leaving the section",
-    askAiSend: "Ask",
     cannotListenNow: "I can't listen now",
     cannotSpeakNow: "I can't speak now",
     browserSpeechError: "Speech is unavailable in this environment.",
@@ -841,9 +842,6 @@ I18N = {
     weaknessContext: "취약점",
     ttsRate: "발화 속도",
     saveSettings: "설정 저장",
-    askAi: "Ask AI",
-    askAiPlaceholder: "문제를 유지한 채 AI에게 질문",
-    askAiSend: "질문",
     cannotListenNow: "지금은 들을 수 없어요",
     cannotSpeakNow: "지금은 말할 수 없어요",
     browserSpeechError: "음성 기능을 사용할 수 없습니다",
@@ -907,9 +905,6 @@ function copy() {
     weaknessContext: "\ucde8\uc57d\uc810",
     ttsRate: "\ubc1c\ud654 \uc18d\ub3c4",
     saveSettings: "\uc124\uc815 \uc800\uc7a5",
-    askAi: "Ask AI",
-    askAiPlaceholder: "\ubb38\uc81c\ub97c \uc720\uc9c0\ud55c \ucc44 AI\uc5d0\uac8c \uc9c8\ubb38",
-    askAiSend: "\uc9c8\ubb38",
     cannotListenNow: "\uc9c0\uae08\uc740 \ub4e4\uc744 \uc218 \uc5c6\uc5b4\uc694",
     cannotSpeakNow: "\uc9c0\uae08\uc740 \ub9d0\ud560 \uc218 \uc5c6\uc5b4\uc694",
     browserSpeechError: "\uc74c\uc131 \uae30\ub2a5\uc744 \uc0ac\uc6a9\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
@@ -930,9 +925,6 @@ function copy() {
     weaknessContext: "Weakness context",
     ttsRate: "Speech speed",
     saveSettings: "Save settings",
-    askAi: "Ask AI",
-    askAiPlaceholder: "Ask about this exercise without leaving the section",
-    askAiSend: "Ask",
     cannotListenNow: "I can't listen now",
     cannotSpeakNow: "I can't speak now",
     browserSpeechError: "Speech is unavailable in this environment.",
@@ -1145,6 +1137,17 @@ function notifyIntrinsicHeightSoon() {
   }, 50);
 }
 
+function requestDisplayModeIfUseful() {
+  if (!hasHost || !window.openai?.requestDisplayMode) return;
+  const targetMode = (viewMode === "lesson" || viewMode === "settings") ? "fullscreen" : "";
+  if (!targetMode || window.openai?.displayMode === targetMode || lastRequestedDisplayMode === targetMode) return;
+  lastRequestedDisplayMode = targetMode;
+  window.openai.requestDisplayMode({ mode: targetMode }).catch((err) => {
+    lastRequestedDisplayMode = "";
+    console.warn("LingoStar display mode request failed", err);
+  });
+}
+
 function showNotice(title, message) {
   notice = { title, message };
   toast = "";
@@ -1192,6 +1195,53 @@ function updateModelContextForHost(text, structuredContent = {}) {
   });
 }
 
+function syncCurrentExerciseContextSoon() {
+  if (!hasHost || viewMode !== "lesson") return;
+  const section = getSection();
+  const exercise = getCurrentExercise();
+  if (!section || !exercise) return;
+  const answerDraft = String(typedAnswers.get(exercise.id) || "");
+  const learnerClaim = String(typedAnswers.get(`${exercise.id}:claim`) || "");
+  const key = [
+    section.id,
+    exercise.id,
+    currentExerciseIndex,
+    answerDraft,
+    learnerClaim,
+    getResultForExercise(exercise.id)?.score ?? "",
+  ].join("|");
+  if (key === lastModelContextKey) return;
+  if (modelContextTimer) clearTimeout(modelContextTimer);
+  modelContextTimer = setTimeout(() => {
+    modelContextTimer = null;
+    if (key === lastModelContextKey) return;
+    lastModelContextKey = key;
+    updateModelContextForHost(
+      [
+        "LingoStar current lesson context.",
+        `Section: ${section.id} - ${section.title || "Untitled"}`,
+        `Exercise ${currentExerciseIndex + 1}/${getAllExercises(section).length}: ${exercise.id} (${exercise.type})`,
+        `Prompt: ${exercise.prompt || ""}`,
+        `Instructions: ${exercise.instructions || ""}`,
+        answerDraft ? `Current answer draft: ${answerDraft}` : "Current answer draft: (empty)",
+        learnerClaim ? `Learner claim: ${learnerClaim}` : "",
+        "If the user asks a question, answer in chat without clearing or replacing the current LingoStar section.",
+      ].filter(Boolean).join("\n"),
+      {
+        lingostar: {
+          command: "current_exercise_context",
+          sectionId: section.id,
+          exerciseIndex: currentExerciseIndex,
+          exercise,
+          currentAnswerDraft: answerDraft || null,
+          learnerClaim: learnerClaim || null,
+          result: getResultForExercise(exercise.id) || null,
+        },
+      }
+    );
+  }, 120);
+}
+
 function visibleHostPrompt(kind) {
   const ko = uiLang() === "ko";
   if (kind === "section") {
@@ -1208,11 +1258,6 @@ function visibleHostPrompt(kind) {
     return ko
       ? "현재 LingoStar 말하기 답안을 채점하고 결과를 앱에 저장해 주세요."
       : "Please grade the current LingoStar speaking answers and save the result in the app.";
-  }
-  if (kind === "ask-ai") {
-    return ko
-      ? "현재 LingoStar 문제에 대해 질문하고 싶습니다."
-      : "I have a question about the current LingoStar exercise.";
   }
   return ko
     ? "LingoStar 학습 정보를 확인해 주세요."
@@ -1282,7 +1327,7 @@ window.addEventListener("openai:set_globals", (event) => {
 /* ================================================================ */
 if (hasHost) {
   rpcNotify("ui/initialize", {
-    appInfo: { name: "lingostar-studio", version: "0.7.0" },
+    appInfo: { name: "lingostar", version: "0.8.0" },
     appCapabilities: { tools: { listChanged: true } },
     protocolVersion: "2026-01-26",
   });
@@ -1326,6 +1371,27 @@ function hydrateFromOpenAiGlobals(globals = window.openai || {}) {
   return true;
 }
 
+function applyInitialView(initialView) {
+  const hasLoadedState = Boolean(state?.version || Array.isArray(state?.sessions));
+  if (!initialView || initialView === "auto") {
+    if (!viewMode) {
+      viewMode = state.currentSection ? "lesson" : (state.sessions?.length ? "dashboard" : null);
+    }
+    return;
+  }
+  if (initialView === "lesson") {
+    viewMode = state.currentSection || !hasLoadedState ? "lesson" : "dashboard";
+    return;
+  }
+  if (initialView === "settings") {
+    viewMode = getActiveSession() || !hasLoadedState ? "settings" : "dashboard";
+    return;
+  }
+  if (initialView === "dashboard") {
+    viewMode = "dashboard";
+  }
+}
+
 function updateFromResponse(response) {
   const actual = response?.result || response;
   const sc = actual?.structuredContent || actual;
@@ -1339,7 +1405,7 @@ function updateFromResponse(response) {
     const newSectionId = state.currentSection?.id;
     const hadStateBefore = Boolean(prevState?.version || prevState?.sessions);
 
-    if (newSectionId && hadStateBefore && (newSectionId !== prevSectionId || viewMode === "lesson") && viewMode !== "settings") {
+    if (newSectionId && hadStateBefore && newSectionId !== prevSectionId && viewMode !== "settings") {
       viewMode = "lesson";
       currentExerciseIndex = 0;
     }
@@ -1356,6 +1422,9 @@ function updateFromResponse(response) {
     if (state.sessions?.length && !state.currentSection && viewMode !== "settings") {
       viewMode = "dashboard";
     }
+  }
+  if (sc?.initialView) {
+    applyInitialView(sc.initialView);
   }
   if (sc?.transcript) {
     // Fill transcript into current speaking exercise
@@ -1715,7 +1784,9 @@ function buildDirectEvaluation(exercise, answer, claim = "") {
 }
 
 async function gradeDirectExercise(exercise, answer) {
-  if (!exercise || !DIRECT_GRADE_TYPES.has(exercise.type) || getResultForExercise(exercise.id)) return;
+  if (!exercise || !DIRECT_GRADE_TYPES.has(exercise.type)) return;
+  const existing = getResultForExercise(exercise.id);
+  if (existing && String(existing.userAnswer || "") === String(answer || "")) return;
   const evaluation = buildDirectEvaluation(exercise, answer, typedAnswers.get(`${exercise.id}:claim`) || "");
   if (hasHost) {
     await callTool("grade_section_answers", {
@@ -1727,6 +1798,25 @@ async function gradeDirectExercise(exercise, answer) {
   } else {
     mockGradeAnswer(exercise, answer, "");
   }
+}
+
+function pendingDirectEvaluationFor(exercise) {
+  const draft = String(typedAnswers.get(exercise.id) || "").trim();
+  if (draft) return buildDirectEvaluation(exercise, draft, typedAnswers.get(`${exercise.id}:claim`) || "");
+  return buildDirectEvaluation(exercise, "[SKIPPED]", typedAnswers.get(`${exercise.id}:claim`) || "");
+}
+
+function summarizeObjectiveResults(exercises) {
+  return exercises
+    .filter(ex => DIRECT_GRADE_TYPES.has(ex.type))
+    .map(ex => {
+      const result = getResultForExercise(ex.id);
+      if (!result) return `- ${ex.id} (${ex.type}): pending`;
+      const status = result.skipped ? "skipped" : `score=${Math.round(Number(result.score) || 0)}`;
+      const answer = result.userAnswer ? ` answer="${String(result.userAnswer).replaceAll('"', "'")}"` : "";
+      return `- ${ex.id} (${ex.type}): ${status}${answer}`;
+    })
+    .join("\n");
 }
 
 function getCompletedCount(skill) {
@@ -1815,6 +1905,8 @@ function render() {
     if (el) el.value = val;
   }
   persistWidgetStateSoon();
+  requestDisplayModeIfUseful();
+  syncCurrentExerciseContextSoon();
   notifyIntrinsicHeightSoon();
 }
 
@@ -2086,13 +2178,6 @@ function renderLesson() {
   return `<div class="layout" style="grid-template-columns:1fr;">
     ${topNav}
     ${mainContent}
-    <section class="panel stack">
-      <div class="panel-title">${c.askAi}</div>
-      <textarea data-draft-key="ask-ai" rows="2" placeholder="${escapeHtml(c.askAiPlaceholder)}">${escapeHtml(typedAnswers.get("ask-ai") || "")}</textarea>
-      <div class="row wrap" style="justify-content:flex-end;">
-        <button class="button secondary small" data-action="ask-ai">${c.askAiSend}</button>
-      </div>
-    </section>
     <div style="text-align:center;margin-top:10px;">
       <button class="button secondary small" data-action="dashboard">${c.backToDashboard}</button>
     </div>
@@ -2463,50 +2548,6 @@ appEl.addEventListener("click", async (e) => {
     return;
   }
 
-  if (action === "ask-ai") {
-    const question = String(typedAnswers.get("ask-ai") || "").trim();
-    const section = getSection();
-    const exercise = getCurrentExercise();
-    if (!question || !section || !exercise) return;
-    const answer = typedAnswers.get(exercise.id) || "";
-    const learnerClaim = typedAnswers.get(`${exercise.id}:claim`) || "";
-    const msg = [
-      "[LingoStar Ask AI]",
-      `Section: ${section.id}`,
-      `Exercise: ${exercise.id}`,
-      `Type: ${exercise.type}`,
-      `Target language: ${getActiveSession()?.targetLanguage || ""}`,
-      answer ? `Current answer draft: ${answer}` : "Current answer draft: (empty)",
-      learnerClaim ? `Learner claim: ${learnerClaim}` : "",
-      `Question: ${question}`,
-      "Instruction: Answer the learner's question concisely using the exercise context. Do not clear or replace the current app section.",
-    ].filter(Boolean).join("\n");
-    const visibleAskPrompt = uiLang() === "ko"
-      ? `현재 LingoStar 문제에 대해 질문합니다: ${question}`
-      : `Question about the current LingoStar exercise: ${question}`;
-    if (hasHost) {
-      sendFollowUpToHost(msg, {
-        visiblePrompt: visibleAskPrompt,
-        modelContext: msg,
-        structuredContent: {
-          lingostar: {
-            command: "ask_ai",
-            sectionId: section.id,
-            exercise,
-            question,
-            currentAnswerDraft: answer || null,
-            learnerClaim: learnerClaim || null,
-          },
-        },
-      });
-      typedAnswers.set("ask-ai", "");
-      persistWidgetStateSoon();
-    } else {
-      toast = question;
-      render();
-    }
-    return;
-  }
 
   // Token operations
   if (action === "add-token") {
@@ -2581,30 +2622,29 @@ appEl.addEventListener("click", async (e) => {
       await gradeDirectExercise(exercise, answer);
     }
 
-    const section = getSection();
+    let section = getSection();
     if (!section) return;
 
-    const allExercises = getAllExercises(section);
+    let allExercises = getAllExercises(section);
     const missingDirect = allExercises
       .filter(ex => DIRECT_GRADE_TYPES.has(ex.type) && !getResultForExercise(ex.id))
-      .map(ex => {
-        typedAnswers.set(ex.id, "[SKIPPED]");
-        return buildDirectEvaluation(ex, "[SKIPPED]");
-      });
+      .map(pendingDirectEvaluationFor);
     if (missingDirect.length) {
       if (hasHost) {
         await callTool("grade_section_answers", {
           sessionId: getActiveSession()?.id,
           sectionId: section.id,
           evaluations: missingDirect,
-          sectionFeedback: "Unanswered objective items were skipped.",
+          sectionFeedback: "Auto-graded pending objective exercises before speaking evaluation.",
         });
       } else {
         for (const item of missingDirect) {
           const ex = allExercises.find(candidate => candidate.id === item.exerciseId);
-          if (ex) mockGradeAnswer(ex, "[SKIPPED]", "");
+          if (ex) mockGradeAnswer(ex, item.userAnswer || "[SKIPPED]", item.learnerClaim || "");
         }
       }
+      section = getSection();
+      allExercises = getAllExercises(section);
     }
 
     const speakingExercises = allExercises.filter(ex => ex.type === "speaking");
@@ -2633,7 +2673,8 @@ appEl.addEventListener("click", async (e) => {
       return;
     }
 
-    const msg = `[LingoStar Speaking Submit]\nSection: ${section.id}\nSpeaking Answers:\n${lines.join("\n")}\nInstruction: Evaluate ONLY the speaking answers, call grade_section_answers, and show concise feedback. Each evaluation must include userAnswer exactly as listed and learnerClaim when present. Objective language_info/listening/reading/writing items are already auto-graded by the app. Scores must be 0-100. For any [SKIPPED] answer, set skipped=true and needsReview=true so the MCP server does not lower the skill profile for a deliberate skip.`;
+    const objectiveSummary = summarizeObjectiveResults(allExercises);
+    const msg = `[LingoStar Speaking Submit]\nSection: ${section.id}\nSpeaking Answers:\n${lines.join("\n")}\nObjective Results Already Saved:\n${objectiveSummary || "(none)"}\nInstruction: Evaluate ONLY the speaking answers and call grade_section_answers for speaking exercise IDs only. Do not infer that objective language_info/listening/reading/writing items were skipped; their saved results are listed above. Each speaking evaluation must include userAnswer exactly as listed and learnerClaim when present. Scores must be 0-100. For any [SKIPPED] answer, set skipped=true and needsReview=true so the MCP server does not lower the skill profile for a deliberate skip.`;
 
     if (hasHost) {
       sendFollowUpToHost(msg, {
@@ -2643,6 +2684,10 @@ appEl.addEventListener("click", async (e) => {
           lingostar: {
             command: "grade_section_answers",
             sectionId: section.id,
+            objectiveResults: allExercises
+              .filter(ex => DIRECT_GRADE_TYPES.has(ex.type))
+              .map(ex => getResultForExercise(ex.id))
+              .filter(Boolean),
             answers: speakingExercises.map(ex => ({
               exerciseId: ex.id,
               type: ex.type,
@@ -2889,6 +2934,9 @@ function mockGradeAnswer(exercise, answer, claim) {
 /*  Init                                                            */
 /* ================================================================ */
 applyWidgetStateSnapshot(window.openai?.widgetState, { allowCrossSession: true, allowCrossSection: true });
+if (DEFAULT_VIEW && !DEFAULT_VIEW.startsWith("__")) {
+  applyInitialView(DEFAULT_VIEW);
+}
 if (hasHost && hydrateFromOpenAiGlobals()) {
   render();
 } else {
