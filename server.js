@@ -870,12 +870,14 @@ async function authorizeContext(context, scopes = []) {
     const verifyOptions = OAUTH_ISSUER_ACCEPTED.length ? { issuer: OAUTH_ISSUER_ACCEPTED } : {};
     const { payload } = await jwtVerify(token, signingKeySet(), verifyOptions);
     if (!audienceMatches(payload, OAUTH_AUDIENCE)) {
+      console.error(`[AUTH_ERROR] Audience mismatch. Expected: ${OAUTH_AUDIENCE}, Payload aud: ${JSON.stringify(payload?.aud)}, Payload resource: ${payload?.resource}`);
       return {
         ok: false,
         response: authErrorResponse(scopes, "invalid_token", "The access token audience does not match this MCP server."),
       };
     }
     if (OAUTH_VALIDATE_CLIENT_ID && !tokenClientMatches(payload)) {
+      console.error(`[AUTH_ERROR] Client ID mismatch. Expected: ${OAUTH_CLIENT_ID}, Payload clientIds: ${JSON.stringify(tokenClientIds(payload))}`);
       return {
         ok: false,
         response: authErrorResponse(scopes, "invalid_token", "The access token client does not match this MCP server."),
@@ -885,6 +887,7 @@ async function authorizeContext(context, scopes = []) {
     const availableScopes = tokenScopes(payload);
     const missingScopes = missingRequiredScopes(scopes, availableScopes);
     if (missingScopes.length) {
+      console.error(`[AUTH_ERROR] Missing scopes. Required: ${missingScopes.join(", ")}, Available: ${[...availableScopes].join(", ")}`);
       return {
         ok: false,
         response: authErrorResponse(scopes, "insufficient_scope", `Missing required scope(s): ${missingScopes.join(", ")}.`),
@@ -896,6 +899,7 @@ async function authorizeContext(context, scopes = []) {
     context.lingostarAuthScopeClaims = describeScopeClaims(payload);
     return { ok: true, payload };
   } catch (error) {
+    console.error(`[AUTH_ERROR] jwtVerify failed: ${error?.message}`, error);
     return {
       ok: false,
       response: authErrorResponse(scopes, "invalid_token", cleanText(error?.message) || "The access token could not be verified."),
