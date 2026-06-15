@@ -62,6 +62,11 @@ async function rpc(method, params = {}) {
 
 await waitForServer();
 
+const statusResponse = await fetch(`http://localhost:${PORT}/status.json`);
+const status = await statusResponse.json();
+assert("auth status accepts issuer without trailing slash", status.oauthIssuerAccepted?.includes("https://auth.example.test"));
+assert("auth status accepts issuer with trailing slash", status.oauthIssuerAccepted?.includes("https://auth.example.test/"));
+
 const metadataResponse = await fetch(`http://localhost:${PORT}/.well-known/oauth-protected-resource`);
 const metadata = await metadataResponse.json();
 assert("auth metadata resource is APP_ORIGIN", metadata.resource === "https://lingostar.example.test");

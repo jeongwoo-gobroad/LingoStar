@@ -92,3 +92,4 @@ Cloud Run, Firestore, OAuth, CSP, Secret Manager 설정은 [docs/deployment-gcp.
 - Widget resource URI is versioned in `server.js`; bump `WIDGET_VERSION` and the `ui://widget/...html` filename together when changing widget UI.
 - `/feedback` shows submitted user feedback with sequential IDs. On Cloud Run, inject `FEEDBACK_ADMIN_ID` and `FEEDBACK_ADMIN_PASSWORD` from Secret Manager secrets `feedback-id` and `feedback-pw`.
 - For Auth0 + ChatGPT Apps, use `OAUTH_SCOPE_MODE=none` if Auth0 authorization-code logs keep showing `scope: null`. LingoStar will still verify JWT signature, issuer, audience/resource, and the configured Auth0 client id when present. Use `OAUTH_SCOPE_MODE=strict` only when your provider reliably returns custom API scopes.
+- Auth0 discovery may report an issuer with a trailing `/`; LingoStar accepts both issuer forms during JWT verification.

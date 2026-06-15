@@ -117,7 +117,9 @@ const AUTH_REQUIRED_RAW = firstCleanValue(
 );
 const AUTH_REQUIRED =
   !DEVELOPER_MODE && envFlag(AUTH_REQUIRED_RAW, false);
-const OAUTH_ISSUER = firstCleanValue(process.env.OAUTH_ISSUER, ENV_FILE.OAUTH_ISSUER).replace(/\/+$/, "");
+const OAUTH_ISSUER_RAW = firstCleanValue(process.env.OAUTH_ISSUER, ENV_FILE.OAUTH_ISSUER);
+const OAUTH_ISSUER = OAUTH_ISSUER_RAW.replace(/\/+$/, "");
+const OAUTH_ISSUER_ACCEPTED = acceptedIssuerValues(OAUTH_ISSUER_RAW);
 const OAUTH_JWKS_URL = firstCleanValue(process.env.OAUTH_JWKS_URL, ENV_FILE.OAUTH_JWKS_URL);
 const OAUTH_AUDIENCE = firstCleanValue(process.env.OAUTH_AUDIENCE, ENV_FILE.OAUTH_AUDIENCE, APP_ORIGIN);
 const OAUTH_AUTHORIZATION_SERVERS = firstCleanValue(
@@ -686,6 +688,14 @@ function firstCleanValue(...values) {
   return "";
 }
 
+function acceptedIssuerValues(value) {
+  const raw = cleanText(value);
+  if (!raw) return [];
+  const withoutSlash = raw.replace(/\/+$/, "");
+  const withSlash = withoutSlash ? `${withoutSlash}/` : "";
+  return [...new Set([raw, withoutSlash, withSlash].filter(Boolean))];
+}
+
 function requestHeader(context, name) {
   const headers = context?.requestInfo?.headers;
   if (!headers) return "";
@@ -857,7 +867,7 @@ async function authorizeContext(context, scopes = []) {
   }
 
   try {
-    const verifyOptions = OAUTH_ISSUER ? { issuer: OAUTH_ISSUER } : {};
+    const verifyOptions = OAUTH_ISSUER_ACCEPTED.length ? { issuer: OAUTH_ISSUER_ACCEPTED } : {};
     const { payload } = await jwtVerify(token, signingKeySet(), verifyOptions);
     if (!audienceMatches(payload, OAUTH_AUDIENCE)) {
       return {
@@ -2034,6 +2044,7 @@ function publicConfig() {
     appOrigin: APP_ORIGIN,
     authRequired: AUTH_REQUIRED,
     oauthIssuer: OAUTH_ISSUER,
+    oauthIssuerAccepted: OAUTH_ISSUER_ACCEPTED,
     oauthAudience: OAUTH_AUDIENCE,
     oauthClientId: OAUTH_CLIENT_ID,
     oauthScopeMode: OAUTH_SCOPE_MODE,
@@ -3293,6 +3304,7 @@ const httpServer = createServer(async (req, res) => {
         mcpEndpoint: MCP_PATH,
         mcpCompatibilityPaths: [...MCP_COMPAT_PATHS],
         oauthIssuerConfigured: Boolean(OAUTH_ISSUER),
+        oauthIssuerAccepted: OAUTH_ISSUER_ACCEPTED,
         oauthJwksConfigured: Boolean(OAUTH_JWKS_URL || OAUTH_ISSUER),
         oauthClientIdConfigured: Boolean(OAUTH_CLIENT_ID),
         oauthScopeMode: OAUTH_SCOPE_MODE,

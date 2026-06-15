@@ -212,7 +212,7 @@ For Auth0, configure the API and application this way:
 2. Set the API Identifier to exactly `https://YOUR_ORIGIN`.
 3. Add permissions named `lingostar.read`, `lingostar.write`, and `lingostar.audio` if you plan to run `OAUTH_SCOPE_MODE=strict`.
 4. For ChatGPT Apps with Auth0, start with `OAUTH_SCOPE_MODE=none`. ChatGPT may complete the authorization-code flow with Auth0 logging `scope: null`; in this mode LingoStar does not advertise or require custom API scopes.
-5. Keep `OAUTH_CLIENT_ID` set to the Auth0 application client id and `OAUTH_VALIDATE_CLIENT_ID=true`. LingoStar verifies JWT signature, issuer, audience/resource, and rejects mismatched `azp`/`client_id`/`cid` claims when Auth0 includes them.
+5. Keep `OAUTH_CLIENT_ID` set to the Auth0 application client id and `OAUTH_VALIDATE_CLIENT_ID=true`. LingoStar verifies JWT signature, issuer, audience/resource, and rejects mismatched `azp`/`client_id`/`cid` claims when Auth0 includes them. Auth0's discovery issuer commonly ends with `/`; LingoStar accepts both the configured issuer and the trailing-slash form.
 6. If your Auth0 flow reliably emits custom API scopes and you want tool-level scope enforcement, switch to `OAUTH_SCOPE_MODE=strict`, enable RBAC if needed, and enable "Add Permissions in the Access Token" if you want Auth0 to emit a `permissions` claim. LingoStar accepts both `scope` and `permissions`.
 7. Applications > LingoStar app: confirm the token endpoint authentication method matches the ChatGPT app setting, for example `client_secret_post`.
 8. In the ChatGPT Apps OAuth settings, leave Default scopes empty for `OAUTH_SCOPE_MODE=none`. For `OAUTH_SCOPE_MODE=strict`, set Default scopes to:

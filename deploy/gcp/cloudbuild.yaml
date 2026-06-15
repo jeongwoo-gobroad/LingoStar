@@ -18,7 +18,7 @@ substitutions:
   _OAUTH_AUDIENCE: https://lingostar-859181361542.asia-northeast3.run.app
   _OAUTH_SCOPES: lingostar.read lingostar.write lingostar.audio
   _OAUTH_REQUEST_SCOPES: lingostar.read lingostar.write lingostar.audio
-  _OAUTH_CLIENT_ID: "b41ABh6RcTz3s7R9uIX4fFYCqDjakj3X"
+  _OAUTH_CLIENT_ID: "tpc_jtLrg8FH4NUqaz1aC5SfPd"
   _OAUTH_SCOPE_MODE: "none"
   _OAUTH_VALIDATE_CLIENT_ID: "true"
   _OAUTH_ALLOW_SCOPELESS_TOKENS: "false"

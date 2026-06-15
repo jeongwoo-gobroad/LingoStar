@@ -67,6 +67,8 @@ const health = await healthResponse.json();
 assert("scope-none health exposes mode", health.oauthScopeMode === "none");
 assert("scope-none health disables advertised scopes", health.oauthScopesAdvertised === false);
 assert("scope-none health disables scope enforcement", health.oauthScopesEnforced === false);
+assert("scope-none health accepts issuer without trailing slash", health.oauthIssuerAccepted?.includes("https://auth.example.test"));
+assert("scope-none health accepts issuer with trailing slash", health.oauthIssuerAccepted?.includes("https://auth.example.test/"));
 
 const metadataResponse = await fetch(`http://localhost:${PORT}/.well-known/oauth-protected-resource`);
 const metadata = await metadataResponse.json();
