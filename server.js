@@ -2385,7 +2385,7 @@ function createLingoStarServer() {
         destructiveHint: false,
         openWorldHint: false,
       },
-      _meta: dataToolMeta(WRITE_SCOPES, "Selecting session", "Session selected"),
+      _meta: renderToolMeta(WRITE_SCOPES, "Selecting session", "Session selected"),
     },
     async (args, context) => {
       const auth = await authorizeContext(context, WRITE_SCOPES);
@@ -2427,7 +2427,7 @@ function createLingoStarServer() {
         destructiveHint: false,
         openWorldHint: false,
       },
-      _meta: dataToolMeta(WRITE_SCOPES, "Storing session", "Session stored"),
+      _meta: renderToolMeta(WRITE_SCOPES, "Storing session", "Session stored"),
     },
     async (args, context) => {
       const auth = await authorizeContext(context, WRITE_SCOPES);
@@ -2585,7 +2585,7 @@ function createLingoStarServer() {
         destructiveHint: false,
         openWorldHint: false,
       },
-      _meta: dataToolMeta(WRITE_SCOPES, "Storing section", "Section stored"),
+      _meta: renderToolMeta(WRITE_SCOPES, "Storing section", "Section stored"),
     },
     async (args, context) => {
       const auth = await authorizeContext(context, WRITE_SCOPES);
