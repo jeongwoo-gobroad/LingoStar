@@ -15,7 +15,7 @@ substitutions:
   _OAUTH_ISSUER: "dev-xeh0uw73dwpc4hpk.us.auth0.com"
   _OAUTH_AUTHORIZATION_SERVERS: "dev-xeh0uw73dwpc4hpk.us.auth0.com"
   _OAUTH_JWKS_URL: "dev-xeh0uw73dwpc4hpk.us.auth0.com/.well-known/jwks.json"
-  _OAUTH_AUDIENCE: https://lingostar-859181361542.asia-northeast3.run.app/mcp
+  _OAUTH_AUDIENCE: https://lingostar-859181361542.asia-northeast3.run.app
   _OAUTH_SCOPES: lingostar.read lingostar.write lingostar.audio
   _OAUTH_REQUEST_SCOPES: lingostar.read lingostar.write lingostar.audio
   _OAUTH_CLIENT_ID: "tpc_jtLrg8FH4NUqaz1aC5SfPd"
