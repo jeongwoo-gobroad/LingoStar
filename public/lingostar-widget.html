@@ -124,7 +124,7 @@ button{-webkit-tap-highlight-color:transparent}
   width:32px;height:32px;border:1px solid var(--border);
   border-radius:var(--radius-sm);background:var(--bg-tertiary);
   cursor:pointer;display:grid;place-items:center;font-size:.95rem;
-  transition:all var(--transition);line-height:1;padding:0;
+  transition:background-color var(--transition),border-color var(--transition),color var(--transition);line-height:1;padding:0;
 }
 .theme-toggle:hover{background:var(--accent-soft);border-color:var(--accent)}
 
@@ -161,7 +161,8 @@ button{-webkit-tap-highlight-color:transparent}
 .field label{font-size:.78rem;font-weight:600;color:var(--text-secondary)}
 .field input,.field select,.field textarea{
   padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);
-  background:var(--bg-tertiary);color:var(--text-primary);transition:all var(--transition);
+  background:var(--bg-tertiary);color:var(--text-primary);
+  transition:border-color var(--transition),box-shadow var(--transition),background-color var(--transition);
 }
 .field input:focus,.field select:focus,.field textarea:focus{
   outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow);
@@ -174,24 +175,24 @@ button{-webkit-tap-highlight-color:transparent}
   display:inline-flex;align-items:center;justify-content:center;gap:6px;
   min-height:36px;padding:7px 18px;border:none;border-radius:var(--radius-sm);
   background:var(--accent);color:#fff;font-weight:650;cursor:pointer;
-  font-size:.82rem;white-space:nowrap;transition:all var(--transition);
+  font-size:.82rem;white-space:nowrap;
+  transition:background-color var(--transition),border-color var(--transition),color var(--transition),box-shadow var(--transition),filter var(--transition);
   box-shadow:0 1px 3px var(--accent-glow);
 }
 .button:hover:not(:disabled){
-  background:var(--accent-hover);transform:translateY(-1px);
+  background:var(--accent-hover);
   box-shadow:0 4px 12px var(--accent-glow);
 }
-.button:active:not(:disabled){transform:translateY(0)}
 .button.secondary{
   background:var(--bg-tertiary);color:var(--text-primary);
   box-shadow:var(--shadow-xs);border:1px solid var(--border);
 }
 .button.secondary:hover:not(:disabled){
   background:var(--accent-soft);color:var(--accent);
-  border-color:var(--accent);transform:translateY(-1px);
+  border-color:var(--accent);
 }
 .button.warn{background:var(--danger);color:#fff;box-shadow:0 1px 3px var(--danger-soft)}
-.button.warn:hover:not(:disabled){filter:brightness(1.1);transform:translateY(-1px)}
+.button.warn:hover:not(:disabled){filter:brightness(1.1)}
 .button.small{min-height:30px;padding:4px 12px;font-size:.78rem}
 .button.full{width:100%}
 
@@ -200,7 +201,8 @@ button{-webkit-tap-highlight-color:transparent}
 /* ================================================================ */
 .session{
   border:1px solid var(--border);border-radius:var(--radius);
-  padding:14px;background:var(--bg-tertiary);transition:all var(--transition);
+  padding:14px;background:var(--bg-tertiary);
+  transition:background-color var(--transition),border-color var(--transition),box-shadow var(--transition);
 }
 .session:hover{border-color:var(--accent)}
 .session.active{
@@ -229,9 +231,9 @@ button{-webkit-tap-highlight-color:transparent}
 .skill-grid .skill{
   border:1px solid var(--border);border-radius:var(--radius);
   padding:12px 8px;background:var(--bg-tertiary);text-align:center;
-  transition:all var(--transition);
+  transition:background-color var(--transition),border-color var(--transition),box-shadow var(--transition);
 }
-.skill-grid .skill:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.skill-grid .skill:hover{border-color:var(--accent);box-shadow:var(--shadow-md)}
 .skill-grid .skill strong{
   display:block;font-size:.68rem;font-weight:600;color:var(--text-tertiary);
   margin-bottom:4px;text-transform:uppercase;letter-spacing:.03em;
@@ -256,7 +258,8 @@ button{-webkit-tap-highlight-color:transparent}
   display:flex;align-items:center;gap:10px;width:100%;padding:12px 14px;
   border:1px solid var(--border);border-radius:var(--radius);
   background:var(--bg-tertiary);cursor:pointer;text-align:left;
-  font-size:.86rem;font-weight:650;transition:all var(--transition);
+  font-size:.86rem;font-weight:650;
+  transition:background-color var(--transition),border-color var(--transition),box-shadow var(--transition),color var(--transition);
   color:var(--text-primary);
 }
 .skill-category:hover:not(:disabled){background:var(--accent-soft);border-color:var(--accent)}
@@ -306,20 +309,22 @@ button{-webkit-tap-highlight-color:transparent}
   display:inline-flex;padding:7px 14px;border-radius:var(--radius-full);
   background:var(--bg-secondary);color:var(--text-primary);font-weight:650;
   cursor:pointer;border:1px solid var(--border);font-size:.84rem;
-  transition:all var(--transition);box-shadow:var(--shadow-xs);
+  transition:background-color var(--transition),border-color var(--transition),color var(--transition),box-shadow var(--transition),opacity var(--transition);
+  box-shadow:var(--shadow-xs);
 }
 .token:hover:not(.used){
   border-color:var(--accent);background:var(--accent-soft);
-  color:var(--accent);transform:translateY(-2px);box-shadow:var(--shadow-sm);
+  color:var(--accent);box-shadow:var(--shadow-sm);
 }
-.token.used{opacity:.3;cursor:default;transform:none}
+.token.used{opacity:.3;cursor:default}
 .choice{
   width:100%;padding:12px 16px;border:1px solid var(--border);
   border-radius:var(--radius);background:var(--bg-secondary);
-  cursor:pointer;text-align:left;font-size:.86rem;transition:all var(--transition);
+  cursor:pointer;text-align:left;font-size:.86rem;
+  transition:background-color var(--transition),border-color var(--transition),box-shadow var(--transition),color var(--transition);
 }
 .choice:hover:not(:disabled){
-  border-color:var(--accent);background:var(--accent-soft);transform:translateX(4px);
+  border-color:var(--accent);background:var(--accent-soft);
 }
 .choice.selected{
   border-color:var(--accent);background:var(--accent-soft);
@@ -374,6 +379,12 @@ details summary{cursor:pointer;font-weight:650;font-size:.84rem;color:var(--text
 .modal h2{font-size:1rem;margin:0;font-weight:800}
 .modal ul{margin:10px 0 0;padding-left:20px;color:var(--text-secondary)}
 .modal li{margin:7px 0}
+.notice-modal{
+  width:min(440px,100%);background:var(--bg-secondary);border:1px solid var(--border);
+  border-radius:var(--radius);box-shadow:var(--shadow-lg);padding:18px;text-align:left;
+}
+.notice-modal h2{font-size:1rem;margin:0 0 8px;font-weight:800}
+.notice-modal p{margin:0;color:var(--text-secondary);line-height:1.65}
 .icon-button{
   width:32px;height:32px;padding:0;border:1px solid var(--border);
   border-radius:var(--radius-sm);background:var(--bg-tertiary);
@@ -416,7 +427,15 @@ details summary{cursor:pointer;font-weight:650;font-size:.84rem;color:var(--text
 </style>
 </head>
 <body>
-<div id="app" class="shell"></div>
+<div id="app" class="shell">
+  <div class="empty animate-in">
+    <div class="mark" style="width:56px;height:56px;border-radius:var(--radius-lg);font-size:1.4rem">
+      <img src="__LINGOSTAR_ICON__" alt=""/>
+    </div>
+    <h2>LingoStar</h2>
+    <p>Loading your language learning studio...</p>
+  </div>
+</div>
 <script type="module">
 /* ================================================================ */
 /*  Constants                                                       */
@@ -460,6 +479,7 @@ applyTheme(getPreferredTheme());
 
 const hasHost = window.parent !== window;
 const ICON_SRC = "__LINGOSTAR_ICON__";
+const APP_ORIGIN = "__LINGOSTAR_APP_ORIGIN__";
 const appEl = document.getElementById("app");
 
 /* ================================================================ */
@@ -483,10 +503,14 @@ let rpcId = 0;
 const pendingRequests = new Map();
 let oobeTriggered = false;
 let autoSectionSessionId = null;
-let helpOpen = false;
 let feedbackOpen = false;
-let helpAutoOpened = false;
+let pendingDeleteSessionId = null;
+let notice = null;
 const DIRECT_GRADE_TYPES = new Set(["language_info", "listening", "reading", "writing"]);
+const WIDGET_STATE_VERSION = 1;
+let widgetStatePersistTimer = null;
+let heightNotifyTimer = null;
+let lastPersistedWidgetStateJson = "";
 
 /* ================================================================ */
 /*  I18N                                                            */
@@ -514,6 +538,7 @@ let I18N = {
     exampleResponse: "Example response",
     transcript: "Transcript",
     selectSkill: "Select a skill category to begin",
+    selectSession: "Select a language session to begin",
     oobeTitle: "Welcome to LingoStar",
     oobeGuide: "Tell ChatGPT which language you'd like to learn to get started.",
     oobeExample: "Example: 'I want to learn Japanese' or '스페인어 배우고 싶어'",
@@ -717,7 +742,12 @@ I18N = {
     askAiSend: "Ask",
     cannotListenNow: "I can't listen now",
     cannotSpeakNow: "I can't speak now",
-    browserSpeechError: "Browser speech feature error.",
+    browserSpeechError: "Speech is unavailable in this environment.",
+    speechUnsupportedTitle: "Speaking is not supported here",
+    speechUnsupportedBody: "This ChatGPT environment cannot use browser speech input. Type your answer or skip this speaking exercise.",
+    deletePending: "Confirm deletion",
+    deleteCancel: "Cancel",
+    deleteSession: "Delete",
     passed: "Passed",
     failed: "Needs review",
     yes: "Yes",
@@ -755,6 +785,7 @@ I18N = {
     exampleResponse: "예시 답변",
     transcript: "전사",
     selectSkill: "시작할 영역을 선택하세요",
+    selectSession: "시작할 언어 세션을 선택하세요",
     oobeTitle: "LingoStar에 오신 것을 환영합니다",
     oobeGuide: "ChatGPT에게 배우고 싶은 언어를 말해보세요.",
     oobeExample: "예: '영어 배우고 싶어' 또는 'I want to learn French'",
@@ -815,7 +846,12 @@ I18N = {
     askAiSend: "질문",
     cannotListenNow: "지금은 들을 수 없어요",
     cannotSpeakNow: "지금은 말할 수 없어요",
-    browserSpeechError: "브라우저 내 음성 기능 오류",
+    browserSpeechError: "음성 기능을 사용할 수 없습니다",
+    speechUnsupportedTitle: "이 환경에서는 말하기를 지원하지 않습니다",
+    speechUnsupportedBody: "현재 ChatGPT 환경에서는 브라우저 마이크 입력을 사용할 수 없습니다. 답안을 직접 입력하거나 이 말하기 문제를 건너뛰세요.",
+    deletePending: "삭제 확인",
+    deleteCancel: "취소",
+    deleteSession: "삭제",
     passed: "통과",
     failed: "복습 필요",
     yes: "예",
@@ -876,7 +912,13 @@ function copy() {
     askAiSend: "\uc9c8\ubb38",
     cannotListenNow: "\uc9c0\uae08\uc740 \ub4e4\uc744 \uc218 \uc5c6\uc5b4\uc694",
     cannotSpeakNow: "\uc9c0\uae08\uc740 \ub9d0\ud560 \uc218 \uc5c6\uc5b4\uc694",
-    browserSpeechError: "\ube0c\ub77c\uc6b0\uc800 \ub0b4 \uc74c\uc131 \uae30\ub2a5 \uc624\ub958",
+    browserSpeechError: "\uc74c\uc131 \uae30\ub2a5\uc744 \uc0ac\uc6a9\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+    selectSession: "\uc2dc\uc791\ud560 \uc5b8\uc5b4 \uc138\uc158\uc744 \uc120\ud0dd\ud558\uc138\uc694",
+    speechUnsupportedTitle: "\uc774 \ud658\uacbd\uc5d0\uc11c\ub294 \ub9d0\ud558\uae30\ub97c \uc9c0\uc6d0\ud558\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4",
+    speechUnsupportedBody: "\ud604\uc7ac ChatGPT \ud658\uacbd\uc5d0\uc11c\ub294 \ube0c\ub77c\uc6b0\uc800 \ub9c8\uc774\ud06c \uc785\ub825\uc744 \uc0ac\uc6a9\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4. \ub2f5\uc548\uc744 \uc9c1\uc811 \uc785\ub825\ud558\uac70\ub098 \uc774 \ub9d0\ud558\uae30 \ubb38\uc81c\ub97c \uac74\ub108\ub6f0\uc138\uc694.",
+    deletePending: "\uc0ad\uc81c \ud655\uc778",
+    deleteCancel: "\ucde8\uc18c",
+    deleteSession: "\uc0ad\uc81c",
     passed: "\ud1b5\uacfc",
     failed: "\ubcf5\uc2b5 \ud544\uc694",
   } : {
@@ -893,30 +935,17 @@ function copy() {
     askAiSend: "Ask",
     cannotListenNow: "I can't listen now",
     cannotSpeakNow: "I can't speak now",
-    browserSpeechError: "Browser speech feature error.",
+    browserSpeechError: "Speech is unavailable in this environment.",
+    selectSession: "Select a language session to begin",
+    speechUnsupportedTitle: "Speaking is not supported here",
+    speechUnsupportedBody: "This ChatGPT environment cannot use browser speech input. Type your answer or skip this speaking exercise.",
+    deletePending: "Confirm deletion",
+    deleteCancel: "Cancel",
+    deleteSession: "Delete",
     passed: "Passed",
     failed: "Needs review",
   };
   return { ...base, ...extra };
-}
-
-function helpStorageKey() {
-  const help = state.gui?.help || {};
-  return `lingostar-help-seen:${help.widgetVersion || state.gui?.widgetVersion || "unknown"}:${uiLang()}`;
-}
-
-function maybeOpenFirstHelp() {
-  if (helpAutoOpened) return;
-  helpAutoOpened = true;
-  try {
-    const key = helpStorageKey();
-    if (!localStorage.getItem(key)) {
-      helpOpen = true;
-      localStorage.setItem(key, "1");
-    }
-  } catch {
-    if (!state.sessions?.length) helpOpen = true;
-  }
 }
 
 let ENDONYMS = {
@@ -987,12 +1016,6 @@ function getDisplayLanguageName(lang) {
 }
 
 function skillEmoji(skill) {
-  if (skill === "language_info") return "i";
-  const map = { speaking: "🗣", listening: "👂", writing: "✍️", reading: "📖" };
-  return map[skill] || "📝";
-}
-
-function skillEmoji(skill) {
   const map = { language_info: "i", speaking: "S", listening: "L", writing: "W", reading: "R" };
   return map[skill] || "?";
 }
@@ -1004,7 +1027,8 @@ function skillLabel(skill) {
 
 function getActiveSession() {
   if (!state.sessions?.length) return null;
-  return state.sessions.find(s => s.id === state.activeSessionId) || state.sessions[0];
+  if (state.activeSessionId) return state.sessions.find(s => s.id === state.activeSessionId) || null;
+  return state.sessions.length === 1 ? state.sessions[0] : null;
 }
 
 function clampNumber(value, min, max, fallback) {
@@ -1023,6 +1047,123 @@ function exerciseCountsForSession(session) {
     writing: clampNumber(source.writing, 3, 6, fallback),
     speaking: clampNumber(source.speaking, 3, 6, fallback),
   };
+}
+
+function getAllExercises(section = getSection()) {
+  return [...(section?.exercises || [])];
+}
+
+function getExerciseIndexById(exerciseId, section = getSection()) {
+  return getAllExercises(section).findIndex((exercise) => exercise.id === exerciseId);
+}
+
+function clampExerciseIndex(index, section = getSection()) {
+  const allExercises = getAllExercises(section);
+  if (!allExercises.length) return 0;
+  return clampNumber(index, 0, allExercises.length - 1, 0);
+}
+
+function widgetStateSnapshot() {
+  return {
+    version: WIDGET_STATE_VERSION,
+    activeSessionId: state.activeSessionId || null,
+    sectionId: getSection()?.id || null,
+    viewMode,
+    currentExerciseIndex,
+    currentExerciseId: getCurrentExercise()?.id || null,
+    tokenAnswer,
+    typedAnswers: Object.fromEntries(typedAnswers.entries()),
+    feedbackOpen,
+    pendingDeleteSessionId,
+  };
+}
+
+function applyWidgetStateSnapshot(snapshot, options = {}) {
+  if (!snapshot || typeof snapshot !== "object") return false;
+  const section = getSection();
+  const activeSessionId = state.activeSessionId || null;
+  if (!options.allowCrossSession && snapshot.activeSessionId && activeSessionId && snapshot.activeSessionId !== activeSessionId) {
+    return false;
+  }
+  if (!options.allowCrossSection && snapshot.sectionId && section?.id && snapshot.sectionId !== section.id) {
+    return false;
+  }
+
+  if (snapshot.typedAnswers && typeof snapshot.typedAnswers === "object") {
+    typedAnswers = new Map(Object.entries(snapshot.typedAnswers).map(([key, value]) => [key, String(value ?? "")]));
+  }
+  if (Array.isArray(snapshot.tokenAnswer)) {
+    tokenAnswer = snapshot.tokenAnswer
+      .filter((item) => item && Number.isFinite(Number(item.index)))
+      .map((item) => ({ index: Number(item.index), text: String(item.text ?? "") }));
+  }
+  if (typeof snapshot.viewMode === "string" && ["new-session", "dashboard", "settings", "lesson"].includes(snapshot.viewMode)) {
+    viewMode = snapshot.viewMode;
+  }
+  if (snapshot.currentExerciseId && section) {
+    const byId = getExerciseIndexById(snapshot.currentExerciseId, section);
+    if (byId >= 0) currentExerciseIndex = byId;
+  } else if (Number.isFinite(Number(snapshot.currentExerciseIndex))) {
+    currentExerciseIndex = clampExerciseIndex(Number(snapshot.currentExerciseIndex), section);
+  }
+  feedbackOpen = Boolean(snapshot.feedbackOpen);
+  pendingDeleteSessionId = typeof snapshot.pendingDeleteSessionId === "string" ? snapshot.pendingDeleteSessionId : null;
+  return true;
+}
+
+function persistWidgetState() {
+  if (!hasHost || !window.openai?.setWidgetState) return;
+  try {
+    const snapshot = widgetStateSnapshot();
+    const serialized = JSON.stringify(snapshot);
+    if (serialized === lastPersistedWidgetStateJson) return;
+    lastPersistedWidgetStateJson = serialized;
+    window.openai.setWidgetState(snapshot);
+  } catch (err) {
+    console.warn("LingoStar widget state persist failed", err);
+  }
+}
+
+function persistWidgetStateSoon() {
+  if (widgetStatePersistTimer) clearTimeout(widgetStatePersistTimer);
+  widgetStatePersistTimer = setTimeout(() => {
+    widgetStatePersistTimer = null;
+    persistWidgetState();
+  }, 80);
+}
+
+function notifyIntrinsicHeightSoon() {
+  if (!hasHost || !window.openai?.notifyIntrinsicHeight) return;
+  if (heightNotifyTimer) clearTimeout(heightNotifyTimer);
+  heightNotifyTimer = setTimeout(() => {
+    heightNotifyTimer = null;
+    try {
+      window.openai.notifyIntrinsicHeight();
+    } catch (err) {
+      console.warn("LingoStar height notification failed", err);
+    }
+  }, 50);
+}
+
+function showNotice(title, message) {
+  notice = { title, message };
+  toast = "";
+  render();
+}
+
+function isMobileLikeEnvironment() {
+  const ua = String(window.openai?.userAgent || navigator.userAgent || "");
+  return /iPhone|iPad|iPod|Android|Mobile|ChatGPT/i.test(ua) || window.openai?.displayMode === "fullscreen";
+}
+
+function openHelpPage() {
+  const origin = APP_ORIGIN && !APP_ORIGIN.startsWith("__") ? APP_ORIGIN : window.location.origin;
+  const href = `${origin}/help?locale=${encodeURIComponent(uiLang())}`;
+  if (window.openai?.openExternal) {
+    window.openai.openExternal({ href, redirectUrl: false }).catch(() => window.open(href, "_blank", "noopener"));
+    return;
+  }
+  window.open(href, "_blank", "noopener");
 }
 
 /* ================================================================ */
@@ -1049,33 +1190,6 @@ function updateModelContextForHost(text, structuredContent = {}) {
     console.warn("LingoStar model context update failed", err);
     return { isError: true };
   });
-}
-
-function visibleHostPrompt(kind) {
-  const isKo = uiLang() === "ko";
-  if (isKo && kind === "section") return "\ub2e4\uc74c LingoStar \uc139\uc158\uc744 \uc0dd\uc131\ud574 \uc8fc\uc138\uc694.";
-  if (isKo && kind === "answer") return "\ud604\uc7ac LingoStar \ub2f5\uc548\uc744 \ucc44\uc810\ud574 \uc8fc\uc138\uc694.";
-  if (isKo && kind === "section-submit") return "\ud604\uc7ac LingoStar \uc139\uc158 \uc804\uccb4\ub97c \ucc44\uc810\ud574 \uc8fc\uc138\uc694.";
-  if (isKo) return "LingoStar\ub97c \uc2dc\uc791\ud560 \uc218 \uc788\ub3c4\ub85d \ud559\uc2b5 \uc815\ubcf4\ub97c \ubb3c\uc5b4\ubd10 \uc8fc\uc138\uc694.";
-  const ko = uiLang() === "ko";
-  if (kind === "section") {
-    return ko
-      ? "LingoStar에서 현재 세션의 다음 섹션을 생성해 주세요. 세부 조건은 앱 컨텍스트를 참고하고, 문제는 채팅에 출력하지 말고 앱에 저장해 주세요."
-      : "Please generate the next LingoStar section for the current session. Use the app context for details, do not print exercises in chat, and store them in the app.";
-  }
-  if (kind === "answer") {
-    return ko
-      ? "LingoStar에서 현재 답안을 채점해 주세요. 세부 답안은 앱 컨텍스트를 참고하고, 결과는 앱에 저장해 주세요."
-      : "Please grade the current LingoStar answer. Use the app context for details and save the result in the app.";
-  }
-  if (kind === "section-submit") {
-    return ko
-      ? "LingoStar에서 현재 섹션 전체 답안을 채점해 주세요. 세부 답안은 앱 컨텍스트를 참고하고, 결과는 앱에 저장해 주세요."
-      : "Please grade the full current LingoStar section. Use the app context for the answers and save the results in the app.";
-  }
-  return ko
-    ? "LingoStar를 시작할게요. 필요한 학습 정보를 물어봐 주세요."
-    : "I want to start LingoStar. Please ask for the learning details you need.";
 }
 
 function visibleHostPrompt(kind) {
@@ -1117,10 +1231,15 @@ function sendFollowUpToHost(prompt, options = {}) {
     ? Promise.resolve({})
     : updateModelContextForHost(contextText, contextPayload);
 
-  contextPromise.then(() => rpcRequest("ui/message", {
-    role: "user",
-    content: [{ type: "text", text: visiblePrompt }],
-  })).then((result) => {
+  contextPromise.then(() => {
+    if (window.openai?.sendFollowUpMessage) {
+      return window.openai.sendFollowUpMessage({ prompt: visiblePrompt, scrollToBottom: true });
+    }
+    return rpcRequest("ui/message", {
+      role: "user",
+      content: [{ type: "text", text: visiblePrompt }],
+    });
+  }).then((result) => {
     if (result?.isError) {
       toast = copy().messageRejected || "ChatGPT could not receive the message.";
       render();
@@ -1146,14 +1265,24 @@ window.addEventListener("message", (event) => {
     updateFromResponse(msg.params);
     render();
   }
+  if (msg.method === "ui/notifications/tool-input") {
+    render();
+  }
 });
+
+window.addEventListener("openai:set_globals", (event) => {
+  const globals = event.detail?.globals || {};
+  const restored = applyWidgetStateSnapshot(globals.widgetState);
+  const hydrated = hydrateFromOpenAiGlobals(globals);
+  if (restored || hydrated) render();
+}, { passive: true });
 
 /* ================================================================ */
 /*  Bridge init                                                     */
 /* ================================================================ */
 if (hasHost) {
   rpcNotify("ui/initialize", {
-    appInfo: { name: "lingostar-studio", version: "0.6.2" },
+    appInfo: { name: "lingostar-studio", version: "0.7.0" },
     appCapabilities: { tools: { listChanged: true } },
     protocolVersion: "2026-01-26",
   });
@@ -1170,6 +1299,8 @@ async function callTool(name, args = {}) {
   try {
     if (!hasHost) {
       response = await runPreviewTool(name, args);
+    } else if (window.openai?.callTool) {
+      response = await window.openai.callTool(name, args);
     } else {
       response = await rpcRequest("tools/call", { name, arguments: args });
     }
@@ -1183,6 +1314,18 @@ async function callTool(name, args = {}) {
   return response;
 }
 
+function hydrateFromOpenAiGlobals(globals = window.openai || {}) {
+  const toolOutput = globals?.toolOutput;
+  const metadata = globals?.toolResponseMetadata;
+  applyWidgetStateSnapshot(globals?.widgetState);
+  if (!toolOutput) return false;
+  updateFromResponse({
+    structuredContent: toolOutput,
+    _meta: metadata?.mcp_tool_result?._meta || metadata?.call_tool_result?._meta || metadata,
+  });
+  return true;
+}
+
 function updateFromResponse(response) {
   const actual = response?.result || response;
   const sc = actual?.structuredContent || actual;
@@ -1194,11 +1337,13 @@ function updateFromResponse(response) {
     state = sc.state;
     const prevSectionId = prevState?.currentSection?.id;
     const newSectionId = state.currentSection?.id;
+    const hadStateBefore = Boolean(prevState?.version || prevState?.sessions);
 
-    if (newSectionId && (newSectionId !== prevSectionId || !viewMode) && viewMode !== "settings") {
+    if (newSectionId && hadStateBefore && (newSectionId !== prevSectionId || viewMode === "lesson") && viewMode !== "settings") {
       viewMode = "lesson";
       currentExerciseIndex = 0;
     }
+    applyWidgetStateSnapshot(window.openai?.widgetState);
     // OOBE auto-trigger
     if (hasHost && !state.sessions?.length && !oobeTriggered) {
       oobeTriggered = true;
@@ -1208,15 +1353,8 @@ function updateFromResponse(response) {
       );
     }
 
-    // Auto-section trigger: fires once per session ID.
-    // When a new session is created (activeSessionId changes) and there's no section,
-    // automatically request section generation. Won't re-trigger for the same session
-    // (e.g., after a validation failure — user must manually click "Start Section").
-    if (hasHost && state.activeSessionId && !state.currentSection) {
-      if (state.activeSessionId !== autoSectionSessionId) {
-        autoSectionSessionId = state.activeSessionId;
-        sendSectionGenerationRequest();
-      }
+    if (state.sessions?.length && !state.currentSection && viewMode !== "settings") {
+      viewMode = "dashboard";
     }
   }
   if (sc?.transcript) {
@@ -1318,7 +1456,7 @@ function sendSectionGenerationRequest() {
 function sendAnswerToGPT(exercise, answerText, claim) {
   const section = state.currentSection;
   if (!section) return;
-  const msg = `[LingoStar Exercise Answer]\nSection: ${section.id}\nExercise: ${exercise.id}\nType: ${exercise.type}\nUser Answer: ${answerText}${claim ? `\nLearner Claim: ${claim}` : ""}\nInstruction: Evaluate this answer and call grade_section_answers with one evaluation item to save the result. Scores must be 0-100. If User Answer is [SKIPPED], set skipped=true and needsReview=true.`;
+  const msg = `[LingoStar Exercise Answer]\nSection: ${section.id}\nExercise: ${exercise.id}\nType: ${exercise.type}\nUser Answer: ${answerText}${claim ? `\nLearner Claim: ${claim}` : ""}\nInstruction: Evaluate this answer and call grade_section_answers with one evaluation item to save the result. Include userAnswer exactly as provided and learnerClaim when present. Scores must be 0-100. If User Answer is [SKIPPED], set skipped=true and needsReview=true.`;
 
   if (hasHost) {
     sendFollowUpToHost(msg, {
@@ -1330,7 +1468,7 @@ function sendAnswerToGPT(exercise, answerText, claim) {
           sectionId: section.id,
           exerciseId: exercise.id,
           exerciseType: exercise.type,
-          answer: answerText,
+          userAnswer: answerText,
           learnerClaim: claim || null,
         },
       },
@@ -1426,7 +1564,12 @@ function playAudioDataUrl(dataUrl) {
 /* ================================================================ */
 function startSpeechRecognition(exercise) {
   const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRec) { toast = state.gui?.audio?.aiFallbackEnabled ? copy().speechRecognitionUnavailable : copy().browserSpeechError; render(); return; }
+  if (!SpeechRec) {
+    const c = copy();
+    if (isMobileLikeEnvironment()) showNotice(c.speechUnsupportedTitle, c.speechUnsupportedBody);
+    else { toast = state.gui?.audio?.aiFallbackEnabled ? copy().speechRecognitionUnavailable : copy().browserSpeechError; render(); }
+    return;
+  }
   if (recognitionActive) return;
   recognition = new SpeechRec();
   recognition.lang = exercise?.payload?.speechLang || "en-US";
@@ -1436,10 +1579,16 @@ function startSpeechRecognition(exercise) {
     let text = "";
     for (let i = 0; i < e.results.length; i++) text += e.results[i][0].transcript;
     if (exercise) typedAnswers.set(exercise.id, text);
-    const el = document.getElementById("speaking-transcript");
+    const el = exercise ? document.getElementById(`textarea-${exercise.id}`) : null;
     if (el) el.value = text;
+    persistWidgetStateSoon();
   };
-  recognition.onerror = () => { recognitionActive = false; toast = copy().browserSpeechError; render(); };
+  recognition.onerror = () => {
+    recognitionActive = false;
+    const c = copy();
+    if (isMobileLikeEnvironment()) showNotice(c.speechUnsupportedTitle, c.speechUnsupportedBody);
+    else { toast = c.browserSpeechError; render(); }
+  };
   recognition.onend = () => { recognitionActive = false; render(); };
   recognition.start();
   recognitionActive = true;
@@ -1467,8 +1616,9 @@ async function startRecording() {
     recordingActive = true;
     render();
   } catch (err) {
-    toast = "Microphone access denied";
-    render();
+    const c = copy();
+    if (isMobileLikeEnvironment()) showNotice(c.speechUnsupportedTitle, c.speechUnsupportedBody);
+    else { toast = "Microphone access denied"; render(); }
   }
 }
 
@@ -1487,8 +1637,9 @@ async function stopRecordingAndTranscribe(exercise) {
   const speechLang = exercise?.payload?.speechLang || "";
 
   if (!state.gui?.audio?.aiFallbackEnabled) {
-    toast = copy().browserSpeechError;
-    render();
+    const c = copy();
+    if (isMobileLikeEnvironment()) showNotice(c.speechUnsupportedTitle, c.speechUnsupportedBody);
+    else { toast = c.browserSpeechError; render(); }
     return;
   }
   await callTool("transcribe_audio", { audioBase64: base64, mimeType, speechLang });
@@ -1535,7 +1686,7 @@ function correctChoiceId(exercise) {
   return String(exercise?.payload?.correctChoiceId ?? "");
 }
 
-function buildDirectEvaluation(exercise, answer) {
+function buildDirectEvaluation(exercise, answer, claim = "") {
   const isSkip = answer === "[SKIPPED]";
   let isCorrect = false;
   let expected = "";
@@ -1552,6 +1703,8 @@ function buildDirectEvaluation(exercise, answer) {
     exerciseId: exercise.id,
     score: isSkip ? 0 : (isCorrect ? 100 : 30),
     skill: exercise.skill || exercise.type,
+    userAnswer: answer,
+    learnerClaim: claim || undefined,
     skipped: isSkip,
     needsReview: isSkip || !isCorrect,
     feedback: {
@@ -1563,7 +1716,7 @@ function buildDirectEvaluation(exercise, answer) {
 
 async function gradeDirectExercise(exercise, answer) {
   if (!exercise || !DIRECT_GRADE_TYPES.has(exercise.type) || getResultForExercise(exercise.id)) return;
-  const evaluation = buildDirectEvaluation(exercise, answer);
+  const evaluation = buildDirectEvaluation(exercise, answer, typedAnswers.get(`${exercise.id}:claim`) || "");
   if (hasHost) {
     await callTool("grade_section_answers", {
       sessionId: getActiveSession()?.id,
@@ -1589,7 +1742,7 @@ function getNextIncomplete(skill) {
 function getCurrentExercise() {
   const section = getSection();
   if (!section) return null;
-  const allExercises = [...(section.exercises || []), ...(section.reviewExercises || [])];
+  const allExercises = getAllExercises(section);
   if (currentExerciseIndex >= 0 && currentExerciseIndex < allExercises.length) {
     return allExercises[currentExerciseIndex];
   }
@@ -1612,7 +1765,6 @@ function hasReviewItems() {
 /* ================================================================ */
 function render() {
   const c = copy();
-  maybeOpenFirstHelp();
   const session = getActiveSession();
   const section = getSection();
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -1628,6 +1780,7 @@ function render() {
       ${session ? `<span class="badge">${escapeHtml(getDisplayLanguageName(session.targetLanguage))}</span>` : ""}
       <span class="badge">${hasHost ? c.chatGptApp : c.localPreview}</span>
       ${busy ? `<span class="badge animate-pulse">${c.working}</span>` : ""}
+      ${session ? `<button class="icon-button" data-action="settings" aria-label="${escapeHtml(c.settings)}" title="${escapeHtml(c.settings)}">⚙</button>` : ""}
       <button class="icon-button" data-action="open-help" aria-label="${escapeHtml(c.help)}" title="${escapeHtml(c.help)}">?</button>
       <button class="icon-button" data-action="open-feedback" aria-label="${escapeHtml(c.feedbackButton)}" title="${escapeHtml(c.feedbackButton)}">!</button>
       <button class="theme-toggle" data-action="toggle-theme" aria-label="Toggle theme">${isDark ? '☀️' : '🌙'}</button>
@@ -1651,7 +1804,7 @@ function render() {
     html += renderOobe();
   }
 
-  if (helpOpen) html += renderHelpModal();
+  if (notice) html += renderNoticeModal();
   if (feedbackOpen) html += renderFeedbackModal();
 
   appEl.innerHTML = html;
@@ -1661,32 +1814,18 @@ function render() {
     const el = appEl.querySelector(`[data-draft-key="${key}"]`);
     if (el) el.value = val;
   }
+  persistWidgetStateSoon();
+  notifyIntrinsicHeightSoon();
 }
 
-function renderHelpModal() {
+function renderNoticeModal() {
   const c = copy();
-  const help = state.gui?.help || {};
-  const title = help.title || c.helpTitle;
-  const intro = help.intro || c.helpIntro;
-  const features = Array.isArray(help.features) && help.features.length
-    ? help.features
-    : [
-      c.oobeGuide,
-      c.settingsNote,
-      c.askAiPlaceholder,
-    ];
-  const footer = help.footer || "";
-  return `<div class="modal-backdrop" role="dialog" aria-modal="true" aria-label="${escapeHtml(c.help)}">
-    <section class="modal">
-      <header>
-        <h2>${escapeHtml(title)}</h2>
-        <button class="icon-button" data-action="close-help" aria-label="${escapeHtml(c.close)}">x</button>
-      </header>
-      <p class="prompt">${escapeHtml(intro)}</p>
-      <ul>${features.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
-      ${footer ? `<p class="meta" style="margin-top:14px">${escapeHtml(footer)}</p>` : ""}
+  return `<div class="modal-backdrop" role="dialog" aria-modal="true" aria-label="${escapeHtml(notice?.title || c.appName)}">
+    <section class="notice-modal">
+      <h2>${escapeHtml(notice?.title || "")}</h2>
+      <p>${escapeHtml(notice?.message || "")}</p>
       <div class="row wrap" style="justify-content:flex-end;margin-top:16px">
-        <button class="button secondary" data-action="close-help">${c.close}</button>
+        <button class="button" data-action="close-notice">${c.close}</button>
       </div>
     </section>
   </div>`;
@@ -1765,7 +1904,9 @@ function renderDashboard() {
       <div class="meta">${escapeHtml(s.goal?.detail || s.goal?.type || "")}</div>
       <div class="row wrap" style="margin-top:8px">
         ${!isActive ? `<button class="button small secondary" data-action="select" data-session-id="${s.id}">${c.dashboard}</button>` : ""}
-        <button class="button small warn" data-action="delete" data-session-id="${s.id}" data-language="${escapeHtml(getDisplayLanguageName(s.targetLanguage))}">&times;</button>
+        ${pendingDeleteSessionId === s.id
+          ? `<span class="badge">${c.deletePending}</span><button class="button small warn" data-action="confirm-delete" data-session-id="${s.id}">${c.deleteSession}</button><button class="button small secondary" data-action="cancel-delete">${c.deleteCancel}</button>`
+          : `<button class="button small warn" data-action="delete" data-session-id="${s.id}" data-language="${escapeHtml(getDisplayLanguageName(s.targetLanguage))}">&times;</button>`}
       </div>
     </article>`;
   }
@@ -1815,6 +1956,8 @@ function renderDashboard() {
     }
 
     right += `</div></main>`;
+  } else {
+    right = `<main class="panel empty"><p>${c.selectSession || "Select a session to begin."}</p></main>`;
   }
 
   return `<div class="layout">${left}${right}</div>`;
@@ -1823,26 +1966,6 @@ function renderDashboard() {
 /* ================================================================ */
 /*  Render: Settings (read-only, change via GPT)                    */
 /* ================================================================ */
-function renderSettings() {
-  const c = copy();
-  const session = getActiveSession();
-  if (!session) return renderDashboard();
-
-  const s = session.settings || {};
-  return `<div class="layout">
-    <nav class="panel">
-      <div class="panel-title">${c.settings}</div>
-      <div class="stack">
-        <div class="row spread"><span>${c.exercisesPerSkill}</span><b>${s.exercisesPerSkill || 5}</b></div>
-        <div class="row spread"><span>${c.speakingEnabled}</span><b>${s.speakingEnabled !== false ? "✓" : "✗"}</b></div>
-        <div class="row spread"><span>${c.levelMode}</span><b>${s.levelMode === "freeform" ? c.freeform : c.cefr}</b></div>
-        <p class="meta">${c.settingsNote}</p>
-        <button class="button secondary full" data-action="dashboard">${c.backToDashboard}</button>
-      </div>
-    </nav>
-  </div>`;
-}
-
 function renderSettings() {
   const c = copy();
   const session = getActiveSession();
@@ -1919,10 +2042,7 @@ function renderLesson() {
   const section = getSection();
   if (!section) return `<div class="empty"><p>${c.missingContext}</p></div>`;
 
-  const allExercises = [
-    ...(section.exercises || []),
-    ...(section.reviewExercises || [])
-  ];
+  const allExercises = getAllExercises(section);
 
   if (allExercises.length === 0) {
     return `<div class="empty animate-in">
@@ -2056,7 +2176,7 @@ function renderSpeaking(exercise) {
     <button class="button secondary small" data-action="stop-speaking" ${!recognitionActive ? "disabled" : ""}>${c.stopMic || "Stop mic"}</button>
     <button class="button secondary small" data-action="start-recording" ${recordingActive ? "disabled" : ""}>${c.record || "Start Recording"}</button>
     <button class="button secondary small" data-action="stop-recording" ${!recordingActive ? "disabled" : ""}>${c.stopRecord || "Stop Recording"}</button>
-    <button class="button secondary small" data-action="skip-skill" data-skill="speaking">${c.cannotSpeakNow || c.skip || "Skip"}</button>
+    <button class="button secondary small" data-action="skip-exercise" data-skip-reason="cannot-speak">${c.cannotSpeakNow || c.skip || "Skip"}</button>
     ${speechLang ? `<span class="badge">${escapeHtml(speechLang)}</span>` : ""}
   </div>
   <div class="stack" style="margin-top:15px">
@@ -2077,45 +2197,13 @@ function renderListening(exercise) {
   const draft = typedAnswers.get(draftKey) || "";
   const speechLang = exercise.payload?.speechLang || "";
   const question = exercise.payload?.question || "";
-
-  const choices = exercise.payload?.choices || [];
-  
-  return `${renderExerciseHeading(exercise)}
-  <div class="row wrap" style="margin-bottom:15px;">
-    <button class="button secondary" data-action="play-audio">🔊 ${c.listen || "Listen"}</button>
-    <button class="button secondary small" data-action="stop-audio">⏹ ${c.stop || "Stop"}</button>
-    ${speechLang ? `<span class="badge">${escapeHtml(speechLang)}</span>` : ""}
-  </div>
-  <details>
-    <summary>${c.showText || "Show Text"}</summary>
-    <div class="transcript">${escapeHtml(exercise.payload?.audioText || "")}</div>
-  </details>
-  <div class="stack" style="margin-top:15px;">
-    <strong>${escapeHtml(question)}</strong>
-    ${choices.map((ch, idx) => {
-      const isStr = typeof ch === 'string';
-      const id = isStr ? String(idx) : escapeHtml(ch.id);
-      const text = isStr ? ch : (ch.text || ch.en || ch.ko || ch.id);
-      const isSelected = draft === id;
-      return `<button class="choice ${isSelected ? "selected" : ""}" data-action="select-choice" data-choice-id="${id}" data-draft-key="${draftKey}">${escapeHtml(text)}</button>`;
-    }).join("")}
-    ${renderClaimField(exercise)}
-  </div>`;
-}
-
-function renderListening(exercise) {
-  const c = copy();
-  const draftKey = exercise.id;
-  const draft = typedAnswers.get(draftKey) || "";
-  const speechLang = exercise.payload?.speechLang || "";
-  const question = exercise.payload?.question || "";
   const choices = exercise.payload?.choices || [];
 
   return `${renderExerciseHeading(exercise)}
   <div class="row wrap" style="margin-bottom:15px;">
     <button class="button secondary" data-action="play-audio">${c.listen || "Listen"}</button>
     <button class="button secondary small" data-action="stop-audio">${c.stop || "Stop"}</button>
-    <button class="button secondary small" data-action="skip-skill" data-skill="listening">${c.cannotListenNow || c.skip || "Skip"}</button>
+    <button class="button secondary small" data-action="skip-exercise" data-skip-reason="cannot-listen">${c.cannotListenNow || c.skip || "Skip"}</button>
     ${speechLang ? `<span class="badge">${escapeHtml(speechLang)}</span>` : ""}
   </div>
   <details>
@@ -2192,7 +2280,10 @@ function renderReading(exercise) {
 /* ================================================================ */
 appEl.addEventListener("input", (e) => {
   const key = e.target.dataset?.draftKey;
-  if (key) typedAnswers.set(key, e.target.value);
+  if (key) {
+    typedAnswers.set(key, e.target.value);
+    persistWidgetStateSoon();
+  }
 });
 
 /* ================================================================ */
@@ -2288,6 +2379,7 @@ appEl.addEventListener("submit", async (e) => {
     };
     await callTool("manage_learning_session", { session: updated });
     viewMode = state.currentSection ? "lesson" : "dashboard";
+    render();
     return;
   }
 
@@ -2319,17 +2411,37 @@ appEl.addEventListener("click", async (e) => {
   const action = btn.dataset.action;
 
   if (action === "toggle-theme") { toggleTheme(); return; }
-  if (action === "open-help") { helpOpen = true; render(); return; }
-  if (action === "close-help") { helpOpen = false; render(); return; }
+  if (action === "open-help") { openHelpPage(); return; }
+  if (action === "close-notice") { notice = null; render(); return; }
   if (action === "open-feedback") { feedbackOpen = true; render(); return; }
   if (action === "close-feedback") { feedbackOpen = false; render(); return; }
   if (action === "dashboard") { viewMode = "dashboard"; tokenAnswer = []; render(); return; }
   if (action === "settings") { viewMode = "settings"; render(); return; }
-  if (action === "select") { state.activeSessionId = btn.dataset.sessionId; viewMode = "dashboard"; render(); return; }
+  if (action === "select") {
+    const sessionId = btn.dataset.sessionId;
+    state.activeSessionId = sessionId;
+    viewMode = "dashboard";
+    if (hasHost) await callTool("select_learning_session", { sessionId });
+    else render();
+    return;
+  }
   if (action === "delete") {
-    const lang = btn.dataset.language || "";
-    if (!confirm(copy().deleteConfirm(lang))) return;
-    callTool("delete_session", { sessionId: btn.dataset.sessionId });
+    pendingDeleteSessionId = btn.dataset.sessionId || null;
+    persistWidgetStateSoon();
+    render();
+    return;
+  }
+  if (action === "cancel-delete") {
+    pendingDeleteSessionId = null;
+    persistWidgetStateSoon();
+    render();
+    return;
+  }
+  if (action === "confirm-delete") {
+    const sessionId = btn.dataset.sessionId;
+    pendingDeleteSessionId = null;
+    persistWidgetStateSoon();
+    await callTool("delete_session", { sessionId });
     return;
   }
 
@@ -2356,18 +2468,25 @@ appEl.addEventListener("click", async (e) => {
     const section = getSection();
     const exercise = getCurrentExercise();
     if (!question || !section || !exercise) return;
+    const answer = typedAnswers.get(exercise.id) || "";
+    const learnerClaim = typedAnswers.get(`${exercise.id}:claim`) || "";
     const msg = [
       "[LingoStar Ask AI]",
       `Section: ${section.id}`,
       `Exercise: ${exercise.id}`,
       `Type: ${exercise.type}`,
       `Target language: ${getActiveSession()?.targetLanguage || ""}`,
+      answer ? `Current answer draft: ${answer}` : "Current answer draft: (empty)",
+      learnerClaim ? `Learner claim: ${learnerClaim}` : "",
       `Question: ${question}`,
       "Instruction: Answer the learner's question concisely using the exercise context. Do not clear or replace the current app section.",
-    ].join("\n");
+    ].filter(Boolean).join("\n");
+    const visibleAskPrompt = uiLang() === "ko"
+      ? `현재 LingoStar 문제에 대해 질문합니다: ${question}`
+      : `Question about the current LingoStar exercise: ${question}`;
     if (hasHost) {
       sendFollowUpToHost(msg, {
-        visiblePrompt: visibleHostPrompt("ask-ai"),
+        visiblePrompt: visibleAskPrompt,
         modelContext: msg,
         structuredContent: {
           lingostar: {
@@ -2375,9 +2494,13 @@ appEl.addEventListener("click", async (e) => {
             sectionId: section.id,
             exercise,
             question,
+            currentAnswerDraft: answer || null,
+            learnerClaim: learnerClaim || null,
           },
         },
       });
+      typedAnswers.set("ask-ai", "");
+      persistWidgetStateSoon();
     } else {
       toast = question;
       render();
@@ -2409,40 +2532,8 @@ appEl.addEventListener("click", async (e) => {
       await gradeDirectExercise(exercise, "[SKIPPED]");
     }
     const section = getSection();
-    const allExercises = [...(section?.exercises || []), ...(section?.reviewExercises || [])];
+    const allExercises = getAllExercises(section);
     if (currentExerciseIndex < allExercises.length - 1) currentExerciseIndex++;
-    tokenAnswer = [];
-    render();
-    return;
-  }
-
-  if (action === "skip-skill") {
-    const skill = btn.dataset.skill;
-    const section = getSection();
-    if (!skill || !section) return;
-    const skipped = (section.exercises || [])
-      .filter(ex => ex.type === skill && !getResultForExercise(ex.id))
-      .map(ex => buildDirectEvaluation(ex, "[SKIPPED]"));
-    for (const ex of section.exercises || []) {
-      if (ex.type === skill && !getResultForExercise(ex.id)) typedAnswers.set(ex.id, "[SKIPPED]");
-    }
-    if (skipped.length) {
-      if (hasHost) {
-        await callTool("grade_section_answers", {
-          sessionId: getActiveSession()?.id,
-          sectionId: section.id,
-          evaluations: skipped,
-          sectionFeedback: `${skill} skipped by learner.`,
-        });
-      } else {
-        for (const ex of section.exercises || []) {
-          if (ex.type === skill && !getResultForExercise(ex.id)) mockGradeAnswer(ex, "[SKIPPED]", "");
-        }
-      }
-    }
-    const allExercises = [...(getSection()?.exercises || []), ...(getSection()?.reviewExercises || [])];
-    const nextIndex = allExercises.findIndex(ex => !getResultForExercise(ex.id));
-    currentExerciseIndex = nextIndex >= 0 ? nextIndex : Math.min(currentExerciseIndex, Math.max(0, allExercises.length - 1));
     tokenAnswer = [];
     render();
     return;
@@ -2474,7 +2565,7 @@ appEl.addEventListener("click", async (e) => {
     }
     
     const section = getSection();
-    const allExercises = [...(section?.exercises || []), ...(section?.reviewExercises || [])];
+    const allExercises = getAllExercises(section);
     if (currentExerciseIndex < allExercises.length - 1) currentExerciseIndex++;
     
     tokenAnswer = [];
@@ -2493,7 +2584,7 @@ appEl.addEventListener("click", async (e) => {
     const section = getSection();
     if (!section) return;
 
-    const allExercises = [...(section.exercises || []), ...(section.reviewExercises || [])];
+    const allExercises = getAllExercises(section);
     const missingDirect = allExercises
       .filter(ex => DIRECT_GRADE_TYPES.has(ex.type) && !getResultForExercise(ex.id))
       .map(ex => {
@@ -2517,9 +2608,19 @@ appEl.addEventListener("click", async (e) => {
     }
 
     const speakingExercises = allExercises.filter(ex => ex.type === "speaking");
+    const firstMissingSpeaking = speakingExercises.find(ex => !String(typedAnswers.get(ex.id) || "").trim());
+    if (firstMissingSpeaking) {
+      const missingIndex = getExerciseIndexById(firstMissingSpeaking.id, section);
+      if (missingIndex >= 0) currentExerciseIndex = missingIndex;
+      toast = uiLang() === "ko"
+        ? "말하기 답안을 입력하거나 '지금은 말할 수 없어요'로 건너뛰어 주세요."
+        : "Enter a speaking answer or skip it with 'I can't speak now'.";
+      render();
+      return;
+    }
     
     const lines = speakingExercises.map(ex => {
-      const ans = typedAnswers.get(ex.id) || "[NO ANSWER]";
+      const ans = typedAnswers.get(ex.id) || "[SKIPPED]";
       const claim = typedAnswers.get(`${ex.id}:claim`) || "";
       let out = `- ${ex.id} (${ex.type}): "${ans}"`;
       if (claim) out += ` (Learner Claim: ${claim})`;
@@ -2532,7 +2633,7 @@ appEl.addEventListener("click", async (e) => {
       return;
     }
 
-    const msg = `[LingoStar Speaking Submit]\nSection: ${section.id}\nSpeaking Answers:\n${lines.join("\n")}\nInstruction: Evaluate ONLY the speaking answers, call grade_section_answers, and show concise feedback. Objective language_info/listening/reading/writing items are already auto-graded by the app. Scores must be 0-100. For any [SKIPPED] answer, set skipped=true and needsReview=true so the MCP server does not lower the skill profile for a deliberate skip.`;
+    const msg = `[LingoStar Speaking Submit]\nSection: ${section.id}\nSpeaking Answers:\n${lines.join("\n")}\nInstruction: Evaluate ONLY the speaking answers, call grade_section_answers, and show concise feedback. Each evaluation must include userAnswer exactly as listed and learnerClaim when present. Objective language_info/listening/reading/writing items are already auto-graded by the app. Scores must be 0-100. For any [SKIPPED] answer, set skipped=true and needsReview=true so the MCP server does not lower the skill profile for a deliberate skip.`;
 
     if (hasHost) {
       sendFollowUpToHost(msg, {
@@ -2545,7 +2646,7 @@ appEl.addEventListener("click", async (e) => {
             answers: speakingExercises.map(ex => ({
               exerciseId: ex.id,
               type: ex.type,
-              answer: typedAnswers.get(ex.id) || "[NO ANSWER]",
+              userAnswer: typedAnswers.get(ex.id) || "[SKIPPED]",
               learnerClaim: typedAnswers.get(`${ex.id}:claim`) || null,
             })),
           },
@@ -2596,9 +2697,17 @@ async function runPreviewTool(name, args) {
 
   if (name === "delete_session") {
     state.sessions = state.sessions.filter(s => s.id !== args.sessionId);
-    if (state.activeSessionId === args.sessionId) state.activeSessionId = state.sessions[0]?.id || null;
+    if (state.activeSessionId === args.sessionId) state.activeSessionId = null;
     if (state.currentSection?.sessionId === args.sessionId) state.currentSection = null;
     return { structuredContent: { state }, content: [{ type: "text", text: "Session deleted." }] };
+  }
+
+  if (name === "select_learning_session") {
+    if (state.sessions.some(s => s.id === args.sessionId)) {
+      state.activeSessionId = args.sessionId;
+      if (state.currentSection?.sessionId !== args.sessionId) state.currentSection = null;
+    }
+    return { structuredContent: { state }, content: [{ type: "text", text: "Session selected." }] };
   }
 
   if (name === "transcribe_audio") {
@@ -2748,6 +2857,7 @@ function mockGradeAnswer(exercise, answer, claim) {
     skipped: isSkip,
     score: isSkip ? 0 : (isCorrect ? 100 : 30),
     userAnswer: answer,
+    learnerClaim: claim || undefined,
     expectedAnswer: expected,
     feedback: {
       short: isSkip ? copy().skippedFeedback : (isCorrect ? copy().correctFeedback : copy().notQuiteFeedback),
@@ -2778,7 +2888,12 @@ function mockGradeAnswer(exercise, answer, claim) {
 /* ================================================================ */
 /*  Init                                                            */
 /* ================================================================ */
-callTool("get_lingostar_state");
+applyWidgetStateSnapshot(window.openai?.widgetState, { allowCrossSession: true, allowCrossSection: true });
+if (hasHost && hydrateFromOpenAiGlobals()) {
+  render();
+} else {
+  callTool("get_lingostar_state");
+}
 </script>
 </body>
 </html>

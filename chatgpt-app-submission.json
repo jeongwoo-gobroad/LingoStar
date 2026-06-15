@@ -8,6 +8,18 @@
     "category": "EDUCATION"
   },
   "tools": {
+    "open_lingostar_app": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Renders the LingoStar widget and returns current app state without changing learner data.",
+        "open_world_justification": "Does not publish, send, or modify data in public internet or third-party systems.",
+        "destructive_justification": "Does not delete, overwrite, revoke, or perform irreversible actions."
+      }
+    },
     "get_lingostar_state": {
       "annotations": {
         "readOnlyHint": true,
@@ -88,7 +100,7 @@
       },
       "justifications": {
         "read_only_justification": "Transcribes supplied audio and returns text without changing LingoStar state.",
-        "open_world_justification": "May call the external OpenAI audio transcription API with user-provided audio only when AI fallback is enabled and configured.",
+        "open_world_justification": "May call the external OpenAI audio transcription API with user-provided audio when audio processing is configured.",
         "destructive_justification": "Does not delete, overwrite, revoke, or perform irreversible actions."
       }
     },
@@ -100,8 +112,32 @@
       },
       "justifications": {
         "read_only_justification": "Synthesizes audio from supplied lesson text and returns a playback data URL without changing LingoStar state.",
-        "open_world_justification": "May call the external OpenAI audio speech API with exercise text only when browser TTS is unavailable and AI fallback is enabled.",
+        "open_world_justification": "May call the external OpenAI audio speech API with exercise text when audio processing is configured.",
         "destructive_justification": "Does not delete, overwrite, revoke, or perform irreversible actions."
+      }
+    },
+    "search_lingostar_help": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Searches static LingoStar help content and returns matching snippets without changing learner data.",
+        "open_world_justification": "Uses server-local help markdown and does not call external systems.",
+        "destructive_justification": "Does not delete, overwrite, revoke, or perform irreversible actions."
+      }
+    },
+    "select_learning_session": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Stores the learner's selected active language session so subsequent section actions use the chosen session.",
+        "open_world_justification": "Only updates private LingoStar state and does not publish or update external systems.",
+        "destructive_justification": "Does not delete sessions or perform irreversible destructive actions."
       }
     },
     "submit_feedback": {
@@ -171,19 +207,19 @@
       "expected_output_url": null
     },
     {
-      "description": "Use server STT fallback for a speaking recording.",
+      "description": "Transcribe a speaking recording when direct speech input is unavailable.",
       "user_prompt": "My browser speech recognition failed. Transcribe this recorded speaking answer.",
       "file_attachment_urls": null,
       "tools_triggered": "transcribe_audio",
-      "expected_output": "Returns the transcript when AI fallback is enabled and configured, or a browser speech error message when disabled.",
+      "expected_output": "Returns the transcript when audio processing is available, or tells the learner to type or skip the current speaking exercise.",
       "expected_output_url": null
     },
     {
-      "description": "Use server TTS fallback for a listening exercise.",
+      "description": "Play a listening exercise when browser playback is unavailable.",
       "user_prompt": "My browser cannot play the listening prompt. Generate fallback audio for this LingoStar text.",
       "file_attachment_urls": null,
       "tools_triggered": "synthesize_speech",
-      "expected_output": "Returns a playable audio data URL when AI fallback is enabled and configured, or a browser speech error message when disabled.",
+      "expected_output": "Returns playable audio when audio processing is available, or tells the learner to read the prompt text or skip the current listening exercise.",
       "expected_output_url": null
     },
     {

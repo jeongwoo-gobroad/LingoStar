@@ -17,9 +17,9 @@ import { z } from "zod";
 /*  Static assets                                                     */
 /* ------------------------------------------------------------------ */
 
-const SERVICE_VERSION = "0.6.2";
-const WIDGET_VERSION = "0.6.2";
-const WIDGET_URI = "ui://widget/lingostar-studio-v0-6-2.html";
+const SERVICE_VERSION = "0.7.0";
+const WIDGET_VERSION = "0.7.0";
+const WIDGET_URI = "ui://widget/lingostar-studio-v0-7-0.html";
 const iconAssetPath = existsSync("public/icon-96.png")
   ? "public/icon-96.png"
   : existsSync("public/icon.png")
@@ -169,6 +169,9 @@ const ICON_URL = iconPng ? `${APP_ORIGIN}/icon.png` : "";
 const widgetHtml = readFileSync("public/lingostar-widget.html", "utf8").replaceAll(
   "__LINGOSTAR_ICON__",
   ICON_URL
+).replaceAll(
+  "__LINGOSTAR_APP_ORIGIN__",
+  APP_ORIGIN
 );
 const privacyPolicyHtml = existsSync("privacy-poilcy.html")
   ? readFileSync("privacy-poilcy.html", "utf8")
@@ -176,6 +179,10 @@ const privacyPolicyHtml = existsSync("privacy-poilcy.html")
 const termsOfServiceHtml = existsSync("terms-of-service.html")
   ? readFileSync("terms-of-service.html", "utf8")
   : "";
+const HELP_DOC_PATHS = {
+  en: "content/help/en.md",
+  ko: "content/help/ko.md",
+};
 let oauthJwks = null;
 
 /* ------------------------------------------------------------------ */
@@ -486,15 +493,14 @@ TEXT = {
   },
 };
 
-const HELP_CONTENT = {
+const FALLBACK_HELP_CONTENT = {
   en: {
     title: "How LingoStar works",
-    intro: "LingoStar keeps one learning space per ChatGPT user and shows the lesson inside the app widget.",
+    intro: "LingoStar helps you keep several language learning sessions and practice them inside ChatGPT.",
     features: [
       "Create separate language sessions for each target language and goal.",
       "Practice language information, listening, reading, writing, and speaking in each section.",
-      "Use browser speech first for TTS/STT; OpenAI audio fallback is used only when enabled on the server.",
-      "Skip listening or speaking when the current environment does not allow audio.",
+      "Some mobile ChatGPT environments may limit speaking. Type an answer or skip the current speaking exercise when needed.",
       "Ask AI inside a lesson without losing the current exercise state.",
       "Change per-area exercise counts, progress context, weakness context, pass threshold, and speech speed in settings.",
       "Send product feedback from any screen with the feedback button."
@@ -503,12 +509,11 @@ const HELP_CONTENT = {
   },
   ko: {
     title: "LingoStar 이용 안내",
-    intro: "LingoStar는 ChatGPT 사용자별로 학습 공간을 분리하고, 문제 풀이를 앱 위젯 안에서 유지합니다.",
+    intro: "LingoStar는 여러 언어 학습 세션을 만들고 ChatGPT 안에서 이어서 연습할 수 있게 도와줍니다.",
     features: [
       "배우는 언어와 목표별로 별도 학습 세션을 만들 수 있습니다.",
       "각 섹션에서 언어 정보, 듣기, 읽기, 쓰기, 말하기를 함께 연습합니다.",
-      "TTS/STT는 브라우저 내장 기능을 우선 사용하고, 서버에서 허용된 경우에만 OpenAI 음성 폴백을 사용합니다.",
-      "지금 들을 수 없거나 말할 수 없는 환경에서는 듣기/말하기를 건너뛸 수 있습니다.",
+      "일부 모바일 ChatGPT 환경에서는 말하기가 제한될 수 있습니다. 이 경우 답안을 직접 입력하거나 현재 말하기 문제를 건너뛰세요.",
       "문제 풀이 화면의 Ask AI로 현재 섹션을 유지한 채 질문할 수 있습니다.",
       "설정에서 영역별 문제 수, 진행 상황, 취약점, 통과 점수, 발화 속도를 조정할 수 있습니다.",
       "모든 화면의 피드백 버튼으로 오류나 개선 의견을 보낼 수 있습니다."
@@ -517,13 +522,116 @@ const HELP_CONTENT = {
   }
 };
 
+function parseHelpMarkdown(markdown, locale) {
+  const lines = String(markdown || "").split(/\r?\n/);
+  const titleLine = lines.find((line) => line.startsWith("# ")) || "";
+  const title = cleanText(titleLine.replace(/^#\s+/, "")) || FALLBACK_HELP_CONTENT[locale]?.title || FALLBACK_HELP_CONTENT.en.title;
+  const intro = cleanText(
+    lines
+      .slice(lines.findIndex((line) => line.startsWith("# ")) + 1)
+      .find((line) => line.trim() && !line.startsWith("#") && !line.startsWith("-")) || ""
+  ) || FALLBACK_HELP_CONTENT[locale]?.intro || FALLBACK_HELP_CONTENT.en.intro;
+  const features = lines
+    .filter((line) => line.trim().startsWith("- "))
+    .map((line) => cleanText(line.replace(/^\s*-\s+/, "")))
+    .filter(Boolean);
+  return {
+    title,
+    intro,
+    features: features.length ? features : FALLBACK_HELP_CONTENT[locale]?.features ?? FALLBACK_HELP_CONTENT.en.features,
+    footer: "",
+    markdown: String(markdown || ""),
+    source: "static-md",
+  };
+}
+
+function loadHelpContent() {
+  const loaded = {};
+  for (const locale of SUPPORTED_UI_LOCALES) {
+    const filePath = HELP_DOC_PATHS[locale];
+    if (filePath && existsSync(filePath)) {
+      loaded[locale] = parseHelpMarkdown(readFileSync(filePath, "utf8"), locale);
+    } else {
+      loaded[locale] = { ...FALLBACK_HELP_CONTENT[locale], markdown: "", source: "fallback" };
+    }
+  }
+  return loaded;
+}
+
+const HELP_CONTENT = loadHelpContent();
+
 function helpContentFor(locale) {
   const uiLocale = normalizeUiLocale(locale) ?? "en";
+  const content = HELP_CONTENT[uiLocale] ?? HELP_CONTENT.en ?? FALLBACK_HELP_CONTENT.en;
   return {
-    ...HELP_CONTENT[uiLocale],
+    ...content,
     locale: uiLocale,
     widgetVersion: WIDGET_VERSION,
   };
+}
+
+function searchHelpContent(locale, query = "") {
+  const help = helpContentFor(locale);
+  const needle = cleanText(query).toLowerCase();
+  const lines = String(help.markdown || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const candidates = lines
+    .map((line) => line.replace(/^#+\s*/, "").replace(/^-\s*/, ""))
+    .filter((line) => line && !line.startsWith("---"));
+  const matched = needle
+    ? candidates.filter((line) => line.toLowerCase().includes(needle))
+    : candidates;
+  return {
+    locale: help.locale,
+    title: help.title,
+    query: cleanText(query),
+    results: matched.slice(0, 8),
+    source: help.source || "static-md",
+  };
+}
+
+function markdownToHtml(markdown = "") {
+  const html = [];
+  let inList = false;
+  for (const rawLine of String(markdown || "").split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line) {
+      if (inList) {
+        html.push("</ul>");
+        inList = false;
+      }
+      continue;
+    }
+    if (line.startsWith("# ")) {
+      if (inList) {
+        html.push("</ul>");
+        inList = false;
+      }
+      html.push(`<h1>${htmlEscape(line.replace(/^#\s+/, ""))}</h1>`);
+    } else if (line.startsWith("## ")) {
+      if (inList) {
+        html.push("</ul>");
+        inList = false;
+      }
+      html.push(`<h2>${htmlEscape(line.replace(/^##\s+/, ""))}</h2>`);
+    } else if (line.startsWith("- ")) {
+      if (!inList) {
+        html.push("<ul>");
+        inList = true;
+      }
+      html.push(`<li>${htmlEscape(line.replace(/^-\s+/, ""))}</li>`);
+    } else {
+      if (inList) {
+        html.push("</ul>");
+        inList = false;
+      }
+      html.push(`<p>${htmlEscape(line)}</p>`);
+    }
+  }
+  if (inList) html.push("</ul>");
+  return html.join("\n");
 }
 
 function ensureTranslationCache(state, requestedLocale = "en") {
@@ -691,19 +799,30 @@ function requiredSecuritySchemes(scopes = []) {
   return [{ type: "oauth2", scopes: scopesForOAuthRequest(scopes) }];
 }
 
-function widgetToolMeta(scopes = [], invoking, invoked) {
+function toolMeta(scopes = [], invoking, invoked, options = {}) {
   const securitySchemes = requiredSecuritySchemes(scopes);
-  return {
+  const meta = {
     securitySchemes,
     ui: {
-      resourceUri: WIDGET_URI,
       visibility: ["model", "app"],
     },
-    "openai/outputTemplate": WIDGET_URI,
     "openai/widgetAccessible": true,
     "openai/toolInvocation/invoking": invoking,
     "openai/toolInvocation/invoked": invoked,
   };
+  if (options.render) {
+    meta.ui.resourceUri = WIDGET_URI;
+    meta["openai/outputTemplate"] = WIDGET_URI;
+  }
+  return meta;
+}
+
+function renderToolMeta(scopes = [], invoking, invoked) {
+  return toolMeta(scopes, invoking, invoked, { render: true });
+}
+
+function dataToolMeta(scopes = [], invoking, invoked) {
+  return toolMeta(scopes, invoking, invoked, { render: false });
 }
 
 function audienceMatches(payload, expectedAudience) {
@@ -1191,41 +1310,19 @@ function speechLangForTargetLanguage(targetLanguage = "") {
   return "";
 }
 
-openAiAudioUnavailableMessage = function openAiAudioUnavailableMessage(sessionOrLocale) {
-  const locale =
-    typeof sessionOrLocale === "string"
-      ? sessionOrLocale
-      : sessionOrLocale?.runtime?.interfaceLanguage ?? "en";
-  if (!IS_AI_FALLBACK) {
-    return locale === "ko" ? "브라우저 내 음성 기능 오류" : "Browser speech feature error.";
-  }
-  return locale === "ko"
-    ? "서버 .env에 OPENAI_API_KEY가 없어 OpenAI 음성 기능을 사용할 수 없습니다. 브라우저 음성 또는 직접 입력을 사용해 주세요."
-    : "OpenAI audio is unavailable because OPENAI_API_KEY is not configured on the server. Use browser audio or manual input instead.";
-};
-
-openAiAudioErrorMessage = function openAiAudioErrorMessage(sessionOrLocale, error) {
-  const locale =
-    typeof sessionOrLocale === "string"
-      ? sessionOrLocale
-      : sessionOrLocale?.runtime?.interfaceLanguage ?? "en";
-  const detail = cleanText(error?.message).slice(0, 500);
-  return locale === "ko"
-    ? `OpenAI 음성 처리 중 오류가 발생했습니다.${detail ? ` (${detail})` : ""}`
-    : `OpenAI audio failed.${detail ? ` (${detail})` : ""}`;
-}
-
 function openAiAudioUnavailableMessage(sessionOrLocale) {
   const locale =
     typeof sessionOrLocale === "string"
       ? sessionOrLocale
       : sessionOrLocale?.runtime?.interfaceLanguage ?? "en";
   if (!IS_AI_FALLBACK) {
-    return locale === "ko" ? "브라우저 내 음성 기능 오류" : "Browser speech feature error.";
+    return locale === "ko"
+      ? "이 환경에서는 음성 기능을 사용할 수 없습니다. 답안을 직접 입력하거나 현재 문제를 건너뛰세요."
+      : "Speech is unavailable in this environment. Type an answer or skip the current exercise.";
   }
   return locale === "ko"
-    ? "서버 .env에 OPENAI_API_KEY가 없어 OpenAI 음성 폴백을 사용할 수 없습니다. 브라우저 음성 기능 또는 직접 입력을 사용해 주세요."
-    : "OpenAI audio is unavailable because OPENAI_API_KEY is not configured on the server. Use browser audio or manual input instead.";
+    ? "음성 처리를 사용할 수 없습니다. 브라우저 음성 기능, 직접 입력, 또는 건너뛰기를 사용해 주세요."
+    : "Audio processing is unavailable. Use browser audio, manual input, or skip the current exercise.";
 }
 
 function openAiAudioErrorMessage(sessionOrLocale, error) {
@@ -1752,10 +1849,7 @@ function findSession(state, sessionId) {
 }
 
 function exerciseIdsForSection(section) {
-  return [
-    ...(section.exercises ?? []).map((exercise) => exercise.id),
-    ...(section.reviewExercises ?? []).map((exercise) => exercise.id),
-  ];
+  return (section.exercises ?? []).map((exercise) => exercise.id);
 }
 
 function computeSectionScore(section, session) {
@@ -1882,6 +1976,240 @@ ${nav}
 </html>`;
 }
 
+function writeJson(res, status, payload) {
+  res
+    .writeHead(status, { "content-type": "application/json; charset=utf-8" })
+    .end(JSON.stringify(payload, null, 2));
+}
+
+function readRequestJson(req) {
+  return new Promise((resolve, reject) => {
+    let body = "";
+    req.on("data", (chunk) => {
+      body += chunk;
+      if (body.length > 1_000_000) {
+        reject(new Error("Request body is too large."));
+        req.destroy();
+      }
+    });
+    req.on("end", () => {
+      if (!body.trim()) {
+        resolve({});
+        return;
+      }
+      try {
+        resolve(JSON.parse(body));
+      } catch (error) {
+        reject(error);
+      }
+    });
+    req.on("error", reject);
+  });
+}
+
+function webContextFromRequest(req) {
+  return {
+    requestInfo: { headers: req.headers },
+    _meta: {
+      "openai/locale": "ko-KR",
+      "openai/subject": req.headers["x-lingostar-web-user"] || "web-local-user",
+    },
+  };
+}
+
+async function authorizeWebRequest(req, scopes) {
+  const context = webContextFromRequest(req);
+  const auth = await authorizeContext(context, scopes);
+  if (!auth.ok) {
+    const status = bearerTokenFromContext(context) ? 403 : 401;
+    return { ok: false, status, response: auth.response };
+  }
+  return { ok: true, context };
+}
+
+function publicConfig() {
+  return {
+    serviceVersion: SERVICE_VERSION,
+    widgetVersion: WIDGET_VERSION,
+    appOrigin: APP_ORIGIN,
+    authRequired: AUTH_REQUIRED,
+    oauthIssuer: OAUTH_ISSUER,
+    oauthAudience: OAUTH_AUDIENCE,
+    oauthClientId: OAUTH_CLIENT_ID,
+    oauthScopeMode: OAUTH_SCOPE_MODE,
+    oauthRequestScopes: OAUTH_REQUEST_SCOPES,
+    oauthClientIdConfigured: Boolean(OAUTH_CLIENT_ID),
+  };
+}
+
+function renderHelpPage(locale = "ko") {
+  const help = helpContentFor(locale);
+  const html = markdownToHtml(help.markdown || "");
+  return `<!doctype html>
+<html lang="${htmlEscape(help.locale)}">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>${htmlEscape(help.title)} - LingoStar</title>
+<style>
+body{font-family:system-ui,-apple-system,Segoe UI,sans-serif;margin:0;color:#111827;background:#f8fafc;line-height:1.65}
+main{max-width:820px;margin:0 auto;padding:32px 20px}
+article{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:24px;box-shadow:0 8px 24px rgba(15,23,42,.06)}
+h1{font-size:28px;margin:0 0 12px}
+h2{font-size:18px;margin:28px 0 8px}
+p,li{font-size:15px;color:#374151}
+a{color:#4f46e5;text-decoration:none;font-weight:700}
+</style>
+</head>
+<body>
+<main>
+  <p><a href="/">LingoStar</a></p>
+  <article>${html || `<h1>${htmlEscape(help.title)}</h1><p>${htmlEscape(help.intro)}</p>`}</article>
+</main>
+</body>
+</html>`;
+}
+
+function renderHomePage() {
+  const configJson = JSON.stringify(publicConfig()).replace(/</g, "\\u003c");
+  return `<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>LingoStar</title>
+<style>
+:root{color-scheme:light;--bg:#f6f7fb;--surface:#fff;--text:#111827;--muted:#6b7280;--border:#e5e7eb;--accent:#4f46e5;--danger:#dc2626;--soft:#eef2ff}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--text)}
+button,input,textarea{font:inherit}
+.shell{max-width:1120px;margin:0 auto;padding:24px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:20px}
+.brand{display:flex;align-items:center;gap:12px}
+.mark{width:42px;height:42px;border-radius:10px;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:800}
+.grid{display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;box-shadow:0 8px 24px rgba(15,23,42,.05)}
+.stack{display:flex;flex-direction:column;gap:10px}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.spread{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.muted{color:var(--muted);font-size:14px}
+.badge{background:var(--soft);color:var(--accent);font-weight:700;border-radius:999px;padding:4px 10px;font-size:12px}
+button{border:0;border-radius:8px;background:var(--accent);color:#fff;padding:9px 13px;font-weight:700;cursor:pointer}
+button.secondary{background:#f3f4f6;color:#111827;border:1px solid var(--border)}
+button.danger{background:var(--danger)}
+button:disabled{opacity:.55;cursor:not-allowed}
+input,textarea{width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 11px;background:#fff}
+label{font-size:13px;font-weight:700;color:#374151}
+.session{border:1px solid var(--border);border-radius:10px;padding:12px;background:#fff}
+.session.active{border-color:var(--accent);background:var(--soft)}
+.metric{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.metric div{background:#f9fafb;border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center}
+.metric b{display:block;font-size:18px}
+.history{border-top:1px solid var(--border);padding-top:10px;margin-top:10px}
+.notice{padding:10px 12px;border-radius:10px;background:#ecfdf5;color:#065f46;font-weight:650}
+.error{background:#fef2f2;color:#991b1b}
+@media(max-width:820px){.grid{grid-template-columns:1fr}.metric{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="top">
+    <div class="brand"><div class="mark">L</div><div><h1>LingoStar</h1><p class="muted">언어 세션과 진행 상황을 관리합니다.</p></div></div>
+    <div class="row"><a href="/help?locale=ko">도움말</a><button id="login" class="secondary">로그인</button><button id="logout" class="secondary">로그아웃</button></div>
+  </header>
+  <div id="notice"></div>
+  <main id="app" class="grid"></main>
+</div>
+<script>
+const CONFIG = ${configJson};
+let accessToken = localStorage.getItem("lingostar.accessToken") || "";
+let state = null;
+let activeSessionId = null;
+const app = document.getElementById("app");
+const notice = document.getElementById("notice");
+
+function esc(value){return String(value ?? "").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\\"":"&quot;","'":"&#39;"}[ch]));}
+function setNotice(text, error=false){notice.innerHTML = text ? '<p class="notice '+(error?'error':'')+'">'+esc(text)+'</p>' : '';}
+function headers(){const h={"content-type":"application/json"}; if(accessToken) h.authorization="Bearer "+accessToken; return h;}
+async function api(path, options={}) {
+  const res = await fetch(path, {...options, headers:{...headers(), ...(options.headers||{})}});
+  const data = await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(data?.message || data?.content?.[0]?.text || "요청에 실패했습니다.");
+  return data;
+}
+function average(profile={}) {
+  const keys = ["language_info","listening","reading","writing","speaking"];
+  return Math.round(keys.reduce((sum,key)=>sum+(Number(profile[key])||0),0)/keys.length);
+}
+async function load() {
+  try {
+    const data = await api("/api/state");
+    state = data.state;
+    activeSessionId = state.activeSessionId || (state.sessions?.length === 1 ? state.sessions[0].id : null);
+    render();
+  } catch (err) {
+    setNotice(err.message, true);
+    renderEmpty();
+  }
+}
+function renderEmpty(){
+  app.innerHTML = '<section class="panel stack"><h2>연결 필요</h2><p class="muted">Auth0 로그인이 필요한 서버라면 로그인 후 다시 시도하세요.</p></section>';
+}
+function render(){
+  const sessions = state?.sessions || [];
+  const active = sessions.find(s=>s.id===activeSessionId) || (sessions.length === 1 ? sessions[0] : null);
+  app.innerHTML = '<aside class="panel stack">'+
+    '<div class="spread"><h2>세션</h2><button id="new-session" class="secondary">새 세션</button></div>'+
+    (sessions.length ? sessions.map(s=>'<article class="session '+(s.id===active?.id?'active':'')+'">'+
+      '<div class="spread"><strong>'+esc(s.targetLanguage || "Language")+'</strong><span class="badge">'+average(s.skillProfile)+'</span></div>'+
+      '<p class="muted">'+esc(s.goal?.detail || s.goal?.type || "")+'</p>'+
+      '<div class="row"><button class="secondary" data-select="'+esc(s.id)+'">선택</button><button class="danger" data-delete="'+esc(s.id)+'">삭제</button></div>'+
+    '</article>').join('') : '<p class="muted">아직 세션이 없습니다. ChatGPT 앱에서 세션을 만들거나 아래 버튼을 사용하세요.</p>')+
+    '</aside>'+
+    '<section class="panel stack">'+renderDetail(active)+'</section>';
+}
+function renderDetail(session){
+  if(!session) return '<h2>세션 관리</h2><p class="muted">새 세션을 만들거나 ChatGPT에서 LingoStar를 호출하세요.</p>';
+  const profile = session.skillProfile || {};
+  const history = session.sectionHistory || [];
+  return '<div class="spread"><div><h2>'+esc(session.targetLanguage)+'</h2><p class="muted">'+esc(session.nativeLanguage || "")+'</p></div><span class="badge">'+esc(session.status || "active")+'</span></div>'+
+    '<div class="metric">'+["language_info","listening","reading","writing","speaking"].map(k=>'<div><span class="muted">'+esc(k)+'</span><b>'+Math.round(Number(profile[k])||0)+'</b></div>').join('')+'</div>'+
+    '<form id="settings" class="stack">'+
+      '<label>진행 상황<textarea name="progressContext" rows="3">'+esc(session.progressContext || "")+'</textarea></label>'+
+      '<label>취약점<textarea name="weaknessContext" rows="3">'+esc(session.weaknessContext || "")+'</textarea></label>'+
+      '<div class="row"><button type="submit">설정 저장</button><button type="button" id="select-current" class="secondary">이 세션 선택</button></div>'+
+    '</form>'+
+    '<div class="history"><h3>최근 섹션</h3>'+(history.length ? history.slice(0,8).map(h=>'<p class="muted">'+esc(h.title || h.id)+' · '+esc(h.completedAt || "")+'</p>').join('') : '<p class="muted">완료된 섹션이 없습니다.</p>')+'</div>';
+}
+async function saveSettings(form){
+  const session = (state.sessions||[]).find(s=>s.id===activeSessionId);
+  if(!session) return;
+  const fd = new FormData(form);
+  const updated = {...session, progressContext:String(fd.get("progressContext")||""), weaknessContext:String(fd.get("weaknessContext")||"")};
+  await api("/api/session/"+encodeURIComponent(session.id)+"/settings", {method:"POST", body:JSON.stringify({session:updated})});
+  setNotice("설정을 저장했습니다.");
+  await load();
+}
+document.addEventListener("click", async (e)=>{
+  const select = e.target.closest("[data-select]");
+  const del = e.target.closest("[data-delete]");
+  if(select){activeSessionId=select.dataset.select; await api("/api/session/select",{method:"POST",body:JSON.stringify({sessionId:activeSessionId})}); await load();}
+  if(del && confirm("이 언어 세션을 삭제할까요?")){await api("/api/session/"+encodeURIComponent(del.dataset.delete),{method:"DELETE"}); setNotice("세션을 삭제했습니다."); await load();}
+  if(e.target.id==="new-session") setNotice("새 세션은 ChatGPT에서 LingoStar에게 목표 언어와 목표를 말해 만들 수 있습니다.");
+  if(e.target.id==="select-current" && activeSessionId){await api("/api/session/select",{method:"POST",body:JSON.stringify({sessionId:activeSessionId})}); setNotice("세션을 선택했습니다."); await load();}
+});
+document.addEventListener("submit", async (e)=>{if(e.target.id==="settings"){e.preventDefault(); await saveSettings(e.target);}});
+document.getElementById("login").onclick=()=>{
+  if(!CONFIG.oauthIssuer || !CONFIG.oauthClientId){setNotice("이 서버에는 OAuth 클라이언트가 설정되어 있지 않습니다.", true); return;}
+  setNotice("웹 대시보드 로그인은 Auth0 연결 정보가 있는 배포 환경에서 사용하세요.");
+};
+document.getElementById("logout").onclick=()=>{localStorage.removeItem("lingostar.accessToken"); accessToken=""; load();};
+load();
+</script>
+</body>
+</html>`;
+}
+
 /* ------------------------------------------------------------------ */
 /*  MCP server factory                                                 */
 /* ------------------------------------------------------------------ */
@@ -1920,7 +2248,36 @@ function createLingoStarServer() {
   }));
 
   /* ====================================================================
-   *  Tool 1: get_lingostar_state
+   *  Tool 1: open_lingostar_app (render tool)
+   * ==================================================================== */
+
+  registerAppTool(
+    server,
+    "open_lingostar_app",
+    {
+      title: "Open LingoStar",
+      description:
+        "Render the LingoStar widget. Use this when the user opens the app, wants the dashboard/session picker, current section, or settings UI. Data and mutation tools should be called separately.",
+      inputSchema: {},
+      outputSchema: stateOutputSchema,
+      securitySchemes: requiredSecuritySchemes(READ_SCOPES),
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
+      _meta: renderToolMeta(READ_SCOPES, "Opening LingoStar", "LingoStar opened"),
+    },
+    async (_args, context) => {
+      const auth = await authorizeContext(context, READ_SCOPES);
+      if (!auth.ok) return auth.response;
+      const state = await getState(context);
+      return replyWithState(state, textFor(state.sessions[0] ?? "en").loaded);
+    }
+  );
+
+  /* ====================================================================
+   *  Tool 2: get_lingostar_state
    * ==================================================================== */
 
   registerAppTool(
@@ -1938,7 +2295,7 @@ function createLingoStarServer() {
         destructiveHint: false,
         openWorldHint: false,
       },
-      _meta: widgetToolMeta(READ_SCOPES, "Loading LingoStar", "LingoStar loaded"),
+      _meta: dataToolMeta(READ_SCOPES, "Loading LingoStar", "LingoStar loaded"),
     },
     async (_args, context) => {
       const auth = await authorizeContext(context, READ_SCOPES);
@@ -1949,7 +2306,88 @@ function createLingoStarServer() {
   );
 
   /* ====================================================================
-   *  Tool 2: manage_learning_session
+   *  Tool 3: search_lingostar_help
+   * ==================================================================== */
+
+  registerAppTool(
+    server,
+    "search_lingostar_help",
+    {
+      title: "Search LingoStar help",
+      description:
+        "Searches the static LingoStar help markdown loaded by the server. Use this for help, usage, audio, session, section, settings, or troubleshooting questions before rendering any UI.",
+      inputSchema: {
+        query: z.string().optional().describe("The user's help question or keyword."),
+        locale: z.enum(["en", "ko"]).optional().describe("Preferred help locale."),
+      },
+      outputSchema: {
+        locale: z.string().describe("Resolved help locale."),
+        title: z.string().describe("Help document title."),
+        query: z.string().describe("Normalized search query."),
+        results: z.array(z.string()).describe("Matching help snippets from the static markdown file."),
+        source: z.string().describe("Help source, normally static-md."),
+      },
+      securitySchemes: requiredSecuritySchemes(READ_SCOPES),
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
+      _meta: dataToolMeta(READ_SCOPES, "Searching help", "Help searched"),
+    },
+    async (args, context) => {
+      const auth = await authorizeContext(context, READ_SCOPES);
+      if (!auth.ok) return auth.response;
+      const locale = args.locale || normalizeUiLocale(requestedLocaleFromContext(context)) || "en";
+      const result = searchHelpContent(locale, args.query);
+      return {
+        content: result.results.length
+          ? [{ type: "text", text: result.results.join("\n") }]
+          : [{ type: "text", text: result.title }],
+        structuredContent: result,
+      };
+    }
+  );
+
+  /* ====================================================================
+   *  Tool 4: select_learning_session
+   * ==================================================================== */
+
+  registerAppTool(
+    server,
+    "select_learning_session",
+    {
+      title: "Select learning session",
+      description:
+        "Sets the active LingoStar language session after the user explicitly chooses it in the widget or conversation. This does not create a new lesson section.",
+      inputSchema: {
+        sessionId: z.string().describe("The ID of the language learning session to make active."),
+      },
+      outputSchema: stateOutputSchema,
+      securitySchemes: requiredSecuritySchemes(WRITE_SCOPES),
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
+      _meta: dataToolMeta(WRITE_SCOPES, "Selecting session", "Session selected"),
+    },
+    async (args, context) => {
+      const auth = await authorizeContext(context, WRITE_SCOPES);
+      if (!auth.ok) return auth.response;
+      const state = await getState(context);
+      const session = findSession(state, args.sessionId);
+      if (!session) return replyWithState(state, textFor("en").notFound, true);
+      state.activeSessionId = session.id;
+      if (state.currentSection?.sessionId !== session.id) state.currentSection = null;
+      session.updatedAt = nowIso();
+      await saveState(context, state);
+      return replyWithState(state, textFor(session).loaded);
+    }
+  );
+
+  /* ====================================================================
+   *  Tool 5: manage_learning_session
    * ==================================================================== */
 
   registerAppTool(
@@ -1974,7 +2412,7 @@ function createLingoStarServer() {
         destructiveHint: false,
         openWorldHint: false,
       },
-      _meta: widgetToolMeta(WRITE_SCOPES, "Storing session", "Session stored"),
+      _meta: dataToolMeta(WRITE_SCOPES, "Storing session", "Session stored"),
     },
     async (args, context) => {
       const auth = await authorizeContext(context, WRITE_SCOPES);
@@ -2132,7 +2570,7 @@ function createLingoStarServer() {
         destructiveHint: false,
         openWorldHint: false,
       },
-      _meta: widgetToolMeta(WRITE_SCOPES, "Storing section", "Section stored"),
+      _meta: dataToolMeta(WRITE_SCOPES, "Storing section", "Section stored"),
     },
     async (args, context) => {
       const auth = await authorizeContext(context, WRITE_SCOPES);
@@ -2220,6 +2658,8 @@ function createLingoStarServer() {
             exerciseId: z.string().describe("The ID of the specific exercise being evaluated"),
             score: z.number().min(0).max(100).describe("Score out of 100"),
             skill: z.string().describe("Exercise area being evaluated: language_info, listening, reading, writing, or speaking."),
+            userAnswer: z.string().optional().describe("The learner's submitted answer or transcript. Use [SKIPPED] only when the learner deliberately skipped."),
+            learnerClaim: z.string().optional().describe("Optional learner-provided self-assessment or explanation for this answer."),
             skipped: z.boolean().optional().describe("True when the learner explicitly skipped this exercise."),
             needsReview: z.boolean().describe("Whether this exercise should be added to the review queue"),
             feedback: z.object({
@@ -2237,7 +2677,7 @@ function createLingoStarServer() {
         destructiveHint: false,
         openWorldHint: false,
       },
-      _meta: widgetToolMeta(WRITE_SCOPES, "Grading section", "Grading complete"),
+      _meta: dataToolMeta(WRITE_SCOPES, "Grading section", "Grading complete"),
     },
     async (args, context) => {
       const auth = await authorizeContext(context, WRITE_SCOPES);
@@ -2332,7 +2772,8 @@ function createLingoStarServer() {
       }
       state.recentFeedback = state.recentFeedback.slice(0, 20);
 
-      // Check if all exercises + review exercises are complete.
+      // Complete the section when the original exercise set is done. Review items
+      // are stored as follow-up context, not as a moving completion target.
       const allExerciseIds = exerciseIdsForSection(section);
       const completedIds = new Set(
         (section.results ?? []).map((r) => r.exerciseId)
@@ -2396,7 +2837,7 @@ function createLingoStarServer() {
         destructiveHint: false,
         openWorldHint: false,
       },
-      _meta: widgetToolMeta(WRITE_SCOPES, "Judging level", "Level judged"),
+      _meta: dataToolMeta(WRITE_SCOPES, "Judging level", "Level judged"),
     },
     async (args, context) => {
       const auth = await authorizeContext(context, WRITE_SCOPES);
@@ -2455,7 +2896,7 @@ function createLingoStarServer() {
         destructiveHint: false,
         openWorldHint: false,
       },
-      _meta: widgetToolMeta(WRITE_SCOPES, "Judging goal", "Goal judged"),
+      _meta: dataToolMeta(WRITE_SCOPES, "Judging goal", "Goal judged"),
     },
     async (args, context) => {
       const auth = await authorizeContext(context, WRITE_SCOPES);
@@ -2519,7 +2960,7 @@ function createLingoStarServer() {
         destructiveHint: false,
         openWorldHint: true,
       },
-      _meta: widgetToolMeta(AUDIO_SCOPES, "Transcribing audio", "Audio transcribed"),
+      _meta: dataToolMeta(AUDIO_SCOPES, "Transcribing audio", "Audio transcribed"),
     },
     async (args, context) => {
       const auth = await authorizeContext(context, AUDIO_SCOPES);
@@ -2591,7 +3032,7 @@ function createLingoStarServer() {
         destructiveHint: false,
         openWorldHint: true,
       },
-      _meta: widgetToolMeta(AUDIO_SCOPES, "Synthesizing audio", "Audio synthesized"),
+      _meta: dataToolMeta(AUDIO_SCOPES, "Synthesizing audio", "Audio synthesized"),
     },
     async (args, context) => {
       const auth = await authorizeContext(context, AUDIO_SCOPES);
@@ -2667,7 +3108,7 @@ function createLingoStarServer() {
         destructiveHint: false,
         openWorldHint: false,
       },
-      _meta: widgetToolMeta(WRITE_SCOPES, "Submitting feedback", "Feedback submitted"),
+      _meta: dataToolMeta(WRITE_SCOPES, "Submitting feedback", "Feedback submitted"),
     },
     async (args, context) => {
       const auth = await authorizeContext(context, WRITE_SCOPES);
@@ -2700,7 +3141,7 @@ function createLingoStarServer() {
         destructiveHint: true,
         openWorldHint: false,
       },
-      _meta: widgetToolMeta(WRITE_SCOPES, "Deleting session", "Session deleted"),
+      _meta: dataToolMeta(WRITE_SCOPES, "Deleting session", "Session deleted"),
     },
     async (args, context) => {
       const auth = await authorizeContext(context, WRITE_SCOPES);
@@ -2711,7 +3152,7 @@ function createLingoStarServer() {
       state.sessions = state.sessions.filter((item) => item.id !== args.sessionId);
 
       if (state.activeSessionId === args.sessionId) {
-        state.activeSessionId = state.sessions[0]?.id ?? null;
+        state.activeSessionId = null;
       }
       if (state.currentSection?.sessionId === args.sessionId) {
         state.currentSection = null;
@@ -2866,6 +3307,105 @@ const httpServer = createServer(async (req, res) => {
     return;
   }
 
+  if (req.method === "GET" && url.pathname === "/api/config") {
+    writeJson(res, 200, publicConfig());
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/help") {
+    const locale = normalizeUiLocale(url.searchParams.get("locale")) || "ko";
+    const query = url.searchParams.get("q") || "";
+    writeJson(res, 200, query ? searchHelpContent(locale, query) : helpContentFor(locale));
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/state") {
+    const auth = await authorizeWebRequest(req, READ_SCOPES);
+    if (!auth.ok) {
+      writeJson(res, auth.status, { message: auth.response?.content?.[0]?.text || "Authentication required." });
+      return;
+    }
+    const state = await getState(auth.context);
+    writeJson(res, 200, { state: refreshDashboard(state) });
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/session/select") {
+    const auth = await authorizeWebRequest(req, WRITE_SCOPES);
+    if (!auth.ok) {
+      writeJson(res, auth.status, { message: auth.response?.content?.[0]?.text || "Authentication required." });
+      return;
+    }
+    try {
+      const body = await readRequestJson(req);
+      const state = await getState(auth.context);
+      const session = findSession(state, body.sessionId);
+      if (!session) {
+        writeJson(res, 404, { message: "Session not found." });
+        return;
+      }
+      state.activeSessionId = session.id;
+      if (state.currentSection?.sessionId !== session.id) state.currentSection = null;
+      await saveState(auth.context, state);
+      writeJson(res, 200, { state: refreshDashboard(state) });
+    } catch (error) {
+      writeJson(res, 400, { message: cleanText(error?.message) || "Invalid request." });
+    }
+    return;
+  }
+
+  if (req.method === "DELETE" && url.pathname.startsWith("/api/session/")) {
+    const auth = await authorizeWebRequest(req, WRITE_SCOPES);
+    if (!auth.ok) {
+      writeJson(res, auth.status, { message: auth.response?.content?.[0]?.text || "Authentication required." });
+      return;
+    }
+    const sessionId = decodeURIComponent(url.pathname.slice("/api/session/".length));
+    const state = await getState(auth.context);
+    const before = state.sessions.length;
+    state.sessions = state.sessions.filter((session) => session.id !== sessionId);
+    if (state.activeSessionId === sessionId) state.activeSessionId = null;
+    if (state.currentSection?.sessionId === sessionId) state.currentSection = null;
+    if (before === state.sessions.length) {
+      writeJson(res, 404, { message: "Session not found." });
+      return;
+    }
+    await saveState(auth.context, state);
+    writeJson(res, 200, { state: refreshDashboard(state) });
+    return;
+  }
+
+  const settingsMatch = url.pathname.match(/^\/api\/session\/([^/]+)\/settings$/);
+  if (req.method === "POST" && settingsMatch) {
+    const auth = await authorizeWebRequest(req, WRITE_SCOPES);
+    if (!auth.ok) {
+      writeJson(res, auth.status, { message: auth.response?.content?.[0]?.text || "Authentication required." });
+      return;
+    }
+    try {
+      const sessionId = decodeURIComponent(settingsMatch[1]);
+      const body = await readRequestJson(req);
+      const state = await getState(auth.context);
+      const existingIndex = state.sessions.findIndex((session) => session.id === sessionId);
+      if (existingIndex < 0) {
+        writeJson(res, 404, { message: "Session not found." });
+        return;
+      }
+      const incoming = body.session ?? {};
+      state.sessions[existingIndex] = {
+        ...state.sessions[existingIndex],
+        ...incoming,
+        id: sessionId,
+        updatedAt: nowIso(),
+      };
+      await saveState(auth.context, state);
+      writeJson(res, 200, { state: refreshDashboard(state) });
+    } catch (error) {
+      writeJson(res, 400, { message: cleanText(error?.message) || "Invalid request." });
+    }
+    return;
+  }
+
   if (
     req.method === "GET" &&
     (
@@ -2884,8 +3424,16 @@ const httpServer = createServer(async (req, res) => {
 
   if (req.method === "GET" && url.pathname === "/") {
     res
-      .writeHead(200, { "content-type": "text/plain" })
-      .end(`LingoStar MCP server v${SERVICE_VERSION}. Connect ChatGPT to /mcp. Local widget preview: /preview.`);
+      .writeHead(200, { "content-type": "text/html; charset=utf-8" })
+      .end(renderHomePage());
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/help") {
+    const locale = normalizeUiLocale(url.searchParams.get("locale")) || "ko";
+    res
+      .writeHead(200, { "content-type": "text/html; charset=utf-8" })
+      .end(renderHelpPage(locale));
     return;
   }
 

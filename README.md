@@ -45,7 +45,7 @@ LingoStar는 ChatGPT Apps용 외국어 학습 MCP 앱입니다. ChatGPT가 학�
 
 - TTS: `speechSynthesis` 우선, 실패 시 `synthesize_speech`
 - STT: `SpeechRecognition` 우선, 실패/미지원 시 녹음 후 `transcribe_audio`
-- `IS_AI_FALLBACK=false`이면 OpenAI 음성 폴백을 호출하지 않고 “브라우저 내 음성 기능 오류”만 표시합니다.
+- `IS_AI_FALLBACK=false`이면 OpenAI 음성 처리를 호출하지 않고, 음성이 제한된 환경에서는 직접 입력하거나 현재 문제를 건너뛰도록 안내합니다.
 
 ## 로컬 실행
 

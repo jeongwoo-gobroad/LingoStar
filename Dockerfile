@@ -8,6 +8,7 @@ RUN npm ci --omit=dev
 
 COPY server.js ./
 COPY public ./public
+COPY content ./content
 COPY privacy-poilcy.html terms-of-service.html ./
 
 EXPOSE 8080

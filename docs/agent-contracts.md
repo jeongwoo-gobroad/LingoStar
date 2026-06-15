@@ -6,7 +6,10 @@ This document describes the structural-output contract between ChatGPT, the Ling
 
 | Tool | Caller | Purpose | Mutates state |
 | --- | --- | --- | --- |
+| `open_lingostar_app` | GPT | Render the widget; only this tool carries the Apps SDK output template | No |
 | `get_lingostar_state` | GPT / Widget | Load full user state, dashboard, active section, GUI config | No |
+| `search_lingostar_help` | GPT | Search static help markdown loaded at server startup | No |
+| `select_learning_session` | GPT / Widget | Persist the user's explicitly selected active language session | Yes |
 | `manage_learning_session` | GPT / Widget settings | Create or update a language session; may include the first section | Yes |
 | `create_lesson_exercises` | GPT | Store GPT-generated section exercises after validation | Yes |
 | `grade_section_answers` | GPT / Widget auto-grader | Store scores and feedback, update profiles, create reviews | Yes |
@@ -21,7 +24,7 @@ This document describes the structural-output contract between ChatGPT, the Ling
 
 ```ts
 type AppState = {
-  version: "0.6.2";
+  version: "0.7.0";
   activeSessionId: string | null;
   sessions: LanguageSession[];
   currentSection: Section | null;
@@ -159,6 +162,8 @@ type ExerciseResult = {
   exerciseId: string;
   score: number; // 0-100
   skill: "language_info" | "listening" | "reading" | "writing" | "speaking";
+  userAnswer?: string; // Submitted choice, written answer, transcript, or [SKIPPED]
+  learnerClaim?: string;
   skipped?: boolean;
   needsReview: boolean;
   feedback: { short: string; detail?: string };

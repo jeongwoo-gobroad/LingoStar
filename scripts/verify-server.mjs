@@ -201,8 +201,8 @@ const healthJson = await healthResponse.json();
 assert("health endpoint is ok", healthResponse.ok && healthJson?.ok === true);
 assert("health exposes state store", typeof healthJson?.stateStore === "string");
 assert("health exposes AI fallback flag", typeof healthJson?.aiFallbackEnabled === "boolean");
-assert("health exposes widget version", healthJson?.widgetVersion === "0.6.2");
-assert("health exposes versioned widget uri", healthJson?.widgetUri?.includes("v0-6-2"));
+assert("health exposes widget version", healthJson?.widgetVersion === "0.7.0");
+assert("health exposes versioned widget uri", healthJson?.widgetUri?.includes("v0-7-0"));
 assert("_AUTH_REQUIRED=0 overrides legacy OAUTH_REQUIRED=1", healthJson?.authRequired === false);
 
 const statusResponse = await fetch(`http://localhost:${PORT}/status.json`);
@@ -251,18 +251,18 @@ const toolNames = toolsResult.tools.map((tool) => tool.name);
 console.log("Tools:", toolNames.join(", "));
 
 const resourceResult = await rpc("resources/read", {
-  uri: "ui://widget/lingostar-studio-v0-6-2.html",
+  uri: "ui://widget/lingostar-studio-v0-7-0.html",
 });
 const widgetResource = resourceResult.contents?.[0];
-assert("widget resource template can be read", widgetResource?.uri === "ui://widget/lingostar-studio-v0-6-2.html");
+assert("widget resource template can be read", widgetResource?.uri === "ui://widget/lingostar-studio-v0-7-0.html");
 assert("widget resource has MCP app MIME type", widgetResource?.mimeType?.includes("text/html") && widgetResource?.mimeType?.includes("mcp-app"));
 assert("widget resource includes app HTML", widgetResource?.text?.includes("LingoStar"));
 assert("widget resource includes CSP metadata", Boolean(widgetResource?._meta?.ui?.csp));
 
 const rootResourceResult = await rpcAt("/", "resources/read", {
-  uri: "ui://widget/lingostar-studio-v0-6-2.html",
+  uri: "ui://widget/lingostar-studio-v0-7-0.html",
 });
-assert("root POST compatibility reads widget resource", rootResourceResult.contents?.[0]?.uri === "ui://widget/lingostar-studio-v0-6-2.html");
+assert("root POST compatibility reads widget resource", rootResourceResult.contents?.[0]?.uri === "ui://widget/lingostar-studio-v0-7-0.html");
 
 const looseAcceptBody = JSON.stringify({
   jsonrpc: "2.0",
@@ -324,15 +324,25 @@ assert("store_goal_judgment tool exists", toolNames.includes("store_goal_judgmen
 assert("transcribe_audio tool exists", toolNames.includes("transcribe_audio"));
 assert("synthesize_speech tool exists", toolNames.includes("synthesize_speech"));
 assert("submit_feedback tool exists", toolNames.includes("submit_feedback"));
+assert("open_lingostar_app render tool exists", toolNames.includes("open_lingostar_app"));
 assert("get_lingostar_state tool exists", toolNames.includes("get_lingostar_state"));
+assert("search_lingostar_help tool exists", toolNames.includes("search_lingostar_help"));
+assert("select_learning_session tool exists", toolNames.includes("select_learning_session"));
 assert("delete_session tool exists", toolNames.includes("delete_session"));
 assert("legacy plan_next_lesson removed", !toolNames.includes("plan_next_lesson"));
 assert("legacy synthesize_listening_audio removed", !toolNames.includes("synthesize_listening_audio"));
 
 const manageTool = findTool(toolsResult, "manage_learning_session");
 const createTool = findTool(toolsResult, "create_lesson_exercises");
+const renderTool = findTool(toolsResult, "open_lingostar_app");
 const stateTool = findTool(toolsResult, "get_lingostar_state");
+const gradeTool = findTool(toolsResult, "grade_section_answers");
+const helpTool = findTool(toolsResult, "search_lingostar_help");
+const selectTool = findTool(toolsResult, "select_learning_session");
 
+assert("render tool has ChatGPT output template alias", renderTool?._meta?.["openai/outputTemplate"] === healthJson.widgetUri);
+assert("render tool has MCP resourceUri", renderTool?._meta?.ui?.resourceUri === healthJson.widgetUri);
+assert("render tool allows app-side tool calls", renderTool?._meta?.["openai/widgetAccessible"] === true);
 assert("state output schema is described", hasDescription(schemaAt(stateTool?.outputSchema, "state")));
 assert("state sessions output is described", hasDescription(schemaAt(stateTool?.outputSchema, "state", "sessions")));
 assert("manage session schema is described", hasDescription(schemaAt(manageTool?.inputSchema, "session")));
@@ -351,16 +361,23 @@ assert("manage session skillProfile is described", hasDescription(schemaAt(manag
 assert("manage session feedbackMemory is described", hasDescription(schemaAt(manageTool?.inputSchema, "session", "feedbackMemory")));
 assert("manage initialSection schema is described", hasDescription(schemaAt(manageTool?.inputSchema, "initialSection")));
 assert("default get state tool is noauth", toolSecuritySchemes(stateTool).some((scheme) => scheme.type === "noauth"));
-assert("state tool has ChatGPT output template alias", stateTool?._meta?.["openai/outputTemplate"] === healthJson.widgetUri);
+assert("state tool is data-only without output template", !stateTool?._meta?.["openai/outputTemplate"]);
+assert("state tool has no MCP resourceUri", !stateTool?._meta?.ui?.resourceUri);
 assert("state tool allows app-side tool calls", stateTool?._meta?.["openai/widgetAccessible"] === true);
 assert("state tool is visible to widget app", stateTool?._meta?.ui?.visibility?.includes("app"));
 assert("default manage tool is noauth", toolSecuritySchemes(manageTool).some((scheme) => scheme.type === "noauth"));
+assert("manage tool is data-only without output template", !manageTool?._meta?.["openai/outputTemplate"]);
+assert("grade tool is data-only without output template", !gradeTool?._meta?.["openai/outputTemplate"]);
+assert("select tool is data-only without output template", !selectTool?._meta?.["openai/outputTemplate"]);
+assert("help tool query is described", hasDescription(schemaAt(helpTool?.inputSchema, "query")));
 assert("create section schema is described", hasDescription(schemaAt(createTool?.inputSchema, "section")));
 assert("create section id is described", hasDescription(schemaAt(createTool?.inputSchema, "section", "id")));
 assert("create section sessionId is described", hasDescription(schemaAt(createTool?.inputSchema, "section", "sessionId")));
 assert("create section levelId is described", hasDescription(schemaAt(createTool?.inputSchema, "section", "levelId")));
 assert("create section exercisesPerSkill is described", hasDescription(schemaAt(createTool?.inputSchema, "section", "exercisesPerSkill")));
 assert("create section exerciseCounts is described", hasDescription(schemaAt(createTool?.inputSchema, "section", "exerciseCounts")));
+assert("grade evaluations userAnswer is described", hasDescription(schemaAt(gradeTool?.inputSchema, "evaluations", "items", "userAnswer")));
+assert("grade evaluations learnerClaim is described", hasDescription(schemaAt(gradeTool?.inputSchema, "evaluations", "items", "learnerClaim")));
 
 const stateResult = await rpc("tools/call", {
   name: "get_lingostar_state",
@@ -368,11 +385,11 @@ const stateResult = await rpc("tools/call", {
   _meta: meta,
 });
 const state = stateResult.structuredContent?.state;
-assert("state version is 0.6.2", state?.version === "0.6.2");
+assert("state version is 0.7.0", state?.version === "0.7.0");
 assert("state has currentSection null", state?.currentSection === null);
 assert("interface language resolved to ko", state?.host?.interfaceLanguage === "ko");
 assert("state exposes TTS capability", typeof state?.gui?.audio?.openAiTtsModel === "string");
-assert("state exposes widget version", state?.gui?.widgetVersion === "0.6.2");
+assert("state exposes widget version", state?.gui?.widgetVersion === "0.7.0");
 assert("state exposes help content", typeof state?.gui?.help?.title === "string");
 
 const sessionResult = await rpc("tools/call", {
