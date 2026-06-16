@@ -167,6 +167,9 @@ button:disabled{cursor:not-allowed;opacity:.45}
   border-radius:var(--radius);box-shadow:0 12px 36px rgba(0,0,0,.24);padding:16px;
 }
 .modal header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.help-modal .body{color:var(--text-muted)}
+.help-list{margin:0;padding-left:18px;color:var(--text-muted)}
+.help-list li{margin:6px 0}
 .empty{min-height:220px;display:grid;place-items:center;text-align:center}
 .animate-in{}
 @media (max-width:520px){
@@ -194,7 +197,7 @@ const ICON_SRC = "__LINGOSTAR_ICON__";
 const APP_ORIGIN = "__LINGOSTAR_APP_ORIGIN__";
 const DEFAULT_VIEW = "__LINGOSTAR_DEFAULT_VIEW__";
 const UI_COPY = typeof __LINGOSTAR_UI_COPY__ === "object" ? __LINGOSTAR_UI_COPY__ : { en: {}, ko: {} };
-const APP_VERSION = "0.10.1";
+const APP_VERSION = "0.10.2";
 
 const appEl = document.getElementById("app");
 const hasHost = Boolean(window.openai) || window.parent !== window;
@@ -238,8 +241,23 @@ function normalizeLocale(locale){
   const primary = String(locale || "").toLowerCase().split("-")[0];
   return primary === "ko" ? "ko" : "en";
 }
+function languageToUiLocale(language){
+  const normalized = String(language || "").toLowerCase();
+  if (normalized.includes("ko") || normalized.includes("korean") || normalized.includes("한국")) return "ko";
+  if (normalized.includes("en") || normalized.includes("english") || normalized.includes("영어")) return "en";
+  return "";
+}
 function uiLang(){
-  return normalizeLocale(state?.host?.interfaceLanguage || state?.host?.locale || window.openai?.locale || navigator.language || "en");
+  const active = getActiveSession?.();
+  return normalizeLocale(
+    state?.host?.interfaceLanguage ||
+    state?.host?.locale ||
+    active?.runtime?.interfaceLanguage ||
+    languageToUiLocale(active?.nativeLanguage) ||
+    window.openai?.locale ||
+    navigator.language ||
+    "en"
+  );
 }
 function copy(){
   const lang = uiLang();
@@ -825,10 +843,26 @@ function renderSpeaking(exercise) {
 }
 
 function renderNoticeModal() {
+  if (notice?.kind === "help") return renderHelpNoticeModal();
   return `<div class="modal-backdrop" role="dialog" aria-modal="true">
     <section class="modal stack">
       <h2 class="headline">${escapeHtml(notice?.title || "")}</h2>
       <p class="body">${escapeHtml(notice?.message || "")}</p>
+      <div class="row" style="justify-content:flex-end">
+        <button class="button" data-action="close-notice">${escapeHtml(t("close"))}</button>
+      </div>
+    </section>
+  </div>`;
+}
+function renderHelpNoticeModal() {
+  const help = notice?.help || {};
+  const features = Array.isArray(help.features) ? help.features.filter(Boolean).slice(0, 8) : [];
+  return `<div class="modal-backdrop" role="dialog" aria-modal="true">
+    <section class="modal help-modal stack">
+      <h2 class="headline">${escapeHtml(help.title || t("help"))}</h2>
+      ${help.intro ? `<p class="body">${escapeHtml(help.intro)}</p>` : ""}
+      ${features.length ? `<ul class="help-list">${features.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>` : ""}
+      ${help.footer ? `<p class="caption">${escapeHtml(help.footer)}</p>` : ""}
       <div class="row" style="justify-content:flex-end">
         <button class="button" data-action="close-notice">${escapeHtml(t("close"))}</button>
       </div>
@@ -856,10 +890,9 @@ function renderFeedbackModal() {
 
 function openHelpPage() {
   const help = state.gui?.help || {};
-  const features = help.features || [];
   notice = {
-    title: help.title || t("help"),
-    message: [help.intro, ...features].filter(Boolean).join("\n"),
+    kind: "help",
+    help,
   };
   render();
 }

@@ -94,7 +94,7 @@ if (!renderedHtml.length) {
 }
 
 const lessonState = {
-  version: "0.10.1",
+  version: "0.10.2",
   activeSessionId: "session-test",
   sessions: [{
     id: "session-test",
@@ -128,7 +128,7 @@ const lessonState = {
   feedbackItems: [],
   dashboard: {},
   host: { interfaceLanguage: "ko-KR" },
-  gui: { screen: "lesson", widgetVersion: "0.10.1" },
+  gui: { screen: "lesson", widgetVersion: "0.10.2" },
 };
 
 const beforeGlobalsRenderCount = renderedHtml.length;

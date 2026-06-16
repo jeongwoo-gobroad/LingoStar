@@ -17,11 +17,11 @@ import { z } from "zod";
 /*  Static assets                                                     */
 /* ------------------------------------------------------------------ */
 
-const SERVICE_VERSION = "0.10.1";
-const WIDGET_VERSION = "0.10.1";
-const WELCOME_WIDGET_URI = "ui://widget/lingostar-welcome-v0-10-1.html";
-const SESSION_SELECT_WIDGET_URI = "ui://widget/lingostar-session-select-v0-10-1.html";
-const LESSON_WIDGET_URI = "ui://widget/lingostar-lesson-v0-10-1.html";
+const SERVICE_VERSION = "0.10.2";
+const WIDGET_VERSION = "0.10.2";
+const WELCOME_WIDGET_URI = "ui://widget/lingostar-welcome-v0-10-2.html";
+const SESSION_SELECT_WIDGET_URI = "ui://widget/lingostar-session-select-v0-10-2.html";
+const LESSON_WIDGET_URI = "ui://widget/lingostar-lesson-v0-10-2.html";
 const WIDGET_URI = LESSON_WIDGET_URI;
 const WIDGET_URIS = {
   welcome: WELCOME_WIDGET_URI,
@@ -447,6 +447,9 @@ function requestedLocaleFromContext(context) {
     context?._meta?.["openai/locale"] ??
     context?._meta?.["webplus/i18n"] ??
     context?._meta?.["openai/userLocation"]?.locale ??
+    requestHeader(context, "openai-locale") ??
+    requestHeader(context, "x-openai-locale") ??
+    requestHeader(context, "accept-language") ??
     ""
   );
 }
@@ -496,68 +499,6 @@ function uiCopyFor(locale = "en") {
 /*  TEXT dictionary (en / ko)                                          */
 /* ------------------------------------------------------------------ */
 
-let TEXT = {
-  en: {
-    loaded: "Loaded LingoStar state.",
-    noSession: "Create or select a language session first.",
-    notFound: "Session not found.",
-    deleted: "Deleted the language session.",
-    missingContext: "The session or section could not be found.",
-    sessionStored: (language) => `Stored ${language} session.`,
-    sectionStored: (count) => `Stored section with ${count} exercises.`,
-    resultsStored: "Exercise results saved.",
-    levelJudged: "Level judgment recorded.",
-    transcribed: "Audio transcribed.",
-    synthesized: "Audio synthesized.",
-    feedbackStored: "Feedback submitted.",
-  },
-  ko: {
-    loaded: "LingoStar 상태를 불러왔습니다.",
-    noSession: "먼저 언어 세션을 만들거나 선택해 주세요.",
-    notFound: "세션을 찾을 수 없습니다.",
-    deleted: "언어 세션을 삭제했습니다.",
-    missingContext: "세션 또는 섹션을 찾을 수 없습니다.",
-    sessionStored: (language) => `${language} 세션을 저장했습니다.`,
-    sectionStored: (count) => `${count}개 문제가 포함된 섹션을 저장했습니다.`,
-    resultsStored: "문제 결과를 저장했습니다.",
-    levelJudged: "레벨 판단을 기록했습니다.",
-    transcribed: "음성을 텍스트로 변환했습니다.",
-    synthesized: "음성을 생성했습니다.",
-    feedbackStored: "피드백을 접수했습니다.",
-  },
-};
-
-TEXT = {
-  en: {
-    loaded: "Loaded LingoStar state.",
-    noSession: "Create or select a language session first.",
-    notFound: "Session not found.",
-    deleted: "Deleted the language session.",
-    missingContext: "The session or section could not be found.",
-    sessionStored: (language) => `Stored ${language} session. If no initial section is active, immediately call create_lesson_exercises; do not print exercises in chat text.`,
-    sectionStored: (count) => `Stored section with ${count} exercises.`,
-    resultsStored: "Exercise results saved.",
-    levelJudged: "Level judgment recorded.",
-    transcribed: "Audio transcribed.",
-    synthesized: "Audio synthesized.",
-    feedbackStored: "Feedback submitted.",
-  },
-  ko: {
-    loaded: "LingoStar 상태를 불러왔습니다.",
-    noSession: "먼저 언어 학습 세션을 만들거나 선택해 주세요.",
-    notFound: "세션을 찾을 수 없습니다.",
-    deleted: "언어 학습 세션을 삭제했습니다.",
-    missingContext: "세션 또는 섹션을 찾을 수 없습니다.",
-    sessionStored: (language) => `${language} 세션을 저장했습니다. 활성 섹션이 없다면 즉시 create_lesson_exercises를 호출하고, 문제를 채팅 본문에 출력하지 마세요.`,
-    sectionStored: (count) => `${count}개 문제가 포함된 섹션을 저장했습니다.`,
-    resultsStored: "문제 결과를 저장했습니다.",
-    levelJudged: "레벨 판단을 기록했습니다.",
-    transcribed: "음성을 텍스트로 변환했습니다.",
-    synthesized: "음성을 생성했습니다.",
-    feedbackStored: "피드백을 접수했습니다.",
-  },
-};
-
 const FALLBACK_HELP_CONTENT = {
   en: {
     title: "How LingoStar works",
@@ -587,7 +528,7 @@ const FALLBACK_HELP_CONTENT = {
   }
 };
 
-TEXT = {
+let TEXT = {
   en: {
     loaded: "Loaded the latest LingoStar state.",
     noSession: "Create or select a learning track first.",
@@ -595,8 +536,8 @@ TEXT = {
     deleted: "Deleted the requested learning track.",
     deletedAll: "Deleted all learning tracks in your LingoStar data.",
     missingContext: "The learning track or practice set could not be found.",
-    sessionSelected: (language) => `Selected ${language}. If an unfinished practice set exists, keep using it; otherwise create the next practice set before giving long prose.`,
-    sessionStored: (language) => `Stored the ${language} learning track. If no active practice set exists, immediately call create_lesson_exercises; do not print exercises in chat text.`,
+    sessionSelected: (language) => `Selected ${language}. Continue the unfinished practice set if one exists; otherwise create the next practice set.`,
+    sessionStored: (language) => `Stored the ${language} learning track. Create or open the next practice set before giving long prose.`,
     settingsStored: "Updated the learning settings. New settings apply to the next practice set unless the current set is already open.",
     sectionStored: (count, speakingEnabled) => `Stored a practice set with ${count} exercises. Speaking is ${speakingEnabled ? "included" : "not included"} for this set.`,
     resultsStored: "Exercise results saved. If the practice set is complete, summarize the outcome and suggest the next conversational command.",
@@ -608,13 +549,13 @@ TEXT = {
   ko: {
     loaded: "최신 LingoStar 상태를 불러왔습니다.",
     noSession: "먼저 학습 트랙을 만들거나 선택해 주세요.",
-    notFound: "내 LingoStar 데이터에서 해당 학습 트랙을 찾지 못했습니다.",
+    notFound: "현재 LingoStar 데이터에서 일치하는 학습 트랙을 찾지 못했습니다.",
     deleted: "요청한 학습 트랙을 삭제했습니다.",
     deletedAll: "내 LingoStar 데이터의 모든 학습 트랙을 삭제했습니다.",
     missingContext: "학습 트랙 또는 연습 묶음을 찾지 못했습니다.",
-    sessionSelected: (language) => `${language} 학습 트랙을 선택했습니다. 미완료 연습 묶음이 있으면 그대로 이어가고, 없으면 다음 연습 묶음을 생성하세요.`,
-    sessionStored: (language) => `${language} 학습 트랙을 저장했습니다. 활성 연습 묶음이 없다면 즉시 create_lesson_exercises를 호출하고, 문제는 채팅 본문에 출력하지 마세요.`,
-    settingsStored: "학습 설정을 저장했습니다. 이미 열린 연습 묶음은 유지되고, 새 설정은 다음 연습 묶음부터 적용됩니다.",
+    sessionSelected: (language) => `${language} 학습 트랙을 선택했습니다. 미완료 연습 묶음이 있으면 이어가고, 없으면 다음 연습 묶음을 생성하세요.`,
+    sessionStored: (language) => `${language} 학습 트랙을 저장했습니다. 긴 설명을 하기 전에 다음 연습 묶음을 만들거나 열어 주세요.`,
+    settingsStored: "학습 설정을 업데이트했습니다. 이미 열린 연습 묶음은 유지되고, 새 설정은 다음 연습 묶음부터 적용됩니다.",
     sectionStored: (count, speakingEnabled) => `${count}문항 연습 묶음을 저장했습니다. 이번 연습에는 말하기가 ${speakingEnabled ? "포함됩니다" : "포함되지 않습니다"}.`,
     resultsStored: "문제 결과를 저장했습니다. 연습 묶음이 끝났다면 결과를 요약하고 다음에 쓸 수 있는 명령을 안내하세요.",
     levelJudged: "단계 판정을 기록했습니다.",
@@ -623,6 +564,25 @@ TEXT = {
     feedbackStored: "피드백을 접수했습니다.",
   },
 };
+
+const HELP_FALLBACK_OVERRIDES = {
+  ko: {
+    title: "LingoStar 도움말",
+    intro: "LingoStar는 ChatGPT 안에서 언어 공부를 이어 가는 앱입니다.",
+    features: [
+      "학습 트랙은 하나의 언어와 목표를 묶은 단위입니다.",
+      "연습 묶음은 화면에서 직접 푸는 짧은 문제 세트입니다.",
+      "설정과 진행 상황은 ChatGPT 입력창에서 자연어로 관리합니다.",
+      "일부 모바일 환경에서는 말하기 입력이 제한될 수 있습니다.",
+      "삭제는 현재 사용자에게 속한 학습 트랙에만 적용됩니다.",
+    ],
+    footer: "학습 내용은 목표 언어로, 안내 문구는 가능한 경우 사용자의 표시 언어로 보여 줍니다.",
+  },
+};
+
+if (FALLBACK_HELP_CONTENT.ko) {
+  FALLBACK_HELP_CONTENT.ko = HELP_FALLBACK_OVERRIDES.ko;
+}
 
 function parseHelpMarkdown(markdown, locale) {
   const lines = String(markdown || "").split(/\r?\n/);
@@ -1111,11 +1071,9 @@ function getUserKey(context) {
   return "anonymous:local-demo-user";
 }
 
-function interfaceLanguage(nativeLanguage, setting = "auto", requestedLocale = "en") {
-  if (setting === "en" || setting === "ko") return setting;
-  const locale = normalizeUiLocale(requestedLocale);
-  if (locale) return locale;
-  const normalized = cleanText(nativeLanguage).toLowerCase();
+function uiLocaleFromLanguage(value = "") {
+  const normalized = cleanText(value).toLowerCase();
+  if (!normalized) return null;
   if (
     normalized.includes("ko") ||
     normalized.includes("korean") ||
@@ -1124,15 +1082,23 @@ function interfaceLanguage(nativeLanguage, setting = "auto", requestedLocale = "
   ) {
     return "ko";
   }
-  return "en";
-};
+  if (normalized.includes("en") || normalized.includes("english") || normalized.includes("영어")) {
+    return "en";
+  }
+  return null;
+}
+
+function interfaceLanguage(nativeLanguage, setting = "auto", requestedLocale = "en") {
+  if (setting === "en" || setting === "ko") return setting;
+  return normalizeUiLocale(requestedLocale) ?? uiLocaleFromLanguage(nativeLanguage) ?? "en";
+}
 
 function textFor(sessionOrLocale) {
   const locale =
     typeof sessionOrLocale === "string"
       ? sessionOrLocale
-      : sessionOrLocale?.runtime?.interfaceLanguage ?? "en";
-  return TEXT[locale] ?? TEXT.en;
+      : sessionOrLocale?.runtime?.interfaceLanguage ?? sessionOrLocale?.host?.interfaceLanguage ?? "en";
+  return TEXT[normalizeUiLocale(locale) ?? "en"] ?? TEXT.en;
 }
 
 function splitList(value) {
@@ -1742,7 +1708,15 @@ function migrateState(state, requestedLocale = "en", userKey = "") {
   // Host metadata
   state.host ??= {};
   state.host.locale = requestedLocale || "en";
-  state.host.interfaceLanguage = normalizeUiLocale(requestedLocale) ?? "en";
+  const activeForLocale =
+    state.sessions?.find((session) => session.id === state.activeSessionId) ??
+    state.sessions?.[0] ??
+    null;
+  state.host.interfaceLanguage =
+    normalizeUiLocale(requestedLocale) ??
+    normalizeUiLocale(activeForLocale?.runtime?.interfaceLanguage) ??
+    uiLocaleFromLanguage(activeForLocale?.nativeLanguage) ??
+    "en";
   state.host.developerMode = DEVELOPER_MODE;
 
   // GUI
@@ -1952,12 +1926,19 @@ function stateLocale(state) {
   return normalizeUiLocale(state?.host?.interfaceLanguage || state?.host?.locale || "en") ?? "en";
 }
 
+function withCommandFooter(message, state, options = {}) {
+  const text = cleanText(message);
+  if (options.commandFooter === false) return text;
+  const footer = basicCommandFooter(state);
+  return text ? `${text}\n\n${footer}` : footer;
+}
+
 function basicCommandFooter(state) {
   const ko = stateLocale(state) === "ko";
   if (ko) {
     return [
       "---",
-      "기본 명령: `제 언어별 학습 트랙을 보여 주세요` / `다음 연습 시작` / `설정을 바꾸고 싶어요` / `모든 언어 세션을 삭제해 주세요`",
+      "기본 명령: `제 언어별 학습 트랙을 보여 주세요` / `다음 연습 시작` / `설정을 바꾸고 싶어요` / `모든 언어 학습 트랙을 삭제해 주세요`",
       "설정 예시: `말하기를 포함해 주세요`, `읽기 문제를 4개로 해 주세요`, `음성 속도를 0.8로 낮춰 주세요`",
     ].join("\n");
   }
@@ -1966,13 +1947,6 @@ function basicCommandFooter(state) {
     "Basic commands: `show my learning tracks` / `start the next practice set` / `change my settings` / `delete all learning tracks`",
     "Settings examples: `include speaking`, `make reading four questions`, `slow audio speed to 0.8`",
   ].join("\n");
-}
-
-function withCommandFooter(message, state, options = {}) {
-  const text = cleanText(message);
-  if (options.commandFooter === false) return text;
-  const footer = basicCommandFooter(state);
-  return text ? `${text}\n\n${footer}` : footer;
 }
 
 function sessionTableMessage(state) {
@@ -1984,12 +1958,12 @@ function sessionTableMessage(state) {
   }
   const rows = state.sessions.map((session) => {
     const completed = (session.sectionHistory ?? []).filter((item) => item.status === "completed" || item.status === "passed").length;
-    const status = session.id === state.activeSessionId ? (ko ? "활성" : "Active") : (session.status || (ko ? "보관" : "Saved"));
+    const status = session.id === state.activeSessionId ? (ko ? "활성" : "Active") : (session.status || (ko ? "저장됨" : "Saved"));
     const activeSet = state.currentSection?.sessionId === session.id ? (ko ? "있음" : "Yes") : (ko ? "없음" : "No");
     return `| ${cleanText(session.targetLanguage) || "-"} | ${cleanText(session.goal?.detail || session.goal?.type) || "-"} | ${status} | ${activeSet} | ${completed} |`;
   });
   const header = ko
-    ? "현재 학습 트랙입니다.\n\n| 언어 | 목표 | 상태 | 미완료 연습 | 완료한 연습 |\n|---|---|---|---|---|"
+    ? "현재 학습 트랙입니다.\n\n| 언어 | 목표 | 상태 | 진행 중인 연습 | 완료한 연습 |\n|---|---|---|---|---|"
     : "Current learning tracks.\n\n| Language | Goal | Status | Unfinished practice | Completed sets |\n|---|---|---|---|---|";
   return `${header}\n${rows.join("\n")}`;
 }
@@ -2029,6 +2003,127 @@ function findSessionsByTargetLanguage(state, targetLanguage) {
     ].map(normalizedLookupText);
     return candidates.some((item) => item && (item === target || item.includes(target) || target.includes(item)));
   });
+}
+
+function goalLookupText(value = {}) {
+  const goal = value.goal && typeof value.goal === "object" ? value.goal : value;
+  return cleanText([
+    goal?.type,
+    goal?.detail,
+    value.goalType,
+  ].filter(Boolean).join(" "));
+}
+
+function goalTokens(value = {}) {
+  return goalLookupText(value)
+    .toLowerCase()
+    .normalize("NFKC")
+    .split(/[^\p{Letter}\p{Number}]+/u)
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 2);
+}
+
+function goalSimilarityScore(existing = {}, incoming = {}) {
+  const a = normalizedLookupText(goalLookupText(existing));
+  const b = normalizedLookupText(goalLookupText(incoming));
+  if (!a || !b) return 0;
+  if (a === b) return 1;
+  const examCode = /(jlptn\d|hsk\d|topik\d|dele[a-c]\d|delf[a-c]\d|dalfc\d)/i;
+  const aExam = a.match(examCode)?.[1]?.toLowerCase();
+  const bExam = b.match(examCode)?.[1]?.toLowerCase();
+  if (aExam && bExam && aExam !== bExam) return 0;
+  if (a.includes(b) || b.includes(a)) return 0.9;
+  const aTokens = new Set(goalTokens(existing));
+  const bTokens = new Set(goalTokens(incoming));
+  if (!aTokens.size || !bTokens.size) return 0;
+  const shared = [...aTokens].filter((token) => bTokens.has(token)).length;
+  return shared / Math.max(aTokens.size, bTokens.size);
+}
+
+function findReusableSession(state, incoming = {}) {
+  const sameLanguage = findSessionsByTargetLanguage(state, incoming.targetLanguage);
+  const matchingGoal = sameLanguage
+    .map((session) => ({ session, score: goalSimilarityScore(session, incoming) }))
+    .sort((left, right) => right.score - left.score)
+    .find((item) => item.score >= 0.55)?.session ?? null;
+  return { sameLanguage, matchingGoal };
+}
+
+function hasSkillProfileSignal(profile = {}) {
+  return EXERCISE_AREAS.some((area) => Number(profile?.[area]) > 0);
+}
+
+function mergeExerciseCounts(base = {}, patch = {}) {
+  return normalizeExerciseCounts({
+    ...(base ?? {}),
+    ...(patch ?? {}),
+  }, DEFAULT_EXERCISES_PER_AREA);
+}
+
+function mergeSessionForUpsert(existing, incoming, options = {}) {
+  if (!existing) return incoming;
+  const preserveExisting = Boolean(options.preserveExistingPreferences);
+  const settings = preserveExisting
+    ? {
+        ...(incoming.settings ?? {}),
+        ...(existing.settings ?? {}),
+        exerciseCounts: mergeExerciseCounts(incoming.settings?.exerciseCounts, existing.settings?.exerciseCounts),
+      }
+    : {
+        ...(existing.settings ?? {}),
+        ...(incoming.settings ?? {}),
+        exerciseCounts: mergeExerciseCounts(existing.settings?.exerciseCounts, incoming.settings?.exerciseCounts),
+      };
+  return {
+    ...existing,
+    ...incoming,
+    id: existing.id,
+    createdAt: existing.createdAt ?? incoming.createdAt ?? nowIso(),
+    updatedAt: nowIso(),
+    goal: {
+      ...(existing.goal ?? {}),
+      ...(incoming.goal ?? {}),
+      detail: cleanText(incoming.goal?.detail) || cleanText(existing.goal?.detail),
+      type: cleanText(incoming.goal?.type) || cleanText(existing.goal?.type) || "conversation",
+    },
+    settings,
+    levels: existing.levels?.length ? existing.levels : incoming.levels ?? [],
+    skillProfile: hasSkillProfileSignal(existing.skillProfile) ? existing.skillProfile : incoming.skillProfile ?? existing.skillProfile ?? {},
+    sectionHistory: existing.sectionHistory?.length ? existing.sectionHistory : incoming.sectionHistory ?? [],
+    feedbackMemory: existing.feedbackMemory?.length ? existing.feedbackMemory : incoming.feedbackMemory ?? [],
+    progressContext: cleanText(incoming.progressContext) || cleanText(existing.progressContext),
+    weaknessContext: cleanText(incoming.weaknessContext) || cleanText(existing.weaknessContext),
+  };
+}
+
+function languageGoalConflictMessage(state, incoming, matches = []) {
+  const ko = stateLocale(state) === "ko";
+  const language = cleanText(incoming.targetLanguage) || (ko ? "해당 언어" : "that language");
+  const requestedGoal = cleanText(incoming.goal?.detail || incoming.goal?.type) || (ko ? "새 목표" : "the new goal");
+  const rows = matches.map((session) => {
+    const goal = cleanText(session.goal?.detail || session.goal?.type) || "-";
+    return `| ${cleanText(session.id)} | ${cleanText(session.targetLanguage) || "-"} | ${goal} |`;
+  });
+  if (ko) {
+    return [
+      `${language} 학습 트랙이 이미 있지만 목표가 "${requestedGoal}"와 다릅니다.`,
+      "",
+      "| 트랙 ID | 언어 | 현재 목표 |",
+      "|---|---|---|",
+      ...rows,
+      "",
+      "기존 트랙을 이어가려면 해당 트랙을 선택해 달라고 말해 주세요. 목표를 바꾸려면 기존 트랙을 업데이트해 달라고 말해 주세요. 별도 트랙을 만들고 싶다면 그렇게 말해 주세요.",
+    ].join("\n");
+  }
+  return [
+    `You already have ${language} learning track(s), but the goal differs from "${requestedGoal}".`,
+    "",
+    "| Track ID | Language | Current goal |",
+    "|---|---|---|",
+    ...rows,
+    "",
+    "Ask to select one, update an existing goal, or create a separate track.",
+  ].join("\n");
 }
 
 function getDisplayLanguageNameForServer(value = "") {
@@ -2403,7 +2498,7 @@ function createLingoStarServer() {
     const auth = await authorizeContext(context, READ_SCOPES);
     if (!auth.ok) return auth.response;
     const state = await getState(context);
-    return replyWithState(state, textFor(state.sessions[0] ?? "en").loaded, false, { initialView });
+    return replyWithState(state, textFor(state.host?.interfaceLanguage ?? state.sessions[0] ?? "en").loaded, false, { initialView });
   }
 
   /* ====================================================================
@@ -2576,7 +2671,7 @@ function createLingoStarServer() {
         destructiveHint: false,
         openWorldHint: false,
       },
-      _meta: renderToolMeta(WRITE_SCOPES, "Selecting learning track", "Learning track selected", SESSION_SELECT_WIDGET_URI),
+      _meta: dataToolMeta(WRITE_SCOPES, "Selecting learning track", "Learning track selected"),
     },
     async (args, context) => {
       const auth = await authorizeContext(context, WRITE_SCOPES);
@@ -2623,14 +2718,15 @@ function createLingoStarServer() {
         destructiveHint: false,
         openWorldHint: false,
       },
-      _meta: renderToolMeta(WRITE_SCOPES, "Storing session", "Session stored", LESSON_WIDGET_URI),
+      _meta: dataToolMeta(WRITE_SCOPES, "Storing session", "Session stored"),
     },
     async (args, context) => {
       const auth = await authorizeContext(context, WRITE_SCOPES);
       if (!auth.ok) return auth.response;
       const state = await getState(context);
       const requestedLocale = requestedLocaleFromContext(context);
-      const incoming = args.session ?? {};
+      let incoming = args.session ?? {};
+      const providedSessionId = Boolean(cleanText(incoming.id));
 
       // Ensure basic fields
       if (!incoming.id) {
@@ -2700,9 +2796,24 @@ function createLingoStarServer() {
       incoming.feedbackMemory ??= [];
       incoming.sectionHistory ??= [];
 
-      // Upsert
+      if (!providedSessionId) {
+        const { sameLanguage, matchingGoal } = findReusableSession(state, incoming);
+        if (matchingGoal) {
+          incoming.id = matchingGoal.id;
+          incoming = mergeSessionForUpsert(matchingGoal, incoming, { preserveExistingPreferences: true });
+        } else if (sameLanguage.length > 0) {
+          return replyWithState(state, languageGoalConflictMessage(state, incoming, sameLanguage), false, {
+            initialView: "select",
+          });
+        }
+      }
+
+      // Upsert without erasing existing history, settings, or feedback memory.
       const existingIndex = state.sessions.findIndex((s) => s.id === incoming.id);
       if (existingIndex >= 0) {
+        incoming = mergeSessionForUpsert(state.sessions[existingIndex], incoming, {
+          preserveExistingPreferences: !providedSessionId,
+        });
         state.sessions[existingIndex] = incoming;
       } else {
         state.sessions.push(incoming);
@@ -3473,7 +3584,7 @@ function createLingoStarServer() {
         destructiveHint: true,
         openWorldHint: false,
       },
-      _meta: renderToolMeta(WRITE_SCOPES, "Deleting learning track", "Learning track deleted", SESSION_SELECT_WIDGET_URI),
+      _meta: dataToolMeta(WRITE_SCOPES, "Deleting learning track", "Learning track deleted"),
     },
     async (args, context) => {
       const auth = await authorizeContext(context, WRITE_SCOPES);

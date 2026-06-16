@@ -10,11 +10,11 @@ await import("../server.js");
 let requestId = 0;
 const assertions = [];
 
-const EXPECTED_VERSION = "0.10.1";
+const EXPECTED_VERSION = "0.10.2";
 const EXPECTED_WIDGET_URIS = {
-  welcome: "ui://widget/lingostar-welcome-v0-10-1.html",
-  sessionSelect: "ui://widget/lingostar-session-select-v0-10-1.html",
-  lesson: "ui://widget/lingostar-lesson-v0-10-1.html",
+  welcome: "ui://widget/lingostar-welcome-v0-10-2.html",
+  sessionSelect: "ui://widget/lingostar-session-select-v0-10-2.html",
+  lesson: "ui://widget/lingostar-lesson-v0-10-2.html",
 };
 const DEFAULT_VIEW_BY_RESOURCE = {
   welcome: "welcome",
@@ -284,6 +284,9 @@ assert("lesson render uses lesson template", lessonRenderTool?._meta?.["openai/o
 assert("render tools allow app-side calls", openTool?._meta?.["openai/widgetAccessible"] === true);
 assert("state output schema is described", hasDescription(schemaAt(stateTool?.outputSchema, "state")));
 assert("state tool is data-only without output template", !stateTool?._meta?.["openai/outputTemplate"]);
+assert("manage session is data-only without output template", !manageTool?._meta?.["openai/outputTemplate"]);
+assert("select session is data-only without output template", !selectTool?._meta?.["openai/outputTemplate"]);
+assert("delete session is data-only without output template", !deleteTool?._meta?.["openai/outputTemplate"]);
 assert("state tool is visible to widget app", stateTool?._meta?.ui?.visibility?.includes("app"));
 assert("default state tool is noauth", toolSecuritySchemes(stateTool).some((scheme) => scheme.type === "noauth"));
 assert("manage session targetLanguage is described", hasDescription(schemaAt(manageTool?.inputSchema, "session", "targetLanguage")));
@@ -300,10 +303,12 @@ const stateResult = await rpc("tools/call", {
   _meta: meta,
 });
 const initialState = stateResult.structuredContent?.state;
-assert("state version is 0.10.1", initialState?.version === EXPECTED_VERSION);
+assert("state version is 0.10.2", initialState?.version === EXPECTED_VERSION);
 assert("initial state opens welcome", stateResult.structuredContent?.initialView === "welcome");
 assert("interface language resolved to ko", initialState?.host?.interfaceLanguage === "ko");
 assert("state exposes UI copy", initialState?.gui?.uiCopy?.welcomeTitle);
+assert("state exposes Korean UI copy", initialState?.gui?.uiCopy?.welcomeTitle?.includes("언어 학습"));
+assert("state chat footer is localized", stateResult.content?.[0]?.text?.includes("기본 명령"));
 
 const sessionResult = await rpc("tools/call", {
   name: "manage_learning_session",
@@ -353,6 +358,49 @@ assert("session stored", afterSession?.sessions?.length === 1);
 assert("session select view after creating session without section", sessionResult.structuredContent?.initialView === "select");
 assert("session preserved goal detail", session?.goal?.detail === "JLPT N4");
 assert("session uses per-area language_info count", session?.settings?.exerciseCounts?.language_info === 3);
+
+const resumeSameGoalResult = await rpc("tools/call", {
+  name: "manage_learning_session",
+  arguments: {
+    session: {
+      targetLanguage: "Japanese",
+      nativeLanguage: "Korean",
+      status: "active",
+      goal: { type: "exam", detail: "JLPT N4" },
+      settings: { displayLanguage: "auto", exercisesPerSkill: 3, speakingEnabled: false, levelMode: "cefr" },
+      levels: [{ id: "level-resume-same", name: "Generated duplicate should not replace", status: "active" }],
+      skillProfile: { language_info: 0, speaking: 0, writing: 0, listening: 0, reading: 0 },
+      feedbackMemory: [],
+      sectionHistory: [],
+    },
+  },
+  _meta: meta,
+});
+const afterResumeSameGoal = resumeSameGoalResult.structuredContent?.state;
+const resumedSession = afterResumeSameGoal?.sessions?.find((item) => item.id === session?.id);
+assert("same language and same goal reuses existing track", afterResumeSameGoal?.sessions?.length === 1);
+assert("resume keeps existing track id active", afterResumeSameGoal?.activeSessionId === session?.id);
+assert("resume preserves existing speaking preference instead of generated default", resumedSession?.settings?.speakingEnabled === true);
+
+const differentGoalResult = await rpc("tools/call", {
+  name: "manage_learning_session",
+  arguments: {
+    session: {
+      targetLanguage: "Japanese",
+      nativeLanguage: "Korean",
+      status: "active",
+      goal: { type: "exam", detail: "JLPT N3" },
+      settings: { displayLanguage: "auto", exercisesPerSkill: 3, speakingEnabled: false, levelMode: "cefr" },
+      levels: [{ id: "level-different-goal", name: "N3 basics", status: "active" }],
+      skillProfile: { language_info: 0, speaking: 0, writing: 0, listening: 0, reading: 0 },
+      feedbackMemory: [],
+      sectionHistory: [],
+    },
+  },
+  _meta: meta,
+});
+assert("same language with different goal does not auto-create", differentGoalResult.structuredContent?.state?.sessions?.length === 1);
+assert("same language with different goal asks for confirmation", differentGoalResult.content?.[0]?.text?.includes("목표가"));
 
 const settingsResult = await rpc("tools/call", {
   name: "update_lingostar_settings",
