@@ -11,19 +11,21 @@ flowchart LR
   MCP -->|"structuredContent.state"| GPT
   MCP --> Widget["Widget resource"]
   Widget -->|"short visible follow-up + hidden model context"| GPT
-  Widget -->|"state/audio tool calls"| MCP
+  Widget -->|"state/audio/feedback tool calls"| MCP
   MCP --> DB["Memory or Firestore"]
 ```
 
 ## ChatGPT Does
 
 - Understand natural-language learning goals.
-- Decide learner stage: foundation, intro, intermediate, advanced.
-- Create or update language sessions.
-- Generate structured exercise sections.
-- Grade speaking answers at section submission.
+- Explain the app using learner-facing terms: learning track, practice set, exercise.
+- Present learning-track status as Markdown tables.
+- Change settings through `update_lingostar_settings`.
+- Create or update learning tracks.
+- Generate structured practice sets.
+- Grade speaking answers at practice-set submission.
 - Judge level and goal completion under CEFR or explicit exam standards.
-- Answer learner questions from the native ChatGPT composer without replacing the active section.
+- Answer learner questions from the native ChatGPT composer without replacing the active practice set.
 
 ## MCP Server Does
 
@@ -37,13 +39,15 @@ flowchart LR
 
 ## Widget Does
 
-- Render dashboard, settings, OOBE, and lesson UI.
-- Keep all UI text in the interface language while showing the target language as the learning target.
-- Use browser TTS/STT first.
+- Render welcome, learning-track selection, and lesson surfaces only.
+- Keep UI text in the interface language while showing the target language as the learning target.
+- Use system-like colors, spacing, fonts, and rounded shapes.
+- Avoid duplicate ChatGPT composer behavior.
 - Auto-grade objective answers immediately.
-- Provide listening/speaking skip buttons.
+- Provide current-problem skip buttons.
+- Show centered speech/listening availability messages.
 - Submit speaking answers to ChatGPT for evaluation.
-- Sync the current exercise context so ChatGPT can answer learner questions while preserving the active section.
+- Sync the current exercise context so ChatGPT can answer learner questions while preserving the active practice set.
 
 ## Multi-Agent Status
 
@@ -52,11 +56,11 @@ The current implementation is not a process-level multi-agent backend. It is Cha
 The initial design's agents are represented as persisted context roles:
 
 - User Agent -> stable user key and state namespace
-- Language Selection -> sessions, languages, goals
+- Language Selection -> learning tracks, languages, goals
 - Tracking Agent -> natural-language progress context
 - Problem Management Agent -> natural-language weakness context
 
-This makes the app deployable as a ChatGPT App today while preserving an upgrade path to a future server-side orchestration runtime.
+This keeps the app deployable as a ChatGPT App today while preserving an upgrade path to future server-side orchestration.
 
 ## Section Contract
 
@@ -71,7 +75,7 @@ The server rejects invalid sections rather than silently accepting partial probl
 
 ## Audio Boundary
 
-Browser speech APIs are preferred. OpenAI audio tools are fallback only:
+Browser speech APIs are preferred where the environment supports them. Optional server audio tools exist only for configured fallback:
 
 - `synthesize_speech`: TTS fallback for listening
 - `transcribe_audio`: STT fallback for speaking recordings

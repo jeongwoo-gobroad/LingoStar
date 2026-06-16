@@ -4,76 +4,92 @@
   "app_info": {
     "display_name": "LingoStar",
     "subtitle": "AI language practice",
-    "description": "LingoStar helps learners practice language knowledge, listening, reading, writing, and speaking in ChatGPT with saved progress.",
+    "description": "LingoStar helps learners manage language learning tracks, change settings conversationally, and practice language information, listening, reading, writing, and speaking inside ChatGPT.",
     "category": "EDUCATION"
   },
   "tools": {
     "open_lingostar_app": {
-      "annotations": {
-        "readOnlyHint": true,
-        "openWorldHint": false,
-        "destructiveHint": false
-      },
+      "annotations": { "readOnlyHint": true, "openWorldHint": false, "destructiveHint": false },
       "justifications": {
-        "read_only_justification": "Renders the LingoStar widget and returns current app state without changing learner data.",
+        "read_only_justification": "Renders the welcome/onboarding widget and returns current private app state without changing learner data.",
+        "open_world_justification": "Does not publish, send, or modify data in public internet or third-party systems.",
+        "destructive_justification": "Does not delete, overwrite, revoke, or perform irreversible actions."
+      }
+    },
+    "open_lingostar_session_select": {
+      "annotations": { "readOnlyHint": true, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "Renders the private learning-track picker without changing learner data.",
+        "open_world_justification": "Does not publish, send, or modify data in public internet or third-party systems.",
+        "destructive_justification": "Does not delete, overwrite, revoke, or perform irreversible actions."
+      }
+    },
+    "open_lingostar_lesson": {
+      "annotations": { "readOnlyHint": true, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "Renders the active practice set without changing learner data.",
         "open_world_justification": "Does not publish, send, or modify data in public internet or third-party systems.",
         "destructive_justification": "Does not delete, overwrite, revoke, or perform irreversible actions."
       }
     },
     "get_lingostar_state": {
-      "annotations": {
-        "readOnlyHint": true,
-        "openWorldHint": false,
-        "destructiveHint": false
-      },
+      "annotations": { "readOnlyHint": true, "openWorldHint": false, "destructiveHint": false },
       "justifications": {
-        "read_only_justification": "Only returns the learner's private LingoStar state, dashboard, active section, GUI settings, and persisted logical contexts.",
+        "read_only_justification": "Only returns the learner's private LingoStar state, active practice set, UI copy, help summary, and persisted logical contexts.",
         "open_world_justification": "Does not publish, send, or modify data in public internet or third-party systems.",
         "destructive_justification": "Does not delete, overwrite, revoke, or perform irreversible actions."
       }
     },
-    "manage_learning_session": {
-      "annotations": {
-        "readOnlyHint": false,
-        "openWorldHint": false,
-        "destructiveHint": false
-      },
+    "search_lingostar_help": {
+      "annotations": { "readOnlyHint": true, "openWorldHint": false, "destructiveHint": false },
       "justifications": {
-        "read_only_justification": "Creates or updates a private language-learning session, learner settings, progress context, weakness context, and may store a first section.",
+        "read_only_justification": "Searches static LingoStar help content and returns snippets without changing learner data.",
+        "open_world_justification": "Uses server-local help markdown and does not call external systems.",
+        "destructive_justification": "Does not delete, overwrite, revoke, or perform irreversible actions."
+      }
+    },
+    "select_learning_session": {
+      "annotations": { "readOnlyHint": false, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "Stores the learner's selected active learning track so later practice actions use that private track.",
+        "open_world_justification": "Only updates private LingoStar state and does not publish or update external systems.",
+        "destructive_justification": "Does not delete sessions or perform irreversible destructive actions."
+      }
+    },
+    "manage_learning_session": {
+      "annotations": { "readOnlyHint": false, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "Creates or updates a private learning track, learner context, settings, and optionally the first practice set.",
+        "open_world_justification": "Only changes the app's private learner state and does not publish or update external systems.",
+        "destructive_justification": "Does not delete sessions or perform irreversible destructive actions."
+      }
+    },
+    "update_lingostar_settings": {
+      "annotations": { "readOnlyHint": false, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "Applies user-requested settings changes to a private learning track.",
         "open_world_justification": "Only changes the app's private learner state and does not publish or update external systems.",
         "destructive_justification": "Does not delete sessions or perform irreversible destructive actions."
       }
     },
     "create_lesson_exercises": {
-      "annotations": {
-        "readOnlyHint": false,
-        "openWorldHint": false,
-        "destructiveHint": false
-      },
+      "annotations": { "readOnlyHint": false, "openWorldHint": false, "destructiveHint": false },
       "justifications": {
-        "read_only_justification": "Stores a generated private exercise section for the active learner session after structural validation.",
+        "read_only_justification": "Stores a generated private practice set after structural validation.",
         "open_world_justification": "Only updates private app state and does not publish content or modify external systems.",
         "destructive_justification": "Does not delete or irreversibly overwrite learner data."
       }
     },
     "grade_section_answers": {
-      "annotations": {
-        "readOnlyHint": false,
-        "openWorldHint": false,
-        "destructiveHint": false
-      },
+      "annotations": { "readOnlyHint": false, "openWorldHint": false, "destructiveHint": false },
       "justifications": {
-        "read_only_justification": "Saves grading results, updates private skill scores, creates review exercises, and records section pass/fail.",
+        "read_only_justification": "Saves grading results, updates private skill scores, creates review exercises, and records practice-set pass/fail.",
         "open_world_justification": "Only updates private learner progress inside the app.",
         "destructive_justification": "Does not delete data or perform irreversible destructive operations."
       }
     },
     "store_level_judgment": {
-      "annotations": {
-        "readOnlyHint": false,
-        "openWorldHint": false,
-        "destructiveHint": false
-      },
+      "annotations": { "readOnlyHint": false, "openWorldHint": false, "destructiveHint": false },
       "justifications": {
         "read_only_justification": "Records a private judgment about whether a level is complete and may update that level's status.",
         "open_world_justification": "Only mutates private learning-progress state within LingoStar.",
@@ -81,71 +97,31 @@
       }
     },
     "store_goal_judgment": {
-      "annotations": {
-        "readOnlyHint": false,
-        "openWorldHint": false,
-        "destructiveHint": false
-      },
+      "annotations": { "readOnlyHint": false, "openWorldHint": false, "destructiveHint": false },
       "justifications": {
-        "read_only_justification": "Records GPT's private goal-completion judgment under CEFR or a named certification standard and may mark the goal complete only after the configured minimum section threshold.",
+        "read_only_justification": "Records GPT's private goal-completion judgment and may mark the goal complete only after the configured minimum threshold.",
         "open_world_justification": "Only mutates private learner goal state within LingoStar.",
         "destructive_justification": "Does not delete records or perform irreversible destructive actions."
       }
     },
     "transcribe_audio": {
-      "annotations": {
-        "readOnlyHint": true,
-        "openWorldHint": true,
-        "destructiveHint": false
-      },
+      "annotations": { "readOnlyHint": true, "openWorldHint": true, "destructiveHint": false },
       "justifications": {
         "read_only_justification": "Transcribes supplied audio and returns text without changing LingoStar state.",
-        "open_world_justification": "May call the external OpenAI audio transcription API with user-provided audio when audio processing is configured.",
+        "open_world_justification": "May call the external OpenAI audio transcription API with user-provided audio when configured.",
         "destructive_justification": "Does not delete, overwrite, revoke, or perform irreversible actions."
       }
     },
     "synthesize_speech": {
-      "annotations": {
-        "readOnlyHint": true,
-        "openWorldHint": true,
-        "destructiveHint": false
-      },
+      "annotations": { "readOnlyHint": true, "openWorldHint": true, "destructiveHint": false },
       "justifications": {
-        "read_only_justification": "Synthesizes audio from supplied lesson text and returns a playback data URL without changing LingoStar state.",
-        "open_world_justification": "May call the external OpenAI audio speech API with exercise text when audio processing is configured.",
+        "read_only_justification": "Synthesizes audio from supplied lesson text and returns playback data without changing LingoStar state.",
+        "open_world_justification": "May call the external OpenAI audio speech API with exercise text when configured.",
         "destructive_justification": "Does not delete, overwrite, revoke, or perform irreversible actions."
-      }
-    },
-    "search_lingostar_help": {
-      "annotations": {
-        "readOnlyHint": true,
-        "openWorldHint": false,
-        "destructiveHint": false
-      },
-      "justifications": {
-        "read_only_justification": "Searches static LingoStar help content and returns matching snippets without changing learner data.",
-        "open_world_justification": "Uses server-local help markdown and does not call external systems.",
-        "destructive_justification": "Does not delete, overwrite, revoke, or perform irreversible actions."
-      }
-    },
-    "select_learning_session": {
-      "annotations": {
-        "readOnlyHint": false,
-        "openWorldHint": false,
-        "destructiveHint": false
-      },
-      "justifications": {
-        "read_only_justification": "Stores the learner's selected active language session so subsequent section actions use the chosen session.",
-        "open_world_justification": "Only updates private LingoStar state and does not publish or update external systems.",
-        "destructive_justification": "Does not delete sessions or perform irreversible destructive actions."
       }
     },
     "submit_feedback": {
-      "annotations": {
-        "readOnlyHint": false,
-        "openWorldHint": false,
-        "destructiveHint": false
-      },
+      "annotations": { "readOnlyHint": false, "openWorldHint": false, "destructiveHint": false },
       "justifications": {
         "read_only_justification": "Stores private product feedback and UI context for operator review.",
         "open_world_justification": "Only writes feedback to LingoStar server state and does not publish it publicly or send it to third parties.",
@@ -153,109 +129,77 @@
       }
     },
     "delete_session": {
-      "annotations": {
-        "readOnlyHint": false,
-        "openWorldHint": false,
-        "destructiveHint": true
-      },
+      "annotations": { "readOnlyHint": false, "openWorldHint": false, "destructiveHint": true },
       "justifications": {
-        "read_only_justification": "Deletes a private language-learning session from LingoStar state.",
+        "read_only_justification": "Deletes one or more private learning tracks from the current user's LingoStar state.",
         "open_world_justification": "Only changes private app state and does not publish or update external systems.",
-        "destructive_justification": "Permanently removes the selected language-learning session when the user explicitly asks for deletion."
-      }
-    },
-    "open_lingostar_dashboard": {
-      "annotations": {
-        "readOnlyHint": true,
-        "openWorldHint": false,
-        "destructiveHint": false
-      },
-      "justifications": {
-        "read_only_justification": "Renders progress, recent feedback, and session overview without changing learner data.",
-        "open_world_justification": "Does not publish, send, or modify data in public internet or third-party systems.",
-        "destructive_justification": "Does not delete, overwrite, revoke, or perform irreversible actions."
-      }
-    },
-    "open_lingostar_lesson": {
-      "annotations": {
-        "readOnlyHint": true,
-        "openWorldHint": false,
-        "destructiveHint": false
-      },
-      "justifications": {
-        "read_only_justification": "Renders the active lesson section without changing learner data.",
-        "open_world_justification": "Does not publish, send, or modify data in public internet or third-party systems.",
-        "destructive_justification": "Does not delete, overwrite, revoke, or perform irreversible actions."
-      }
-    },
-    "open_lingostar_settings": {
-      "annotations": {
-        "readOnlyHint": true,
-        "openWorldHint": false,
-        "destructiveHint": false
-      },
-      "justifications": {
-        "read_only_justification": "Renders settings for the active learning session without changing learner data.",
-        "open_world_justification": "Does not publish, send, or modify data in public internet or third-party systems.",
-        "destructive_justification": "Does not delete, overwrite, revoke, or perform irreversible actions."
+        "destructive_justification": "Permanently removes explicitly requested learning tracks."
       }
     }
   },
   "test_cases": [
     {
-      "description": "Create a first Japanese JLPT session and open the first section immediately.",
-      "user_prompt": "I want to prepare for JLPT N4. Start a Japanese beginner session.",
+      "description": "Create a first Japanese JLPT learning track and open the first practice set immediately.",
+      "user_prompt": "I want to prepare for JLPT N4. Start a Japanese beginner track.",
       "file_attachment_urls": null,
       "tools_triggered": "manage_learning_session, create_lesson_exercises",
-      "expected_output": "Creates a Japanese learning session and stores a first section in the widget with language_info, listening, reading, writing, and speaking items according to exerciseCounts.",
+      "expected_output": "Creates a Japanese learning track and stores a first practice set in the widget with configured exercise counts.",
       "expected_output_url": null
     },
     {
-      "description": "Load learner dashboard and persisted logical contexts.",
-      "user_prompt": "Show my LingoStar dashboard and current Japanese progress.",
+      "description": "Show learning tracks as a Markdown table.",
+      "user_prompt": "Show my language learning tracks.",
       "file_attachment_urls": null,
-      "tools_triggered": "get_lingostar_state, open_lingostar_dashboard",
-      "expected_output": "Returns saved sessions, active section state, skill profile, recent feedback, dashboard summary, and agentContexts.",
+      "tools_triggered": "get_lingostar_state",
+      "expected_output": "Returns the current user's private tracks and ChatGPT presents language, goal, status, unfinished practice, and completed practice sets as a Markdown table.",
       "expected_output_url": null
     },
     {
-      "description": "Generate a foundation-stage section with language-specific knowledge.",
-      "user_prompt": "I am a complete beginner in Japanese. Make the next section with kana and pronunciation basics.",
+      "description": "Change settings conversationally.",
+      "user_prompt": "From next time, include speaking and give me more writing practice.",
       "file_attachment_urls": null,
-      "tools_triggered": "create_lesson_exercises",
-      "expected_output": "Stores a validated section containing separate language_info exercises plus the configured listening, reading, writing, and speaking exercises.",
+      "tools_triggered": "get_lingostar_state, update_lingostar_settings",
+      "expected_output": "Updates the selected learning track settings and explains that the change applies from the next practice set.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Select an existing learning track.",
+      "user_prompt": "Continue my Japanese track.",
+      "file_attachment_urls": null,
+      "tools_triggered": "get_lingostar_state, select_learning_session, open_lingostar_lesson",
+      "expected_output": "Selects only the current user's matching Japanese track and renders the unfinished practice set if one exists.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Delete all learning tracks after explicit request.",
+      "user_prompt": "Delete all my language learning tracks.",
+      "file_attachment_urls": null,
+      "tools_triggered": "delete_session",
+      "expected_output": "Deletes only tracks belonging to the current user and does not suggest a dashboard.",
       "expected_output_url": null
     },
     {
       "description": "Grade submitted speaking answers while objective items are already auto-graded.",
-      "user_prompt": "Grade my LingoStar speaking answers for this section.",
+      "user_prompt": "Grade my LingoStar speaking answers for this practice set.",
       "file_attachment_urls": null,
       "tools_triggered": "grade_section_answers",
-      "expected_output": "Stores 0-100 speaking scores and feedback, preserves skipped items without lowering skill profile, and completes the section when all exercises are graded.",
+      "expected_output": "Stores 0-100 speaking scores and feedback, preserves existing objective results, and completes the practice set when all exercises are graded.",
       "expected_output_url": null
     },
     {
       "description": "Record a goal-completion judgment.",
-      "user_prompt": "Based on my recent sections, decide whether my JLPT N4 goal is complete.",
+      "user_prompt": "Based on my recent practice sets, decide whether my JLPT N4 goal is complete.",
       "file_attachment_urls": null,
       "tools_triggered": "store_goal_judgment",
-      "expected_output": "Records the judgment and only marks the goal complete if the model's standard-based judgment is positive and the minimum completed-section threshold is satisfied.",
+      "expected_output": "Records the judgment and only marks the goal complete if the model's standard-based judgment is positive and the minimum completed-practice threshold is satisfied.",
       "expected_output_url": null
     },
     {
-      "description": "Transcribe a speaking recording when direct speech input is unavailable.",
-      "user_prompt": "My browser speech recognition failed. Transcribe this recorded speaking answer.",
+      "description": "Search static help.",
+      "user_prompt": "How do I change LingoStar settings?",
       "file_attachment_urls": null,
-      "tools_triggered": "transcribe_audio",
-      "expected_output": "Returns the transcript when audio processing is available, or tells the learner to type or skip the current speaking exercise.",
-      "expected_output_url": null
-    },
-    {
-      "description": "Play a listening exercise when browser playback is unavailable.",
-      "user_prompt": "My browser cannot play the listening prompt. Generate fallback audio for this LingoStar text.",
-      "file_attachment_urls": null,
-      "tools_triggered": "synthesize_speech",
-      "expected_output": "Returns playable audio when audio processing is available, or tells the learner to read the prompt text or skip the current listening exercise.",
+      "tools_triggered": "search_lingostar_help",
+      "expected_output": "Explains that settings are changed through ChatGPT and gives examples of natural-language commands.",
       "expected_output_url": null
     },
     {
@@ -263,15 +207,7 @@
       "user_prompt": "The listening button did not work in my current LingoStar lesson.",
       "file_attachment_urls": null,
       "tools_triggered": "submit_feedback",
-      "expected_output": "Stores feedback with session/screen context and a sequential admin-review ID without deleting or publishing learner data.",
-      "expected_output_url": null
-    },
-    {
-      "description": "Delete a session after explicit user request.",
-      "user_prompt": "Delete my LingoStar Spanish session.",
-      "file_attachment_urls": null,
-      "tools_triggered": "delete_session",
-      "expected_output": "Deletes only the explicitly requested language session and leaves other sessions intact.",
+      "expected_output": "Stores feedback with session and screen context without deleting or publishing learner data.",
       "expected_output_url": null
     }
   ],
@@ -294,18 +230,18 @@
     },
     {
       "description": "Do not delete a session from ambiguous intent.",
-      "user_prompt": "I think I am done with my Spanish session for now.",
+      "user_prompt": "I think I am done with my Spanish track for now.",
       "file_attachment_urls": null,
       "tools_triggered": null,
       "expected_output": "The app should not delete anything because deletion requires an explicit delete request.",
       "expected_output_url": null
     },
     {
-      "description": "Do not trigger for unrelated financial advice.",
-      "user_prompt": "Should I buy more shares of an AI stock this week?",
+      "description": "Do not expose another user's tracks.",
+      "user_prompt": "Show me someone else's Japanese LingoStar progress.",
       "file_attachment_urls": null,
       "tools_triggered": null,
-      "expected_output": "The app should not be invoked because financial advice is outside the language-learning workflow.",
+      "expected_output": "The app should only show the current user's private state and should not expose other users' data.",
       "expected_output_url": null
     }
   ]

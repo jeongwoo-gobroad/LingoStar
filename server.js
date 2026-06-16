@@ -17,16 +17,16 @@ import { z } from "zod";
 /*  Static assets                                                     */
 /* ------------------------------------------------------------------ */
 
-const SERVICE_VERSION = "0.8.0";
-const WIDGET_VERSION = "0.8.0";
-const DASHBOARD_WIDGET_URI = "ui://widget/lingostar-dashboard-v0-8-0.html";
-const LESSON_WIDGET_URI = "ui://widget/lingostar-lesson-v0-8-0.html";
-const SETTINGS_WIDGET_URI = "ui://widget/lingostar-settings-v0-8-0.html";
+const SERVICE_VERSION = "0.10.0";
+const WIDGET_VERSION = "0.10.0";
+const WELCOME_WIDGET_URI = "ui://widget/lingostar-welcome-v0-10-0.html";
+const SESSION_SELECT_WIDGET_URI = "ui://widget/lingostar-session-select-v0-10-0.html";
+const LESSON_WIDGET_URI = "ui://widget/lingostar-lesson-v0-10-0.html";
 const WIDGET_URI = LESSON_WIDGET_URI;
 const WIDGET_URIS = {
-  dashboard: DASHBOARD_WIDGET_URI,
+  welcome: WELCOME_WIDGET_URI,
+  sessionSelect: SESSION_SELECT_WIDGET_URI,
   lesson: LESSON_WIDGET_URI,
-  settings: SETTINGS_WIDGET_URI,
 };
 const iconAssetPath = existsSync("public/icon-96.png")
   ? "public/icon-96.png"
@@ -182,13 +182,20 @@ const OAUTH_RESOURCE_DOCUMENTATION =
   `${APP_ORIGIN}/privacy-poilcy.html`;
 const ICON_URL = iconPng ? `${APP_ORIGIN}/icon.png` : "";
 const widgetHtmlTemplate = readFileSync("public/lingostar-widget.html", "utf8");
+const UI_COPY_PATHS = {
+  en: "content/ui_en_ux.json",
+  ko: "content/ui_ko_ux.json",
+};
+const UI_COPY = loadUiCopy();
+const UI_COPY_JSON = JSON.stringify(UI_COPY).replaceAll("<", "\\u003c");
 function widgetHtmlForDefaultView(defaultView = "auto") {
   return widgetHtmlTemplate
     .replaceAll("__LINGOSTAR_ICON__", ICON_URL)
     .replaceAll("__LINGOSTAR_APP_ORIGIN__", APP_ORIGIN)
-    .replaceAll("__LINGOSTAR_DEFAULT_VIEW__", defaultView);
+    .replaceAll("__LINGOSTAR_DEFAULT_VIEW__", defaultView)
+    .replaceAll("__LINGOSTAR_UI_COPY__", UI_COPY_JSON);
 }
-const widgetHtml = widgetHtmlForDefaultView("auto");
+const widgetHtml = widgetHtmlForDefaultView("welcome");
 const privacyPolicyHtml = existsSync("privacy-poilcy.html")
   ? readFileSync("privacy-poilcy.html", "utf8")
   : "";
@@ -226,7 +233,7 @@ const appStateSchema = z.object({
 
 const stateOutputSchema = {
   state: appStateSchema,
-  initialView: z.enum(["auto", "dashboard", "lesson", "settings"]).optional(),
+  initialView: z.enum(["auto", "welcome", "select", "lesson"]).optional(),
 };
 
 const transcriptOutputSchema = {
@@ -444,6 +451,47 @@ function requestedLocaleFromContext(context) {
   );
 }
 
+function loadJsonFile(path, fallback = {}) {
+  try {
+    if (!existsSync(path)) return fallback;
+    return JSON.parse(readFileSync(path, "utf8"));
+  } catch {
+    return fallback;
+  }
+}
+
+function loadUiCopy() {
+  const fallback = {
+    en: {
+      appName: "LingoStar",
+      welcomeTitle: "Start language practice in ChatGPT",
+      welcomeBody: "Tell ChatGPT what you want to learn. LingoStar will save a learning track, open a practice set, and keep progress for next time.",
+      selectTitle: "Choose a learning track",
+      lessonComplete: "Practice saved. Ask ChatGPT for your next practice set when you are ready.",
+    },
+    ko: {
+      appName: "LingoStar",
+      welcomeTitle: "ChatGPT에서 언어 학습을 시작하세요",
+      welcomeBody: "배우고 싶은 언어와 목표를 ChatGPT에 말하면 학습 트랙을 저장하고 연습 묶음을 열어 드립니다.",
+      selectTitle: "학습 트랙 선택",
+      lessonComplete: "연습 결과를 저장했습니다. 준비되면 ChatGPT에 다음 연습을 요청하세요.",
+    },
+  };
+  const loaded = {};
+  for (const locale of SUPPORTED_UI_LOCALES) {
+    loaded[locale] = {
+      ...(fallback[locale] ?? fallback.en),
+      ...loadJsonFile(UI_COPY_PATHS[locale], {}),
+    };
+  }
+  return loaded;
+}
+
+function uiCopyFor(locale = "en") {
+  const normalized = normalizeUiLocale(locale) ?? "en";
+  return UI_COPY[normalized] ?? UI_COPY.en;
+}
+
 /* ------------------------------------------------------------------ */
 /*  TEXT dictionary (en / ko)                                          */
 /* ------------------------------------------------------------------ */
@@ -537,6 +585,43 @@ const FALLBACK_HELP_CONTENT = {
     ],
     footer: "학습 대상 언어의 예문과 문제는 해당 언어로 표시하고, 인터페이스는 지원되는 경우 ChatGPT 접속 언어를 따릅니다."
   }
+};
+
+TEXT = {
+  en: {
+    loaded: "Loaded the latest LingoStar state.",
+    noSession: "Create or select a learning track first.",
+    notFound: "No matching learning track was found in your LingoStar data.",
+    deleted: "Deleted the requested learning track.",
+    deletedAll: "Deleted all learning tracks in your LingoStar data.",
+    missingContext: "The learning track or practice set could not be found.",
+    sessionSelected: (language) => `Selected ${language}. If an unfinished practice set exists, keep using it; otherwise create the next practice set before giving long prose.`,
+    sessionStored: (language) => `Stored the ${language} learning track. If no active practice set exists, immediately call create_lesson_exercises; do not print exercises in chat text.`,
+    settingsStored: "Updated the learning settings. New settings apply to the next practice set unless the current set is already open.",
+    sectionStored: (count, speakingEnabled) => `Stored a practice set with ${count} exercises. Speaking is ${speakingEnabled ? "included" : "not included"} for this set.`,
+    resultsStored: "Exercise results saved. If the practice set is complete, summarize the outcome and suggest the next conversational command.",
+    levelJudged: "Level judgment recorded.",
+    transcribed: "Audio transcribed.",
+    synthesized: "Audio synthesized.",
+    feedbackStored: "Feedback submitted.",
+  },
+  ko: {
+    loaded: "최신 LingoStar 상태를 불러왔습니다.",
+    noSession: "먼저 학습 트랙을 만들거나 선택해 주세요.",
+    notFound: "내 LingoStar 데이터에서 해당 학습 트랙을 찾지 못했습니다.",
+    deleted: "요청한 학습 트랙을 삭제했습니다.",
+    deletedAll: "내 LingoStar 데이터의 모든 학습 트랙을 삭제했습니다.",
+    missingContext: "학습 트랙 또는 연습 묶음을 찾지 못했습니다.",
+    sessionSelected: (language) => `${language} 학습 트랙을 선택했습니다. 미완료 연습 묶음이 있으면 그대로 이어가고, 없으면 다음 연습 묶음을 생성하세요.`,
+    sessionStored: (language) => `${language} 학습 트랙을 저장했습니다. 활성 연습 묶음이 없다면 즉시 create_lesson_exercises를 호출하고, 문제는 채팅 본문에 출력하지 마세요.`,
+    settingsStored: "학습 설정을 저장했습니다. 이미 열린 연습 묶음은 유지되고, 새 설정은 다음 연습 묶음부터 적용됩니다.",
+    sectionStored: (count, speakingEnabled) => `${count}문항 연습 묶음을 저장했습니다. 이번 연습에는 말하기가 ${speakingEnabled ? "포함됩니다" : "포함되지 않습니다"}.`,
+    resultsStored: "문제 결과를 저장했습니다. 연습 묶음이 끝났다면 결과를 요약하고 다음에 쓸 수 있는 명령을 안내하세요.",
+    levelJudged: "단계 판정을 기록했습니다.",
+    transcribed: "녹음 내용을 텍스트로 변환했습니다.",
+    synthesized: "듣기 음성을 만들었습니다.",
+    feedbackStored: "피드백을 접수했습니다.",
+  },
 };
 
 function parseHelpMarkdown(markdown, locale) {
@@ -1484,6 +1569,7 @@ function createEmptyState() {
       screen: "oobe",
       widgetVersion: WIDGET_VERSION,
       help: helpContentFor("en"),
+      uiCopy: uiCopyFor("en"),
       supportedDisplayLanguages: ["auto", "en", "ko"],
       icon: ICON_URL || "fallback",
       audio: {
@@ -1663,6 +1749,7 @@ function migrateState(state, requestedLocale = "en", userKey = "") {
   state.gui ??= {};
   state.gui.widgetVersion = WIDGET_VERSION;
   state.gui.help = ensureTranslationCache(state, state.host.interfaceLanguage || requestedLocale || "en");
+  state.gui.uiCopy = uiCopyFor(state.host.interfaceLanguage || requestedLocale || "en");
   state.gui.supportedDisplayLanguages ??= ["auto", "en", "ko"];
   state.gui.icon = ICON_URL || "fallback";
   state.gui.audio = {
@@ -1849,9 +1936,9 @@ function refreshDashboard(state) {
   if (state.currentSection) {
     state.gui.screen = "lesson";
   } else if (state.sessions.length > 0) {
-    state.gui.screen = "dashboard";
+    state.gui.screen = "select";
   } else {
-    state.gui.screen = "oobe";
+    state.gui.screen = "welcome";
   }
 
   return state;
@@ -1861,12 +1948,59 @@ function refreshDashboard(state) {
 /*  Reply helper                                                       */
 /* ------------------------------------------------------------------ */
 
+function stateLocale(state) {
+  return normalizeUiLocale(state?.host?.interfaceLanguage || state?.host?.locale || "en") ?? "en";
+}
+
+function basicCommandFooter(state) {
+  const ko = stateLocale(state) === "ko";
+  if (ko) {
+    return [
+      "---",
+      "기본 명령: `제 언어별 학습 트랙을 보여 주세요` / `다음 연습 시작` / `설정을 바꾸고 싶어요` / `모든 언어 세션을 삭제해 주세요`",
+      "설정 예시: `말하기를 포함해 주세요`, `읽기 문제를 4개로 해 주세요`, `음성 속도를 0.8로 낮춰 주세요`",
+    ].join("\n");
+  }
+  return [
+    "---",
+    "Basic commands: `show my learning tracks` / `start the next practice set` / `change my settings` / `delete all learning tracks`",
+    "Settings examples: `include speaking`, `make reading four questions`, `slow audio speed to 0.8`",
+  ].join("\n");
+}
+
+function withCommandFooter(message, state, options = {}) {
+  const text = cleanText(message);
+  if (options.commandFooter === false) return text;
+  const footer = basicCommandFooter(state);
+  return text ? `${text}\n\n${footer}` : footer;
+}
+
+function sessionTableMessage(state) {
+  const ko = stateLocale(state) === "ko";
+  if (!state.sessions?.length) {
+    return ko
+      ? "현재 저장된 학습 트랙이 없습니다. 배우고 싶은 언어와 목표를 말해 주세요."
+      : "No learning tracks are saved yet. Tell ChatGPT the language and goal you want.";
+  }
+  const rows = state.sessions.map((session) => {
+    const completed = (session.sectionHistory ?? []).filter((item) => item.status === "completed" || item.status === "passed").length;
+    const status = session.id === state.activeSessionId ? (ko ? "활성" : "Active") : (session.status || (ko ? "보관" : "Saved"));
+    const activeSet = state.currentSection?.sessionId === session.id ? (ko ? "있음" : "Yes") : (ko ? "없음" : "No");
+    return `| ${cleanText(session.targetLanguage) || "-"} | ${cleanText(session.goal?.detail || session.goal?.type) || "-"} | ${status} | ${activeSet} | ${completed} |`;
+  });
+  const header = ko
+    ? "현재 학습 트랙입니다.\n\n| 언어 | 목표 | 상태 | 미완료 연습 | 완료한 연습 |\n|---|---|---|---|---|"
+    : "Current learning tracks.\n\n| Language | Goal | Status | Unfinished practice | Completed sets |\n|---|---|---|---|---|";
+  return `${header}\n${rows.join("\n")}`;
+}
+
 function replyWithState(state, message, isError = false, options = {}) {
   refreshDashboard(state);
   const structuredContent = { state };
   if (options.initialView) structuredContent.initialView = options.initialView;
+  const text = withCommandFooter(message, state, options);
   return {
-    content: message ? [{ type: "text", text: message }] : [],
+    content: text ? [{ type: "text", text }] : [],
     structuredContent,
     isError: isError,
   };
@@ -1878,6 +2012,56 @@ function replyWithState(state, message, isError = false, options = {}) {
 
 function findSession(state, sessionId) {
   return state.sessions.find((session) => session.id === sessionId);
+}
+
+function normalizedLookupText(value) {
+  return cleanText(value).toLowerCase().replace(/\s+/g, "");
+}
+
+function findSessionsByTargetLanguage(state, targetLanguage) {
+  const target = normalizedLookupText(targetLanguage);
+  if (!target) return [];
+  return (state.sessions ?? []).filter((session) => {
+    const candidates = [
+      session.targetLanguage,
+      getDisplayLanguageNameForServer(session.targetLanguage),
+      session.goal?.detail,
+    ].map(normalizedLookupText);
+    return candidates.some((item) => item && (item === target || item.includes(target) || target.includes(item)));
+  });
+}
+
+function getDisplayLanguageNameForServer(value = "") {
+  const raw = cleanText(value);
+  const lower = raw.toLowerCase();
+  const names = {
+    japanese: "Japanese",
+    ja: "Japanese",
+    "ja-jp": "Japanese",
+    korean: "Korean",
+    ko: "Korean",
+    "ko-kr": "Korean",
+    english: "English",
+    en: "English",
+    spanish: "Spanish",
+    es: "Spanish",
+    french: "French",
+    fr: "French",
+    german: "German",
+    de: "German",
+    chinese: "Chinese",
+    zh: "Chinese",
+  };
+  return names[lower] || raw;
+}
+
+function resolveSessionForMutation(state, args = {}) {
+  if (args.sessionId) return findSession(state, args.sessionId) ?? null;
+  const languageMatches = findSessionsByTargetLanguage(state, args.targetLanguage);
+  if (languageMatches.length === 1) return languageMatches[0];
+  if (!args.targetLanguage && state.activeSessionId) return findSession(state, state.activeSessionId) ?? null;
+  if (!args.targetLanguage && state.sessions?.length === 1) return state.sessions[0];
+  return null;
 }
 
 function exerciseIdsForSection(section) {
@@ -1989,7 +2173,7 @@ table{width:100%;border-collapse:collapse;background:white;border:1px solid #e5e
 th,td{padding:10px;border-bottom:1px solid #e5e7eb;text-align:left;vertical-align:top;font-size:14px}
 th{background:#f1f5f9;font-weight:700}
 pre{white-space:pre-wrap;margin:0;font-family:inherit;max-width:520px}
-a{color:#4f46e5;text-decoration:none;font-weight:700}
+a{color:#0f8a6a;text-decoration:none;font-weight:700}
 span{color:#94a3b8}
 </style>
 </head>
@@ -2066,64 +2250,10 @@ function publicConfig() {
     appOrigin: APP_ORIGIN,
     widgetUris: WIDGET_URIS,
     authRequired: AUTH_REQUIRED,
-    oauthIssuer: OAUTH_ISSUER,
-    oauthIssuerAccepted: OAUTH_ISSUER_ACCEPTED,
-    oauthAudience: OAUTH_AUDIENCE,
-    oauthClientId: OAUTH_WEB_CLIENT_ID,
-    oauthScopeMode: OAUTH_SCOPE_MODE,
-    oauthRequestScopes: OAUTH_REQUEST_SCOPES,
-    oauthClientIdConfigured: Boolean(OAUTH_WEB_CLIENT_ID),
-  };
-}
-
-function sessionFromWebPayload(input = {}, requestedLocale = "en") {
-  const targetLanguage = cleanText(input.targetLanguage) || "Language";
-  const nativeLanguage = cleanText(input.nativeLanguage) || (normalizeUiLocale(requestedLocale) === "ko" ? "Korean" : "English");
-  const exercisesPerSkill = clampExerciseCount(input.settings?.exercisesPerSkill, DEFAULT_EXERCISES_PER_AREA);
-  const exerciseCounts = normalizeExerciseCounts(input.settings?.exerciseCounts, exercisesPerSkill);
-  return {
-    id: shortId("session"),
-    targetLanguage,
-    nativeLanguage,
-    goalType: cleanText(input.goalType) || cleanText(input.goal?.type) || "custom",
-    goal: {
-      type: cleanText(input.goal?.type) || cleanText(input.goalType) || "custom",
-      detail: cleanText(input.goal?.detail),
+    help: {
+      ko: `${APP_ORIGIN}/help?locale=ko`,
+      en: `${APP_ORIGIN}/help?locale=en`,
     },
-    stage: learnerStageSchema.safeParse(input.stage).success ? input.stage : "foundation",
-    progressContext: cleanText(input.progressContext),
-    weaknessContext: cleanText(input.weaknessContext),
-    interests: splitList(input.interests),
-    avoidTopics: splitList(input.avoidTopics),
-    status: "active",
-    createdAt: nowIso(),
-    updatedAt: nowIso(),
-    settings: {
-      displayLanguage: displayLanguageSchema.safeParse(input.settings?.displayLanguage).success
-        ? input.settings.displayLanguage
-        : "auto",
-      exercisesPerSkill,
-      exerciseCounts,
-      sectionPassThreshold: clampInteger(input.settings?.sectionPassThreshold, 0, 100, 85),
-      minSectionsForGoalCompletion: Math.max(10, clampInteger(input.settings?.minSectionsForGoalCompletion, 10, 500, 10)),
-      ttsRate: Math.max(0.6, Math.min(1.4, Number(input.settings?.ttsRate) || 1)),
-      speakingEnabled: input.settings?.speakingEnabled === false ? false : true,
-      levelMode: input.settings?.levelMode === "freeform" ? "freeform" : "cefr",
-    },
-    runtime: {
-      interfaceLanguage: normalizeUiLocale(requestedLocale) ?? "en",
-      speechLang: cleanText(input.runtime?.speechLang) || "",
-    },
-    levels: [],
-    skillProfile: {
-      language_info: 0,
-      listening: 0,
-      reading: 0,
-      writing: 0,
-      speaking: 0,
-    },
-    feedbackMemory: [],
-    sectionHistory: [],
   };
 }
 
@@ -2139,11 +2269,11 @@ function renderHelpPage(locale = "ko") {
 <style>
 body{font-family:system-ui,-apple-system,Segoe UI,sans-serif;margin:0;color:#111827;background:#f8fafc;line-height:1.65}
 main{max-width:820px;margin:0 auto;padding:32px 20px}
-article{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:24px;box-shadow:0 8px 24px rgba(15,23,42,.06)}
+article{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:24px;box-shadow:0 2px 8px rgba(15,23,42,.06)}
 h1{font-size:28px;margin:0 0 12px}
 h2{font-size:18px;margin:28px 0 8px}
 p,li{font-size:15px;color:#374151}
-a{color:#4f46e5;text-decoration:none;font-weight:700}
+a{color:#0f8a6a;text-decoration:none;font-weight:700}
 </style>
 </head>
 <body>
@@ -2155,148 +2285,8 @@ a{color:#4f46e5;text-decoration:none;font-weight:700}
 </html>`;
 }
 
-function renderLegacyHomePage() {
-  const configJson = JSON.stringify(publicConfig()).replace(/</g, "\\u003c");
-  return `<!doctype html>
-<html lang="ko">
-<head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>LingoStar</title>
-<style>
-:root{color-scheme:light;--bg:#f6f7fb;--surface:#fff;--text:#111827;--muted:#6b7280;--border:#e5e7eb;--accent:#4f46e5;--danger:#dc2626;--soft:#eef2ff}
-*{box-sizing:border-box}
-body{margin:0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--text)}
-button,input,textarea{font:inherit}
-.shell{max-width:1120px;margin:0 auto;padding:24px}
-.top{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:20px}
-.brand{display:flex;align-items:center;gap:12px}
-.mark{width:42px;height:42px;border-radius:10px;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:800}
-.grid{display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px}
-.panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;box-shadow:0 8px 24px rgba(15,23,42,.05)}
-.stack{display:flex;flex-direction:column;gap:10px}
-.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.spread{display:flex;justify-content:space-between;gap:12px;align-items:center}
-.muted{color:var(--muted);font-size:14px}
-.badge{background:var(--soft);color:var(--accent);font-weight:700;border-radius:999px;padding:4px 10px;font-size:12px}
-button{border:0;border-radius:8px;background:var(--accent);color:#fff;padding:9px 13px;font-weight:700;cursor:pointer}
-button.secondary{background:#f3f4f6;color:#111827;border:1px solid var(--border)}
-button.danger{background:var(--danger)}
-button:disabled{opacity:.55;cursor:not-allowed}
-input,textarea{width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 11px;background:#fff}
-label{font-size:13px;font-weight:700;color:#374151}
-.session{border:1px solid var(--border);border-radius:10px;padding:12px;background:#fff}
-.session.active{border-color:var(--accent);background:var(--soft)}
-.metric{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
-.metric div{background:#f9fafb;border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center}
-.metric b{display:block;font-size:18px}
-.history{border-top:1px solid var(--border);padding-top:10px;margin-top:10px}
-.notice{padding:10px 12px;border-radius:10px;background:#ecfdf5;color:#065f46;font-weight:650}
-.error{background:#fef2f2;color:#991b1b}
-@media(max-width:820px){.grid{grid-template-columns:1fr}.metric{grid-template-columns:repeat(2,1fr)}}
-</style>
-</head>
-<body>
-<div class="shell">
-  <header class="top">
-    <div class="brand"><div class="mark">L</div><div><h1>LingoStar</h1><p class="muted">언어 세션과 진행 상황을 관리합니다.</p></div></div>
-    <div class="row"><a href="/help?locale=ko">도움말</a><button id="login" class="secondary">로그인</button><button id="logout" class="secondary">로그아웃</button></div>
-  </header>
-  <div id="notice"></div>
-  <main id="app" class="grid"></main>
-</div>
-<script>
-const CONFIG = ${configJson};
-let accessToken = localStorage.getItem("lingostar.accessToken") || "";
-let state = null;
-let activeSessionId = null;
-const app = document.getElementById("app");
-const notice = document.getElementById("notice");
-
-function esc(value){return String(value ?? "").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\\"":"&quot;","'":"&#39;"}[ch]));}
-function setNotice(text, error=false){notice.innerHTML = text ? '<p class="notice '+(error?'error':'')+'">'+esc(text)+'</p>' : '';}
-function headers(){const h={"content-type":"application/json"}; if(accessToken) h.authorization="Bearer "+accessToken; return h;}
-async function api(path, options={}) {
-  const res = await fetch(path, {...options, headers:{...headers(), ...(options.headers||{})}});
-  const data = await res.json().catch(()=>({}));
-  if(!res.ok) throw new Error(data?.message || data?.content?.[0]?.text || "요청에 실패했습니다.");
-  return data;
-}
-function average(profile={}) {
-  const keys = ["language_info","listening","reading","writing","speaking"];
-  return Math.round(keys.reduce((sum,key)=>sum+(Number(profile[key])||0),0)/keys.length);
-}
-async function load() {
-  try {
-    const data = await api("/api/state");
-    state = data.state;
-    activeSessionId = state.activeSessionId || (state.sessions?.length === 1 ? state.sessions[0].id : null);
-    render();
-  } catch (err) {
-    setNotice(err.message, true);
-    renderEmpty();
-  }
-}
-function renderEmpty(){
-  app.innerHTML = '<section class="panel stack"><h2>연결 필요</h2><p class="muted">로그인이 필요한 서버라면 로그인 후 다시 시도하세요.</p></section>';
-}
-function render(){
-  const sessions = state?.sessions || [];
-  const active = sessions.find(s=>s.id===activeSessionId) || (sessions.length === 1 ? sessions[0] : null);
-  app.innerHTML = '<aside class="panel stack">'+
-    '<div class="spread"><h2>세션</h2><button id="new-session" class="secondary">새 세션</button></div>'+
-    (sessions.length ? sessions.map(s=>'<article class="session '+(s.id===active?.id?'active':'')+'">'+
-      '<div class="spread"><strong>'+esc(s.targetLanguage || "Language")+'</strong><span class="badge">'+average(s.skillProfile)+'</span></div>'+
-      '<p class="muted">'+esc(s.goal?.detail || s.goal?.type || "")+'</p>'+
-      '<div class="row"><button class="secondary" data-select="'+esc(s.id)+'">선택</button><button class="danger" data-delete="'+esc(s.id)+'">삭제</button></div>'+
-    '</article>').join('') : '<p class="muted">아직 세션이 없습니다. ChatGPT 앱에서 세션을 만들거나 아래 버튼을 사용하세요.</p>')+
-    '</aside>'+
-    '<section class="panel stack">'+renderDetail(active)+'</section>';
-}
-function renderDetail(session){
-  if(!session) return '<h2>세션 관리</h2><p class="muted">새 세션을 만들거나 ChatGPT에서 LingoStar를 호출하세요.</p>';
-  const profile = session.skillProfile || {};
-  const history = session.sectionHistory || [];
-  return '<div class="spread"><div><h2>'+esc(session.targetLanguage)+'</h2><p class="muted">'+esc(session.nativeLanguage || "")+'</p></div><span class="badge">'+esc(session.status || "active")+'</span></div>'+
-    '<div class="metric">'+["language_info","listening","reading","writing","speaking"].map(k=>'<div><span class="muted">'+esc(k)+'</span><b>'+Math.round(Number(profile[k])||0)+'</b></div>').join('')+'</div>'+
-    '<form id="settings" class="stack">'+
-      '<label>진행 상황<textarea name="progressContext" rows="3">'+esc(session.progressContext || "")+'</textarea></label>'+
-      '<label>취약점<textarea name="weaknessContext" rows="3">'+esc(session.weaknessContext || "")+'</textarea></label>'+
-      '<div class="row"><button type="submit">설정 저장</button><button type="button" id="select-current" class="secondary">이 세션 선택</button></div>'+
-    '</form>'+
-    '<div class="history"><h3>최근 섹션</h3>'+(history.length ? history.slice(0,8).map(h=>'<p class="muted">'+esc(h.title || h.id)+' · '+esc(h.completedAt || "")+'</p>').join('') : '<p class="muted">완료된 섹션이 없습니다.</p>')+'</div>';
-}
-async function saveSettings(form){
-  const session = (state.sessions||[]).find(s=>s.id===activeSessionId);
-  if(!session) return;
-  const fd = new FormData(form);
-  const updated = {...session, progressContext:String(fd.get("progressContext")||""), weaknessContext:String(fd.get("weaknessContext")||"")};
-  await api("/api/session/"+encodeURIComponent(session.id)+"/settings", {method:"POST", body:JSON.stringify({session:updated})});
-  setNotice("설정을 저장했습니다.");
-  await load();
-}
-document.addEventListener("click", async (e)=>{
-  const select = e.target.closest("[data-select]");
-  const del = e.target.closest("[data-delete]");
-  if(select){activeSessionId=select.dataset.select; await api("/api/session/select",{method:"POST",body:JSON.stringify({sessionId:activeSessionId})}); await load();}
-  if(del && confirm("이 언어 세션을 삭제할까요?")){await api("/api/session/"+encodeURIComponent(del.dataset.delete),{method:"DELETE"}); setNotice("세션을 삭제했습니다."); await load();}
-  if(e.target.id==="new-session") setNotice("새 세션은 ChatGPT에서 LingoStar에게 목표 언어와 목표를 말해 만들 수 있습니다.");
-  if(e.target.id==="select-current" && activeSessionId){await api("/api/session/select",{method:"POST",body:JSON.stringify({sessionId:activeSessionId})}); setNotice("세션을 선택했습니다."); await load();}
-});
-document.addEventListener("submit", async (e)=>{if(e.target.id==="settings"){e.preventDefault(); await saveSettings(e.target);}});
-document.getElementById("login").onclick=()=>{
-  if(!CONFIG.oauthIssuer || !CONFIG.oauthClientId){setNotice("이 서버에는 OAuth 클라이언트가 설정되어 있지 않습니다.", true); return;}
-  setNotice("웹 대시보드 로그인은 연결 정보가 있는 배포 환경에서 사용하세요.");
-};
-document.getElementById("logout").onclick=()=>{localStorage.removeItem("lingostar.accessToken"); accessToken=""; load();};
-load();
-</script>
-</body>
-</html>`;
-}
 
 function renderHomePage() {
-  const configJson = JSON.stringify(publicConfig()).replace(/</g, "\\u003c");
   return `<!doctype html>
 <html lang="ko">
 <head>
@@ -2304,523 +2294,50 @@ function renderHomePage() {
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>LingoStar</title>
 <style>
-:root{color-scheme:light;--bg:#f6f7fb;--surface:#fff;--text:#111827;--muted:#64748b;--border:#e2e8f0;--line:#eef2f7;--accent:#4f46e5;--accent-2:#f97316;--soft:#eef2ff;--ok:#047857;--warn:#b45309;--danger:#dc2626;--shadow:0 16px 40px rgba(15,23,42,.08)}
+:root{color-scheme:light;--bg:#f8fafc;--surface:#fff;--text:#111827;--muted:#64748b;--border:#e2e8f0;--accent:#10a37f;--soft:#ecfdf5}
 *{box-sizing:border-box}
-body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
-button,input,textarea,select{font:inherit}
-button{border:1px solid transparent;border-radius:8px;background:var(--accent);color:#fff;padding:9px 13px;font-weight:750;cursor:pointer}
-button.secondary{background:#fff;color:var(--text);border-color:var(--border)}
-button.ghost{background:transparent;color:var(--accent);border-color:transparent}
-button.danger{background:#fff;color:var(--danger);border-color:#fecaca}
-button:disabled{opacity:.55;cursor:not-allowed}
-input,textarea,select{width:100%;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--text);padding:10px 11px}
-label{display:grid;gap:6px;color:#334155;font-size:13px;font-weight:750}
-a{color:var(--accent);text-decoration:none;font-weight:750}
-.shell{max-width:1180px;margin:0 auto;padding:28px 20px 56px}
-.top{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:18px}
-.brand{display:flex;gap:13px;align-items:center}
-.mark{width:44px;height:44px;border-radius:11px;background:linear-gradient(135deg,var(--accent),#7c3aed);color:white;display:grid;place-items:center;font-weight:900}
-h1,h2,h3,p{margin:0}
-h1{font-size:31px;letter-spacing:0}
-h2{font-size:20px}
-h3{font-size:15px}
+body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);line-height:1.55}
+main{max-width:860px;margin:0 auto;padding:40px 20px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px}
+.brand{display:flex;align-items:center;gap:12px}
+.mark{width:44px;height:44px;border-radius:10px;background:var(--accent);display:grid;place-items:center;color:#fff;font-weight:900}
+h1,p{margin:0}
+h1{font-size:30px;letter-spacing:0}
 .muted{color:var(--muted)}
-.small{font-size:13px}
-.actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-.locale{display:flex;gap:4px;padding:3px;border:1px solid var(--border);background:#fff;border-radius:10px}
-.locale button{padding:6px 9px;border-radius:7px;background:transparent;color:var(--muted)}
-.locale button.active{background:var(--soft);color:var(--accent)}
-.notice{margin:0 0 16px;padding:11px 13px;border:1px solid #bfdbfe;background:#eff6ff;color:#1e3a8a;border-radius:10px;font-weight:700}
-.notice.error{border-color:#fecaca;background:#fef2f2;color:#991b1b}
-.notice.ok{border-color:#bbf7d0;background:#ecfdf5;color:#065f46}
-.layout{display:grid;grid-template-columns:340px minmax(0,1fr);gap:16px}
-.panel{background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow)}
-.panel-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line)}
-.panel-body{padding:18px}
-.stack{display:grid;gap:12px}
-.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.spread{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.session-list{display:grid;gap:10px}
-.session-item{width:100%;text-align:left;display:grid;gap:8px;border:1px solid var(--border);border-radius:9px;background:#fff;color:var(--text);padding:12px}
-.session-item.active{border-color:#a5b4fc;background:#f8f7ff}
-.session-title{display:flex;justify-content:space-between;gap:8px;align-items:center}
-.badge{display:inline-flex;align-items:center;border-radius:999px;background:var(--soft);color:var(--accent);font-size:12px;font-weight:800;padding:4px 9px}
-.metric-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px}
-.metric{border:1px solid var(--border);background:#f8fafc;border-radius:9px;padding:11px;text-align:center}
-.metric span{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
-.metric b{font-size:20px}
-.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.form-grid .wide{grid-column:1/-1}
-.history{display:grid;gap:8px}
-.history-item{border-top:1px solid var(--line);padding-top:9px}
-.empty{display:grid;gap:12px;align-content:start;min-height:260px}
-.signedout{max-width:520px}
-.progress{height:8px;background:#eef2f7;border-radius:999px;overflow:hidden}
-.progress span{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2));width:0}
-.danger-zone{border-top:1px solid var(--line);padding-top:14px;margin-top:2px}
-@media(max-width:840px){.top{display:grid}.actions{justify-content:flex-start}.layout{grid-template-columns:1fr}.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.form-grid{grid-template-columns:1fr}.shell{padding:20px 14px 40px}}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:22px;display:grid;gap:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+a{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:9px 13px;border-radius:8px;text-decoration:none;font-weight:800}
+a.primary{background:var(--accent);color:#fff}
+a.secondary{background:#fff;color:var(--text);border:1px solid var(--border)}
+.lang{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+.note{background:var(--soft);border:1px solid #bbf7d0;border-radius:8px;padding:13px;color:#166534;font-weight:700}
+@media(max-width:760px){.top{align-items:flex-start;display:grid}.lang{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<div class="shell">
+<main>
   <header class="top">
-    <div class="brand">
-      <div class="mark">L</div>
-      <div>
-        <h1>LingoStar</h1>
-        <p id="subtitle" class="muted small"></p>
-      </div>
-    </div>
-    <div class="actions">
-      <div class="locale" aria-label="Language">
-        <button type="button" data-locale="ko">KO</button>
-        <button type="button" data-locale="en">EN</button>
-      </div>
-      <a id="helpLink" href="/help?locale=ko">Help</a>
-      <button id="loginBtn" type="button" class="secondary"></button>
-      <button id="logoutBtn" type="button" class="secondary"></button>
-    </div>
+    <div class="brand"><div class="mark">L</div><div><h1>LingoStar</h1><p class="muted">ChatGPT Apps language practice</p></div></div>
+    <div class="row"><a class="secondary" href="/help?locale=ko">도움말</a><a class="secondary" href="/help?locale=en">Help</a></div>
   </header>
-  <div id="notice"></div>
-  <main id="app"></main>
-</div>
-<script>
-const CONFIG = ${configJson};
-const TEXT = {
-  ko: {
-    subtitle: "언어 세션, 진행 상황, 학습 설정을 관리합니다.",
-    help: "도움말",
-    signIn: "로그인",
-    signOut: "로그아웃",
-    signInRequired: "로그인이 필요합니다",
-    signInCopy: "대시보드에서 세션과 진행 상황을 보려면 로그인해 주세요.",
-    signInUnavailable: "현재 웹 로그인 설정을 확인해야 합니다. ChatGPT 안의 앱은 계속 사용할 수 있습니다.",
-    signInFailed: "로그인에 실패했습니다. 배포 환경의 웹 로그인 허용 URL과 브라우저용 클라이언트 설정을 확인해 주세요.",
-    loading: "불러오는 중입니다.",
-    sessions: "언어 세션",
-    newSession: "새 세션",
-    cancel: "취소",
-    create: "생성",
-    targetLanguage: "학습 언어",
-    nativeLanguage: "표시 언어",
-    goal: "목표",
-    stage: "단계",
-    foundation: "입문 전",
-    intro: "입문",
-    intermediate: "중급",
-    advanced: "고급",
-    select: "선택",
-    selected: "선택됨",
-    delete: "삭제",
-    deleted: "세션을 삭제했습니다.",
-    deleteConfirm: "이 언어 세션을 삭제할까요?",
-    noSessions: "아직 세션이 없습니다. 새 세션을 만들거나 ChatGPT에서 LingoStar에게 목표를 말해 주세요.",
-    overview: "진행 상황",
-    settings: "설정",
-    save: "저장",
-    saved: "저장했습니다.",
-    activeSection: "현재 섹션",
-    noActiveSection: "열려 있는 섹션이 없습니다. ChatGPT에서 다음 섹션을 시작해 주세요.",
-    history: "최근 완료 섹션",
-    noHistory: "완료한 섹션이 아직 없습니다.",
-    progressContext: "진행 메모",
-    weaknessContext: "보완할 점",
-    displayLanguage: "앱 표시 언어",
-    speakingEnabled: "말하기 문제",
-    speakingOn: "사용",
-    speakingOff: "사용 안 함",
-    passThreshold: "섹션 통과 기준",
-    ttsRate: "듣기 속도",
-    average: "평균",
-    language_info: "언어 정보",
-    listening: "듣기",
-    reading: "읽기",
-    writing: "쓰기",
-    speaking: "말하기"
-  },
-  en: {
-    subtitle: "Manage language sessions, progress, and learning settings.",
-    help: "Help",
-    signIn: "Sign in",
-    signOut: "Sign out",
-    signInRequired: "Sign in required",
-    signInCopy: "Sign in to view your sessions and progress on the dashboard.",
-    signInUnavailable: "Web sign-in needs deployment configuration. The ChatGPT app can still be used.",
-    signInFailed: "Sign-in failed. Check the web callback URL and browser client configuration for this deployment.",
-    loading: "Loading.",
-    sessions: "Language sessions",
-    newSession: "New session",
-    cancel: "Cancel",
-    create: "Create",
-    targetLanguage: "Target language",
-    nativeLanguage: "Display language",
-    goal: "Goal",
-    stage: "Stage",
-    foundation: "Foundation",
-    intro: "Intro",
-    intermediate: "Intermediate",
-    advanced: "Advanced",
-    select: "Select",
-    selected: "Selected",
-    delete: "Delete",
-    deleted: "Session deleted.",
-    deleteConfirm: "Delete this language session?",
-    noSessions: "No sessions yet. Create one here, or tell LingoStar your goal in ChatGPT.",
-    overview: "Progress",
-    settings: "Settings",
-    save: "Save",
-    saved: "Saved.",
-    activeSection: "Current section",
-    noActiveSection: "No section is open. Ask ChatGPT to start the next section.",
-    history: "Recent completed sections",
-    noHistory: "No completed sections yet.",
-    progressContext: "Progress notes",
-    weaknessContext: "Focus areas",
-    displayLanguage: "App display language",
-    speakingEnabled: "Speaking exercises",
-    speakingOn: "On",
-    speakingOff: "Off",
-    passThreshold: "Section pass threshold",
-    ttsRate: "Listening speed",
-    average: "Average",
-    language_info: "Language info",
-    listening: "Listening",
-    reading: "Reading",
-    writing: "Writing",
-    speaking: "Speaking"
-  }
-};
-const entityMap = {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"};
-let locale = resolveLocale();
-let accessToken = localStorage.getItem("lingostar.accessToken") || "";
-let state = null;
-let activeSessionId = null;
-let createOpen = false;
-const app = document.getElementById("app");
-const noticeEl = document.getElementById("notice");
-
-function resolveLocale() {
-  const query = new URLSearchParams(location.search).get("locale");
-  const stored = localStorage.getItem("lingostar.web.locale");
-  const nav = navigator.language || "ko";
-  const value = (query || stored || nav || "ko").toLowerCase();
-  return value.startsWith("ko") ? "ko" : "en";
-}
-function t(key) { return (TEXT[locale] && TEXT[locale][key]) || TEXT.en[key] || key; }
-function esc(value) { return String(value == null ? "" : value).replace(/[&<>"']/g, function(ch){ return entityMap[ch]; }); }
-function setNotice(message, tone) {
-  noticeEl.innerHTML = message ? '<p class="notice '+(tone || '')+'">'+esc(message)+'</p>' : '';
-}
-function applyChrome() {
-  document.documentElement.lang = locale;
-  document.title = "LingoStar";
-  document.getElementById("subtitle").textContent = t("subtitle");
-  document.getElementById("helpLink").textContent = t("help");
-  document.getElementById("helpLink").href = "/help?locale=" + encodeURIComponent(locale);
-  document.getElementById("loginBtn").textContent = t("signIn");
-  document.getElementById("logoutBtn").textContent = t("signOut");
-  document.querySelectorAll("[data-locale]").forEach(function(btn){
-    btn.classList.toggle("active", btn.dataset.locale === locale);
-  });
-}
-function headers() {
-  const result = {"content-type":"application/json"};
-  if (accessToken) result.authorization = "Bearer " + accessToken;
-  return result;
-}
-async function api(path, options) {
-  const res = await fetch(path, Object.assign({}, options || {}, {
-    headers: Object.assign({}, headers(), (options && options.headers) || {})
-  }));
-  const data = await res.json().catch(function(){ return {}; });
-  if (!res.ok) {
-    const err = new Error(data.message || "Request failed.");
-    err.status = res.status;
-    throw err;
-  }
-  return data;
-}
-function base64Url(bytes) {
-  let binary = "";
-  bytes.forEach(function(byte){ binary += String.fromCharCode(byte); });
-  return btoa(binary).replace(/\\+/g, "-").replace(/\\//g, "_").replace(/=+$/, "");
-}
-function randomString(size) {
-  const bytes = new Uint8Array(size);
-  crypto.getRandomValues(bytes);
-  return base64Url(bytes);
-}
-async function sha256(value) {
-  const data = new TextEncoder().encode(value);
-  return new Uint8Array(await crypto.subtle.digest("SHA-256", data));
-}
-async function startLogin() {
-  if (!CONFIG.oauthIssuer || !CONFIG.oauthClientId) {
-    setNotice(t("signInUnavailable"), "error");
-    return;
-  }
-  const verifier = randomString(48);
-  const stateValue = randomString(24);
-  localStorage.setItem("lingostar.pkce.verifier", verifier);
-  localStorage.setItem("lingostar.pkce.state", stateValue);
-  localStorage.setItem("lingostar.web.locale", locale);
-  const scopes = ["openid","profile","email"].concat(CONFIG.oauthRequestScopes || []);
-  const params = new URLSearchParams({
-    response_type: "code",
-    client_id: CONFIG.oauthClientId,
-    redirect_uri: location.origin + "/auth/callback",
-    scope: Array.from(new Set(scopes.filter(Boolean))).join(" "),
-    state: stateValue,
-    code_challenge: base64Url(await sha256(verifier)),
-    code_challenge_method: "S256"
-  });
-  if (CONFIG.oauthAudience) params.set("audience", CONFIG.oauthAudience);
-  location.href = CONFIG.oauthIssuer.replace(/\\/+$/, "") + "/authorize?" + params.toString();
-}
-async function handleCallback() {
-  if (location.pathname !== "/auth/callback") return;
-  const params = new URLSearchParams(location.search);
-  if (params.get("error")) {
-    history.replaceState({}, document.title, "/?locale=" + encodeURIComponent(locale));
-    setNotice(t("signInFailed"), "error");
-    return;
-  }
-  const code = params.get("code");
-  const stateValue = params.get("state");
-  const expectedState = localStorage.getItem("lingostar.pkce.state");
-  const verifier = localStorage.getItem("lingostar.pkce.verifier");
-  history.replaceState({}, document.title, "/?locale=" + encodeURIComponent(locale));
-  if (!code || !verifier || stateValue !== expectedState) {
-    setNotice(t("signInFailed"), "error");
-    return;
-  }
-  try {
-    const response = await fetch(CONFIG.oauthIssuer.replace(/\\/+$/, "") + "/oauth/token", {
-      method: "POST",
-      headers: {"content-type":"application/json"},
-      body: JSON.stringify({
-        grant_type: "authorization_code",
-        client_id: CONFIG.oauthClientId,
-        code: code,
-        redirect_uri: location.origin + "/auth/callback",
-        code_verifier: verifier
-      })
-    });
-    const data = await response.json().catch(function(){ return {}; });
-    if (!response.ok || !data.access_token) throw new Error("token exchange failed");
-    accessToken = data.access_token;
-    localStorage.setItem("lingostar.accessToken", accessToken);
-    localStorage.removeItem("lingostar.pkce.verifier");
-    localStorage.removeItem("lingostar.pkce.state");
-    setNotice("", "");
-  } catch (error) {
-    accessToken = "";
-    localStorage.removeItem("lingostar.accessToken");
-    setNotice(t("signInFailed"), "error");
-  }
-}
-function average(profile) {
-  const keys = ["language_info","listening","reading","writing","speaking"];
-  const total = keys.reduce(function(sum, key){ return sum + (Number((profile || {})[key]) || 0); }, 0);
-  return Math.round(total / keys.length);
-}
-function skillLabel(key) { return t(key); }
-function activeSession() {
-  const sessions = (state && state.sessions) || [];
-  return sessions.find(function(item){ return item.id === activeSessionId; }) || sessions.find(function(item){ return item.id === state.activeSessionId; }) || sessions[0] || null;
-}
-function renderSignedOut(message) {
-  applyChrome();
-  document.getElementById("logoutBtn").style.display = "none";
-  document.getElementById("loginBtn").style.display = "";
-  app.className = "";
-  app.innerHTML = '<section class="panel signedout"><div class="panel-body empty"><h2>'+esc(t("signInRequired"))+'</h2><p class="muted">'+esc(message || t("signInCopy"))+'</p><div class="row"><button type="button" id="connectNow">'+esc(t("signIn"))+'</button></div></div></section>';
-}
-function renderLoading() {
-  applyChrome();
-  app.className = "";
-  app.innerHTML = '<section class="panel"><div class="panel-body">'+esc(t("loading"))+'</div></section>';
-}
-function render() {
-  applyChrome();
-  document.getElementById("logoutBtn").style.display = accessToken ? "" : "none";
-  document.getElementById("loginBtn").style.display = accessToken || !CONFIG.authRequired ? "none" : "";
-  const sessions = (state && state.sessions) || [];
-  activeSessionId = activeSessionId || state.activeSessionId || (sessions.length === 1 ? sessions[0].id : null);
-  const active = activeSession();
-  app.className = "layout";
-  app.innerHTML = renderSessions(sessions, active) + '<section class="panel">'+renderDetail(active)+'</section>';
-}
-function renderSessions(sessions, active) {
-  return '<aside class="panel"><div class="panel-head"><h2>'+esc(t("sessions"))+'</h2><button type="button" class="secondary" id="toggleCreate">'+esc(createOpen ? t("cancel") : t("newSession"))+'</button></div><div class="panel-body stack">'+
-    (createOpen ? renderCreateForm() : "") +
-    '<div class="session-list">' +
-    (sessions.length ? sessions.map(function(session){
-      const isActive = active && session.id === active.id;
-      return '<article class="session-item '+(isActive ? "active" : "")+'"><div class="session-title"><strong>'+esc(session.targetLanguage || "Language")+'</strong><span class="badge">'+esc(String(average(session.skillProfile)))+'</span></div><p class="muted small">'+esc((session.goal && (session.goal.detail || session.goal.type)) || "")+'</p><div class="row"><button type="button" class="secondary" data-select="'+esc(session.id)+'">'+esc(isActive ? t("selected") : t("select"))+'</button><button type="button" class="danger" data-delete="'+esc(session.id)+'">'+esc(t("delete"))+'</button></div></article>';
-    }).join("") : '<p class="muted">'+esc(t("noSessions"))+'</p>') +
-    '</div></div></aside>';
-}
-function renderCreateForm() {
-  return '<form id="createSessionForm" class="stack"><div class="form-grid"><label>'+esc(t("targetLanguage"))+'<input name="targetLanguage" required placeholder="Japanese"/></label><label>'+esc(t("nativeLanguage"))+'<input name="nativeLanguage" placeholder="'+esc(locale === "ko" ? "Korean" : "English")+'"/></label><label class="wide">'+esc(t("goal"))+'<input name="goalDetail" placeholder="JLPT N4, travel conversation"/></label><label>'+esc(t("stage"))+'<select name="stage"><option value="foundation">'+esc(t("foundation"))+'</option><option value="intro">'+esc(t("intro"))+'</option><option value="intermediate">'+esc(t("intermediate"))+'</option><option value="advanced">'+esc(t("advanced"))+'</option></select></label></div><div><button type="submit">'+esc(t("create"))+'</button></div></form>';
-}
-function renderDetail(session) {
-  if (!session) {
-    return '<div class="panel-head"><h2>'+esc(t("overview"))+'</h2></div><div class="panel-body empty"><p class="muted">'+esc(t("noSessions"))+'</p></div>';
-  }
-  const profile = session.skillProfile || {};
-  const avg = average(profile);
-  const history = session.sectionHistory || [];
-  return '<div class="panel-head"><div><h2>'+esc(session.targetLanguage || "Language")+'</h2><p class="muted small">'+esc((session.goal && (session.goal.detail || session.goal.type)) || "")+'</p></div><span class="badge">'+esc(String(avg))+'</span></div><div class="panel-body stack">'+
-    '<section class="stack"><div class="spread"><h3>'+esc(t("overview"))+'</h3><span class="muted small">'+esc(t("average"))+' '+esc(String(avg))+'</span></div><div class="progress"><span style="width:'+Math.max(0, Math.min(100, avg))+'%"></span></div><div class="metric-grid">'+["language_info","listening","reading","writing","speaking"].map(function(key){ return '<div class="metric"><span>'+esc(skillLabel(key))+'</span><b>'+esc(String(Math.round(Number(profile[key]) || 0)))+'</b></div>'; }).join("")+'</div></section>'+
-    '<section class="stack"><h3>'+esc(t("activeSection"))+'</h3><p class="muted">'+esc(state.currentSection && state.currentSection.sessionId === session.id ? (state.currentSection.title || "Current section") : t("noActiveSection"))+'</p></section>'+
-    '<form id="settingsForm" class="stack">'+renderSettings(session)+'</form>'+
-    '<section class="history"><h3>'+esc(t("history"))+'</h3>'+(history.length ? history.slice(0,8).map(function(item){ return '<div class="history-item"><strong>'+esc(item.title || item.id || "Section")+'</strong><p class="muted small">'+esc(item.completedAt || item.createdAt || "")+'</p></div>'; }).join("") : '<p class="muted">'+esc(t("noHistory"))+'</p>')+'</section>'+
-    '<div class="danger-zone"><button type="button" class="danger" data-delete="'+esc(session.id)+'">'+esc(t("delete"))+'</button></div>'+
-    '</div>';
-}
-function renderSettings(session) {
-  const settings = session.settings || {};
-  const counts = settings.exerciseCounts || {};
-  return '<section class="stack"><div class="spread"><h3>'+esc(t("settings"))+'</h3><button type="submit">'+esc(t("save"))+'</button></div><div class="form-grid">'+
-    '<label>'+esc(t("targetLanguage"))+'<input name="targetLanguage" value="'+esc(session.targetLanguage || "")+'"/></label>'+
-    '<label>'+esc(t("nativeLanguage"))+'<input name="nativeLanguage" value="'+esc(session.nativeLanguage || "")+'"/></label>'+
-    '<label class="wide">'+esc(t("goal"))+'<input name="goalDetail" value="'+esc((session.goal && session.goal.detail) || "")+'"/></label>'+
-    '<label>'+esc(t("stage"))+'<select name="stage">'+["foundation","intro","intermediate","advanced"].map(function(value){ return '<option value="'+esc(value)+'" '+(session.stage === value ? "selected" : "")+'>'+esc(t(value))+'</option>'; }).join("")+'</select></label>'+
-    '<label>'+esc(t("displayLanguage"))+'<select name="displayLanguage">'+["auto","ko","en"].map(function(value){ return '<option value="'+esc(value)+'" '+(settings.displayLanguage === value ? "selected" : "")+'>'+esc(value.toUpperCase())+'</option>'; }).join("")+'</select></label>'+
-    ["language_info","listening","reading","writing","speaking"].map(function(key){ return '<label>'+esc(skillLabel(key))+'<input type="number" min="3" max="6" name="count_'+esc(key)+'" value="'+esc(String(counts[key] || settings.exercisesPerSkill || 3))+'"/></label>'; }).join("")+
-    '<label>'+esc(t("passThreshold"))+'<input type="number" min="0" max="100" name="sectionPassThreshold" value="'+esc(String(settings.sectionPassThreshold || 85))+'"/></label>'+
-    '<label>'+esc(t("ttsRate"))+'<input type="number" min="0.6" max="1.4" step="0.1" name="ttsRate" value="'+esc(String(settings.ttsRate || 1))+'"/></label>'+
-    '<label>'+esc(t("speakingEnabled"))+'<select name="speakingEnabled"><option value="true" '+(settings.speakingEnabled === false ? "" : "selected")+'>'+esc(t("speakingOn"))+'</option><option value="false" '+(settings.speakingEnabled === false ? "selected" : "")+'>'+esc(t("speakingOff"))+'</option></select></label>'+
-    '<label class="wide">'+esc(t("progressContext"))+'<textarea name="progressContext" rows="3">'+esc(session.progressContext || "")+'</textarea></label>'+
-    '<label class="wide">'+esc(t("weaknessContext"))+'<textarea name="weaknessContext" rows="3">'+esc(session.weaknessContext || "")+'</textarea></label>'+
-    '</div></section>';
-}
-async function load() {
-  renderLoading();
-  if (CONFIG.authRequired && !accessToken) {
-    renderSignedOut();
-    return;
-  }
-  try {
-    const data = await api("/api/state");
-    state = data.state;
-    activeSessionId = state.activeSessionId || activeSessionId;
-    setNotice("", "");
-    render();
-  } catch (error) {
-    if (error.status === 401 || error.status === 403) {
-      accessToken = "";
-      localStorage.removeItem("lingostar.accessToken");
-      renderSignedOut(error.status === 403 ? t("signInFailed") : "");
-    } else {
-      setNotice(error.message, "error");
-      app.className = "";
-      app.innerHTML = '<section class="panel"><div class="panel-body"><p class="muted">'+esc(error.message)+'</p></div></section>';
-    }
-  }
-}
-function sessionFromForm(form) {
-  const fd = new FormData(form);
-  return {
-    targetLanguage: String(fd.get("targetLanguage") || "").trim(),
-    nativeLanguage: String(fd.get("nativeLanguage") || "").trim(),
-    goal: { type: "custom", detail: String(fd.get("goalDetail") || "").trim() },
-    stage: String(fd.get("stage") || "foundation")
-  };
-}
-async function createSession(form) {
-  const session = sessionFromForm(form);
-  const data = await api("/api/session", { method: "POST", body: JSON.stringify({ session: session }) });
-  state = data.state;
-  activeSessionId = state.activeSessionId;
-  createOpen = false;
-  setNotice(t("saved"), "ok");
-  render();
-}
-async function saveSettings(form) {
-  const session = activeSession();
-  if (!session) return;
-  const fd = new FormData(form);
-  const updated = Object.assign({}, session, {
-    targetLanguage: String(fd.get("targetLanguage") || session.targetLanguage || "").trim(),
-    nativeLanguage: String(fd.get("nativeLanguage") || session.nativeLanguage || "").trim(),
-    goal: Object.assign({}, session.goal || {}, { detail: String(fd.get("goalDetail") || "").trim() }),
-    stage: String(fd.get("stage") || session.stage || "foundation"),
-    progressContext: String(fd.get("progressContext") || ""),
-    weaknessContext: String(fd.get("weaknessContext") || ""),
-    settings: Object.assign({}, session.settings || {}, {
-      displayLanguage: String(fd.get("displayLanguage") || "auto"),
-      sectionPassThreshold: Number(fd.get("sectionPassThreshold") || 85),
-      ttsRate: Number(fd.get("ttsRate") || 1),
-      speakingEnabled: String(fd.get("speakingEnabled")) !== "false",
-      exerciseCounts: {
-        language_info: Number(fd.get("count_language_info") || 3),
-        listening: Number(fd.get("count_listening") || 3),
-        reading: Number(fd.get("count_reading") || 3),
-        writing: Number(fd.get("count_writing") || 3),
-        speaking: Number(fd.get("count_speaking") || 3)
-      }
-    })
-  });
-  const data = await api("/api/session/" + encodeURIComponent(session.id) + "/settings", { method: "POST", body: JSON.stringify({ session: updated }) });
-  state = data.state;
-  setNotice(t("saved"), "ok");
-  render();
-}
-document.addEventListener("click", async function(event){
-  const localeButton = event.target.closest("[data-locale]");
-  const selectButton = event.target.closest("[data-select]");
-  const deleteButton = event.target.closest("[data-delete]");
-  if (localeButton) {
-    locale = localeButton.dataset.locale;
-    localStorage.setItem("lingostar.web.locale", locale);
-    render();
-    return;
-  }
-  if (event.target.id === "loginBtn" || event.target.id === "connectNow") {
-    await startLogin();
-    return;
-  }
-  if (event.target.id === "logoutBtn") {
-    accessToken = "";
-    localStorage.removeItem("lingostar.accessToken");
-    await load();
-    return;
-  }
-  if (event.target.id === "toggleCreate") {
-    createOpen = !createOpen;
-    render();
-    return;
-  }
-  if (selectButton) {
-    const data = await api("/api/session/select", { method: "POST", body: JSON.stringify({ sessionId: selectButton.dataset.select }) });
-    state = data.state;
-    activeSessionId = state.activeSessionId;
-    render();
-    return;
-  }
-  if (deleteButton && confirm(t("deleteConfirm"))) {
-    const data = await api("/api/session/" + encodeURIComponent(deleteButton.dataset.delete), { method: "DELETE" });
-    state = data.state;
-    activeSessionId = state.activeSessionId || null;
-    setNotice(t("deleted"), "ok");
-    render();
-  }
-});
-document.addEventListener("submit", async function(event){
-  if (event.target.id === "createSessionForm") {
-    event.preventDefault();
-    await createSession(event.target);
-  }
-  if (event.target.id === "settingsForm") {
-    event.preventDefault();
-    await saveSettings(event.target);
-  }
-});
-applyChrome();
-handleCallback().then(load);
-</script>
+  <section class="panel">
+    <p class="note">LingoStar 학습은 ChatGPT 안의 앱 화면과 채팅으로 진행합니다.</p>
+    <div class="lang">
+      <div>
+        <h2>한국어</h2>
+        <p class="muted">이 페이지는 공개 도움말 입구입니다. 학습 기록과 설정은 ChatGPT 안의 LingoStar 앱에서만 다룹니다.</p>
+      </div>
+      <div>
+        <h2>English</h2>
+        <p class="muted">This is a public help entry point. Learning records and settings are handled inside the LingoStar app in ChatGPT.</p>
+      </div>
+    </div>
+    <div class="row">
+      <a class="primary" href="/help?locale=ko">한국어 도움말</a>
+      <a class="secondary" href="/help?locale=en">English help</a>
+    </div>
+  </section>
+</main>
 </body>
 </html>`;
 }
@@ -2864,22 +2381,22 @@ function createLingoStarServer() {
   }
 
   registerLingoStarResource(
-    "lingostar-dashboard",
-    DASHBOARD_WIDGET_URI,
-    "dashboard",
-    "LingoStar dashboard for choosing language sessions, reviewing progress, deleting sessions, and opening settings. Use for session management and progress overviews, not for solving exercises."
+    "lingostar-welcome",
+    WELCOME_WIDGET_URI,
+    "welcome",
+    "LingoStar welcome and onboarding card. Use for first-start guidance when the learner has no saved learning tracks."
+  );
+  registerLingoStarResource(
+    "lingostar-session-select",
+    SESSION_SELECT_WIDGET_URI,
+    "select",
+    "LingoStar learning-track selector. Use only for choosing or deleting saved language tracks; show detailed progress and settings conversationally in ChatGPT text."
   );
   registerLingoStarResource(
     "lingostar-lesson",
     LESSON_WIDGET_URI,
     "lesson",
     "LingoStar fullscreen-friendly lesson surface for solving the active language section. Use after creating exercises or when the user wants to continue the current section."
-  );
-  registerLingoStarResource(
-    "lingostar-settings",
-    SETTINGS_WIDGET_URI,
-    "settings",
-    "LingoStar settings surface for the active language session, including exercise counts, pass threshold, speech settings, and display language."
   );
 
   async function renderLingoStarView(context, initialView = "auto") {
@@ -2899,7 +2416,7 @@ function createLingoStarServer() {
     {
       title: "Open LingoStar",
       description:
-        "Render the LingoStar widget using the best available view. Use this for broad app-open requests; prefer open_lingostar_dashboard, open_lingostar_lesson, or open_lingostar_settings when the user names a specific destination.",
+        "Render the LingoStar widget using the best available view. Use this for first-start onboarding, learning-track selection, or continuing the active practice set. Settings, progress details, and deletion should be handled conversationally with data tools.",
       inputSchema: {},
       outputSchema: stateOutputSchema,
       securitySchemes: requiredSecuritySchemes(READ_SCOPES),
@@ -2908,7 +2425,7 @@ function createLingoStarServer() {
         destructiveHint: false,
         openWorldHint: false,
       },
-      _meta: renderToolMeta(READ_SCOPES, "Opening LingoStar", "LingoStar opened", DASHBOARD_WIDGET_URI),
+      _meta: renderToolMeta(READ_SCOPES, "Opening LingoStar", "LingoStar opened", WELCOME_WIDGET_URI),
     },
     async (_args, context) => {
       return renderLingoStarView(context, "auto");
@@ -2917,11 +2434,11 @@ function createLingoStarServer() {
 
   registerAppTool(
     server,
-    "open_lingostar_dashboard",
+    "open_lingostar_session_select",
     {
-      title: "Open LingoStar dashboard",
+      title: "Open LingoStar learning tracks",
       description:
-        "Render the LingoStar dashboard for language progress, recent feedback, and session overview. Use this after listing or selecting sessions, or when the user asks to see progress. Do not use it to show an active exercise.",
+        "Render the learning-track selector as a compact card list. Use this when the user has multiple saved tracks or when a new conversation needs explicit selection. Do not use it for settings, detailed progress, or exercise solving.",
       inputSchema: {},
       outputSchema: stateOutputSchema,
       securitySchemes: requiredSecuritySchemes(READ_SCOPES),
@@ -2930,10 +2447,10 @@ function createLingoStarServer() {
         destructiveHint: false,
         openWorldHint: false,
       },
-      _meta: renderToolMeta(READ_SCOPES, "Opening dashboard", "Dashboard opened", DASHBOARD_WIDGET_URI),
+      _meta: renderToolMeta(READ_SCOPES, "Opening learning tracks", "Learning tracks opened", SESSION_SELECT_WIDGET_URI),
     },
     async (_args, context) => {
-      return renderLingoStarView(context, "dashboard");
+      return renderLingoStarView(context, "select");
     }
   );
 
@@ -2959,28 +2476,6 @@ function createLingoStarServer() {
     }
   );
 
-  registerAppTool(
-    server,
-    "open_lingostar_settings",
-    {
-      title: "Open LingoStar settings",
-      description:
-        "Render the settings view for the active language session. Use this when the user asks to inspect or change language, exercise counts, pass threshold, speech speed, or speaking availability. Persist changes with manage_learning_session.",
-      inputSchema: {},
-      outputSchema: stateOutputSchema,
-      securitySchemes: requiredSecuritySchemes(READ_SCOPES),
-      annotations: {
-        readOnlyHint: true,
-        destructiveHint: false,
-        openWorldHint: false,
-      },
-      _meta: renderToolMeta(READ_SCOPES, "Opening settings", "Settings opened", SETTINGS_WIDGET_URI),
-    },
-    async (_args, context) => {
-      return renderLingoStarView(context, "settings");
-    }
-  );
-
   /* ====================================================================
    *  Tool 2: get_lingostar_state
    * ==================================================================== */
@@ -2991,7 +2486,7 @@ function createLingoStarServer() {
     {
       title: "Get LingoStar state",
       description:
-        "Returns the user's full LingoStar state including sessions, active section, dashboard, and GUI configuration.",
+        "Returns the user's latest private LingoStar state. Use this before answering progress, settings, details, or management questions; present learning tracks as a Markdown table in chat.",
       inputSchema: {},
       outputSchema: stateOutputSchema,
       securitySchemes: requiredSecuritySchemes(READ_SCOPES),
@@ -3006,7 +2501,9 @@ function createLingoStarServer() {
       const auth = await authorizeContext(context, READ_SCOPES);
       if (!auth.ok) return auth.response;
       const state = await getState(context);
-      return replyWithState(state, textFor(state.sessions[0] ?? "en").loaded);
+      return replyWithState(state, sessionTableMessage(state), false, {
+        initialView: state.sessions?.length ? "select" : "welcome",
+      });
     }
   );
 
@@ -3020,7 +2517,7 @@ function createLingoStarServer() {
     {
       title: "Search LingoStar help",
       description:
-        "Searches the static LingoStar help markdown loaded by the server. Use this for help, usage, audio, session, section, settings, or troubleshooting questions before rendering any UI.",
+        "Searches the static LingoStar help markdown loaded by the server. Use this for help, usage, audio, learning-track, practice-set, settings, or troubleshooting questions before rendering any UI.",
       inputSchema: {
         query: z.string().optional().describe("The user's help question or keyword."),
         locale: z.enum(["en", "ko"]).optional().describe("Preferred help locale."),
@@ -3064,9 +2561,13 @@ function createLingoStarServer() {
     {
       title: "Select learning session",
       description:
-        "Sets the active LingoStar language session after the user explicitly chooses it in the widget or conversation. Render the dashboard afterward so the user can confirm the selected session before starting or resuming a section.",
+        "Sets the active LingoStar learning track after the user explicitly chooses it in the widget or conversation. If an unfinished practice set exists, render the lesson. If no practice set exists, call create_lesson_exercises in the same assistant turn instead of rendering a progress page.",
       inputSchema: {
-        sessionId: z.string().describe("The ID of the language learning session to make active."),
+        sessionId: z.string().optional().describe("Exact learning-track ID to make active, when the user or widget provides it."),
+        targetLanguage: z
+          .string()
+          .optional()
+          .describe("Target language or track name to select when the user says things like 'Japanese track'. Must resolve inside the current user's private state only."),
       },
       outputSchema: stateOutputSchema,
       securitySchemes: requiredSecuritySchemes(WRITE_SCOPES),
@@ -3075,19 +2576,24 @@ function createLingoStarServer() {
         destructiveHint: false,
         openWorldHint: false,
       },
-      _meta: renderToolMeta(WRITE_SCOPES, "Selecting session", "Session selected", DASHBOARD_WIDGET_URI),
+      _meta: renderToolMeta(WRITE_SCOPES, "Selecting learning track", "Learning track selected", SESSION_SELECT_WIDGET_URI),
     },
     async (args, context) => {
       const auth = await authorizeContext(context, WRITE_SCOPES);
       if (!auth.ok) return auth.response;
       const state = await getState(context);
-      const session = findSession(state, args.sessionId);
+      const session = resolveSessionForMutation(state, args);
       if (!session) return replyWithState(state, textFor("en").notFound, true);
       state.activeSessionId = session.id;
       if (state.currentSection?.sessionId !== session.id) state.currentSection = null;
       session.updatedAt = nowIso();
       await saveState(context, state);
-      return replyWithState(state, textFor(session).loaded, false, { initialView: "dashboard" });
+      return replyWithState(
+        state,
+        textFor(session).sessionSelected(cleanText(session.targetLanguage) || "selected language"),
+        false,
+        { initialView: state.currentSection ? "lesson" : "select" }
+      );
     }
   );
 
@@ -3254,7 +2760,118 @@ function createLingoStarServer() {
         state,
         textFor(incoming).sessionStored(lang),
         false,
-        { initialView: state.currentSection ? "lesson" : "dashboard" }
+        { initialView: state.currentSection ? "lesson" : "select" }
+      );
+    }
+  );
+
+  /* ====================================================================
+   *  Tool 6: update_lingostar_settings
+   * ==================================================================== */
+
+  registerAppTool(
+    server,
+    "update_lingostar_settings",
+    {
+      title: "Update LingoStar settings",
+      description:
+        "Use this when the learner conversationally asks to change settings, such as speaking on/off, per-area question counts, pass score, audio speed, display language, progress notes, weak-point notes, target language, native language, interests, or avoided topics. This is a data tool; do not render a settings widget. New exercise settings apply to the next practice set unless a current practice set is already open.",
+      inputSchema: {
+        sessionId: z.string().optional().describe("Preferred exact learning-track ID to update. Use when the user selected a specific track or the current state table provided an ID."),
+        targetLanguage: z.string().optional().describe("Target language or learning-track name to update when no sessionId is available, e.g. Japanese or Korean. If multiple tracks match, ask the user to choose instead of guessing."),
+        patch: z.object({
+          targetLanguage: z.string().optional().describe("New target language for this learning track, if the learner explicitly renames or changes it."),
+          nativeLanguage: z.string().optional().describe("Learner's native/interface language for explanations, if explicitly changed."),
+          goal: goalSchema.optional().describe("Updated learning goal, such as JLPT N4, travel conversation, or business email."),
+          progressContext: z.string().optional().describe("Updated progress note in the learner's interface language. Preserve useful prior context unless the learner asks to replace it."),
+          weaknessContext: z.string().optional().describe("Updated weak-point note in the learner's interface language. Preserve useful prior context unless the learner asks to replace it."),
+          interests: z.array(z.string()).optional().describe("Updated interests for personalization."),
+          avoidTopics: z.array(z.string()).optional().describe("Updated topics to avoid."),
+          settings: z.object({
+            displayLanguage: displayLanguageSchema.optional().describe("UI display language: auto, en, or ko."),
+            exercisesPerSkill: z.number().optional().describe("Uniform fallback number of exercises per enabled area. Prefer exerciseCounts when changing one area."),
+            exerciseCounts: z.object({
+              language_info: z.number().optional().describe("Number of language fact questions per practice set, 3-6."),
+              listening: z.number().optional().describe("Number of listening questions per practice set, 3-6."),
+              reading: z.number().optional().describe("Number of reading questions per practice set, 3-6."),
+              writing: z.number().optional().describe("Number of writing questions per practice set, 3-6."),
+              speaking: z.number().optional().describe("Number of speaking prompts per practice set, 3-6 when speaking is enabled."),
+            }).passthrough().optional().describe("Per-area question counts the learner asked to change."),
+            sectionPassThreshold: z.number().optional().describe("Practice-set pass score threshold from 0-100."),
+            minSectionsForGoalCompletion: z.number().optional().describe("Minimum completed practice sets before a goal can be marked complete. Minimum 10."),
+            ttsRate: z.number().optional().describe("Speech playback speed, usually 0.6-1.4 for the widget."),
+            speakingEnabled: z.boolean().optional().describe("Whether future practice sets should include speaking prompts."),
+            levelMode: z.enum(["cefr", "freeform"]).optional().describe("Curriculum structure mode."),
+          }).passthrough().optional().describe("Settings changes extracted from the learner's natural-language request."),
+        }).passthrough().describe("Only include fields the learner explicitly asked to change or that are necessary to keep the setting coherent."),
+      },
+      outputSchema: stateOutputSchema,
+      securitySchemes: requiredSecuritySchemes(WRITE_SCOPES),
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
+      _meta: dataToolMeta(WRITE_SCOPES, "Updating settings", "Settings updated"),
+    },
+    async (args, context) => {
+      const auth = await authorizeContext(context, WRITE_SCOPES);
+      if (!auth.ok) return auth.response;
+      const state = await getState(context);
+      const session = resolveSessionForMutation(state, args);
+      if (!session) {
+        return replyWithState(state, textFor(state.host?.interfaceLanguage ?? "en").notFound, true, { initialView: state.sessions?.length ? "select" : "welcome" });
+      }
+
+      const patch = args.patch ?? {};
+      if (patch.targetLanguage !== undefined) session.targetLanguage = cleanText(patch.targetLanguage) || session.targetLanguage;
+      if (patch.nativeLanguage !== undefined) session.nativeLanguage = cleanText(patch.nativeLanguage) || session.nativeLanguage;
+      if (patch.goal) {
+        session.goal = {
+          ...(session.goal ?? {}),
+          ...patch.goal,
+        };
+        session.goal.type ??= session.goalType || "conversation";
+        session.goal.detail ??= "";
+      }
+      if (patch.progressContext !== undefined) session.progressContext = cleanText(patch.progressContext);
+      if (patch.weaknessContext !== undefined) session.weaknessContext = cleanText(patch.weaknessContext);
+      if (patch.interests !== undefined) session.interests = splitList(patch.interests);
+      if (patch.avoidTopics !== undefined) session.avoidTopics = splitList(patch.avoidTopics);
+
+      session.settings ??= {};
+      if (patch.settings) {
+        const nextSettings = { ...session.settings, ...patch.settings };
+        nextSettings.displayLanguage = displayLanguageSchema.safeParse(nextSettings.displayLanguage).success ? nextSettings.displayLanguage : "auto";
+        nextSettings.exercisesPerSkill = clampExerciseCount(nextSettings.exercisesPerSkill, session.settings.exercisesPerSkill || DEFAULT_EXERCISES_PER_AREA);
+        nextSettings.exerciseCounts = normalizeExerciseCounts(
+          { ...(session.settings.exerciseCounts ?? {}), ...(patch.settings.exerciseCounts ?? {}) },
+          nextSettings.exercisesPerSkill
+        );
+        nextSettings.sectionPassThreshold = clampInteger(nextSettings.sectionPassThreshold, 0, 100, 85);
+        nextSettings.minSectionsForGoalCompletion = Math.max(10, clampInteger(nextSettings.minSectionsForGoalCompletion, 10, 500, 10));
+        nextSettings.ttsRate = Math.max(0.6, Math.min(1.4, Number(nextSettings.ttsRate) || 1));
+        nextSettings.speakingEnabled = nextSettings.speakingEnabled !== false;
+        nextSettings.levelMode = ["cefr", "freeform"].includes(nextSettings.levelMode) ? nextSettings.levelMode : "cefr";
+        session.settings = nextSettings;
+      }
+
+      session.stage = learnerStageSchema.safeParse(session.stage).success ? session.stage : inferLearnerStage(session);
+      session.runtime ??= {};
+      session.runtime.interfaceLanguage = interfaceLanguage(
+        session.nativeLanguage ?? "",
+        session.settings.displayLanguage,
+        requestedLocaleFromContext(context)
+      );
+      session.runtime.speechLang = speechLangForTargetLanguage(session.targetLanguage);
+      session.updatedAt = nowIso();
+
+      await saveState(context, state);
+      return replyWithState(
+        state,
+        textFor(session).settingsStored,
+        false,
+        { initialView: state.currentSection?.sessionId === session.id ? "lesson" : "select" }
       );
     }
   );
@@ -3344,7 +2961,7 @@ function createLingoStarServer() {
       await saveState(context, state);
       return replyWithState(
         state,
-        textFor(session).sectionStored(incoming.exercises.length),
+        textFor(session).sectionStored(incoming.exercises.length, session.settings?.speakingEnabled !== false),
         false,
         { initialView: "lesson" }
       );
@@ -3807,7 +3424,7 @@ function createLingoStarServer() {
         "Stores product feedback from the LingoStar widget. Use this for UI errors, broken audio, confusing exercises, or feature requests. Each entry receives a server-side sequence number for admin review.",
       inputSchema: {
         message: z.string().min(1).max(4000).describe("The learner's feedback message or bug report."),
-        screen: z.string().optional().describe("The UI screen where the feedback was submitted, such as oobe, dashboard, lesson, or settings."),
+        screen: z.string().optional().describe("The UI screen where the feedback was submitted, such as welcome, select, or lesson."),
         sessionId: z.string().optional().describe("The active learning session ID, if any."),
         sectionId: z.string().optional().describe("The active lesson section ID, if any."),
         exerciseId: z.string().optional().describe("The active exercise ID, if any."),
@@ -3842,9 +3459,12 @@ function createLingoStarServer() {
     {
       title: "Delete session",
       description:
-        "Deletes a language learning session only when the user explicitly asks for deletion.",
+        "Deletes one or more private LingoStar learning tracks only when the user explicitly asks for deletion. Use deleteAll for requests such as 'delete all language sessions'. Use targetLanguage for requests such as 'delete my Japanese track'. Never suggest a web dashboard for deletion.",
       inputSchema: {
-        sessionId: z.string().describe("The ID of the session to delete"),
+        sessionId: z.string().optional().describe("Exact learning-track ID to delete, when known."),
+        targetLanguage: z.string().optional().describe("Target language or track name to delete, e.g. Japanese. Deletes matching tracks only inside the current user's state."),
+        deleteAll: z.boolean().optional().describe("True only when the user explicitly asks to delete all LingoStar language sessions or all learning tracks."),
+        deleteActive: z.boolean().optional().describe("True only when the user explicitly asks to delete the currently active/selected learning track."),
       },
       outputSchema: stateOutputSchema,
       securitySchemes: requiredSecuritySchemes(WRITE_SCOPES),
@@ -3853,28 +3473,53 @@ function createLingoStarServer() {
         destructiveHint: true,
         openWorldHint: false,
       },
-      _meta: dataToolMeta(WRITE_SCOPES, "Deleting session", "Session deleted"),
+      _meta: renderToolMeta(WRITE_SCOPES, "Deleting learning track", "Learning track deleted", SESSION_SELECT_WIDGET_URI),
     },
     async (args, context) => {
       const auth = await authorizeContext(context, WRITE_SCOPES);
       if (!auth.ok) return auth.response;
       const state = await getState(context);
-      const session = findSession(state, args.sessionId);
       const before = state.sessions.length;
-      state.sessions = state.sessions.filter((item) => item.id !== args.sessionId);
+      let deleteIds = [];
+      if (args.deleteAll) {
+        deleteIds = state.sessions.map((session) => session.id);
+      } else if (args.sessionId) {
+        deleteIds = findSession(state, args.sessionId) ? [args.sessionId] : [];
+      } else if (args.deleteActive && state.activeSessionId) {
+        deleteIds = [state.activeSessionId];
+      } else if (args.targetLanguage) {
+        deleteIds = findSessionsByTargetLanguage(state, args.targetLanguage).map((session) => session.id);
+      }
 
-      if (state.activeSessionId === args.sessionId) {
+      if (!deleteIds.length) {
+        return replyWithState(
+          state,
+          textFor(state.host?.interfaceLanguage ?? "en").notFound,
+          true,
+          { initialView: state.sessions?.length ? "select" : "welcome" }
+        );
+      }
+
+      const deletedSessions = state.sessions.filter((item) => deleteIds.includes(item.id));
+      state.sessions = state.sessions.filter((item) => !deleteIds.includes(item.id));
+
+      if (deleteIds.includes(state.activeSessionId)) {
         state.activeSessionId = null;
       }
-      if (state.currentSection?.sessionId === args.sessionId) {
+      if (deleteIds.includes(state.currentSection?.sessionId)) {
         state.currentSection = null;
       }
 
       const deleted = before !== state.sessions.length;
       if (deleted) await saveState(context, state);
+      const localeTarget = deletedSessions[0] ?? state.host?.interfaceLanguage ?? "en";
       return replyWithState(
         state,
-        deleted ? textFor(session ?? "en").deleted : textFor(session ?? "en").notFound
+        deleted
+          ? (args.deleteAll ? textFor(localeTarget).deletedAll : textFor(localeTarget).deleted)
+          : textFor(localeTarget).notFound,
+        !deleted,
+        { initialView: state.sessions?.length ? "select" : "welcome" }
       );
     }
   );
@@ -4034,114 +3679,18 @@ const httpServer = createServer(async (req, res) => {
     return;
   }
 
-  if (req.method === "GET" && url.pathname === "/api/state") {
-    const auth = await authorizeWebRequest(req, READ_SCOPES);
-    if (!auth.ok) {
-      writeJson(res, auth.status, { message: auth.response?.content?.[0]?.text || "Authentication required." });
-      return;
-    }
-    const state = await getState(auth.context);
-    writeJson(res, 200, { state: refreshDashboard(state) });
+  if (
+    url.pathname === "/api/state" ||
+    url.pathname === "/api/session" ||
+    url.pathname === "/api/session/select" ||
+    url.pathname.startsWith("/api/session/")
+  ) {
+    writeJson(res, 410, {
+      message: "The web state API is disabled. Manage LingoStar learning tracks through the ChatGPT app tools.",
+    });
     return;
   }
 
-  if (req.method === "POST" && url.pathname === "/api/session") {
-    const auth = await authorizeWebRequest(req, WRITE_SCOPES);
-    if (!auth.ok) {
-      writeJson(res, auth.status, { message: auth.response?.content?.[0]?.text || "Authentication required." });
-      return;
-    }
-    try {
-      const body = await readRequestJson(req);
-      const state = await getState(auth.context);
-      const locale = normalizeUiLocale(req.headers["accept-language"]) || "en";
-      const session = sessionFromWebPayload(body.session ?? {}, locale);
-      state.sessions.push(session);
-      state.activeSessionId = session.id;
-      if (state.currentSection?.sessionId !== session.id) state.currentSection = null;
-      await saveState(auth.context, state);
-      writeJson(res, 200, { state: refreshDashboard(state), sessionId: session.id });
-    } catch (error) {
-      writeJson(res, 400, { message: cleanText(error?.message) || "Invalid request." });
-    }
-    return;
-  }
-
-  if (req.method === "POST" && url.pathname === "/api/session/select") {
-    const auth = await authorizeWebRequest(req, WRITE_SCOPES);
-    if (!auth.ok) {
-      writeJson(res, auth.status, { message: auth.response?.content?.[0]?.text || "Authentication required." });
-      return;
-    }
-    try {
-      const body = await readRequestJson(req);
-      const state = await getState(auth.context);
-      const session = findSession(state, body.sessionId);
-      if (!session) {
-        writeJson(res, 404, { message: "Session not found." });
-        return;
-      }
-      state.activeSessionId = session.id;
-      if (state.currentSection?.sessionId !== session.id) state.currentSection = null;
-      await saveState(auth.context, state);
-      writeJson(res, 200, { state: refreshDashboard(state) });
-    } catch (error) {
-      writeJson(res, 400, { message: cleanText(error?.message) || "Invalid request." });
-    }
-    return;
-  }
-
-  if (req.method === "DELETE" && url.pathname.startsWith("/api/session/")) {
-    const auth = await authorizeWebRequest(req, WRITE_SCOPES);
-    if (!auth.ok) {
-      writeJson(res, auth.status, { message: auth.response?.content?.[0]?.text || "Authentication required." });
-      return;
-    }
-    const sessionId = decodeURIComponent(url.pathname.slice("/api/session/".length));
-    const state = await getState(auth.context);
-    const before = state.sessions.length;
-    state.sessions = state.sessions.filter((session) => session.id !== sessionId);
-    if (state.activeSessionId === sessionId) state.activeSessionId = null;
-    if (state.currentSection?.sessionId === sessionId) state.currentSection = null;
-    if (before === state.sessions.length) {
-      writeJson(res, 404, { message: "Session not found." });
-      return;
-    }
-    await saveState(auth.context, state);
-    writeJson(res, 200, { state: refreshDashboard(state) });
-    return;
-  }
-
-  const settingsMatch = url.pathname.match(/^\/api\/session\/([^/]+)\/settings$/);
-  if (req.method === "POST" && settingsMatch) {
-    const auth = await authorizeWebRequest(req, WRITE_SCOPES);
-    if (!auth.ok) {
-      writeJson(res, auth.status, { message: auth.response?.content?.[0]?.text || "Authentication required." });
-      return;
-    }
-    try {
-      const sessionId = decodeURIComponent(settingsMatch[1]);
-      const body = await readRequestJson(req);
-      const state = await getState(auth.context);
-      const existingIndex = state.sessions.findIndex((session) => session.id === sessionId);
-      if (existingIndex < 0) {
-        writeJson(res, 404, { message: "Session not found." });
-        return;
-      }
-      const incoming = body.session ?? {};
-      state.sessions[existingIndex] = {
-        ...state.sessions[existingIndex],
-        ...incoming,
-        id: sessionId,
-        updatedAt: nowIso(),
-      };
-      await saveState(auth.context, state);
-      writeJson(res, 200, { state: refreshDashboard(state) });
-    } catch (error) {
-      writeJson(res, 400, { message: cleanText(error?.message) || "Invalid request." });
-    }
-    return;
-  }
 
   if (
     req.method === "GET" &&

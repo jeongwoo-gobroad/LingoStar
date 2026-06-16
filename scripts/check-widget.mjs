@@ -27,6 +27,7 @@ const windowStub = {
   matchMedia() {
     return { matches: true };
   },
+  postMessage() {},
   addEventListener() {},
   speechSynthesis: null,
 };
@@ -79,6 +80,10 @@ if (!html.includes('const DEFAULT_VIEW = "__LINGOSTAR_DEFAULT_VIEW__";')) {
   throw new Error("Widget default view must be injected by the server for each component template.");
 }
 
+if (!html.includes('const UI_COPY = typeof __LINGOSTAR_UI_COPY__ === "object"')) {
+  throw new Error("Widget copy must be injected from language-specific UI resources.");
+}
+
 if (!html.includes('rpcRequest("ui/message"')) {
   throw new Error("Widget follow-up messages must use the standard ui/message request.");
 }
@@ -99,7 +104,7 @@ if (!html.includes("appCapabilities")) {
   throw new Error("Widget initialize request must advertise appCapabilities.");
 }
 
-if (!html.includes("Loading your language learning studio")) {
+if (!html.includes("Loading LingoStar")) {
   throw new Error("Widget must include static fallback UI before JavaScript runs.");
 }
 
@@ -124,11 +129,43 @@ if (!html.includes("sendFollowUpMessage")) {
 }
 
 if (!html.includes("requestDisplayMode({ mode: targetMode })")) {
-  throw new Error("Widget should request fullscreen display mode for complex lesson/settings surfaces.");
+  throw new Error("Widget should request fullscreen display mode for complex lesson surfaces.");
+}
+
+if (!html.includes("requestInlineDisplayMode")) {
+  throw new Error("Widget must request inline display mode after section completion.");
+}
+
+if (!html.includes('requestInlineDisplayMode("section-complete")')) {
+  throw new Error("Widget must automatically return to inline display after section completion.");
+}
+
+if (html.includes('data-action="dashboard">${c.backToDashboard}')) {
+  throw new Error("Lesson surfaces must not include an in-section dashboard navigation button.");
+}
+
+if (html.includes('data-action="settings"') || html.includes("renderSettings") || html.includes("open_lingostar_settings")) {
+  throw new Error("Widget must not include a settings surface; settings are conversational.");
+}
+
+if (html.includes("open_lingostar_dashboard")) {
+  throw new Error("Widget must not reference the removed dashboard render tool.");
 }
 
 if (html.includes('data-action="ask-ai"')) {
   throw new Error("Widget must not duplicate ChatGPT's composer with an in-widget Ask AI action.");
+}
+
+if (html.includes('data-action="toggle-theme"') || html.includes("theme-toggle")) {
+  throw new Error("Widget must not add app-level theme controls; it should inherit ChatGPT/native theme context.");
+}
+
+if (html.includes("background:linear-gradient")) {
+  throw new Error("Widget must not rely on decorative gradients; use native cards and accent-only branding.");
+}
+
+if (html.includes("skillEmoji") || html.includes("emoji")) {
+  throw new Error("Widget must not rely on emoji labels or redundant visual branding.");
 }
 
 if (!html.includes("pendingDirectEvaluationFor")) {

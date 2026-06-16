@@ -6,28 +6,28 @@ This document describes the structural-output contract between ChatGPT, the Ling
 
 | Tool | Caller | Purpose | Mutates state |
 | --- | --- | --- | --- |
-| `open_lingostar_app` | GPT | Render the dashboard resource template | No |
-| `open_lingostar_dashboard` | GPT | Render language progress, recent feedback, and session overview | No |
-| `open_lingostar_lesson` | GPT | Render the active lesson resource template in fullscreen-friendly mode | No |
-| `open_lingostar_settings` | GPT | Render the active session settings resource template | No |
-| `get_lingostar_state` | GPT / Widget | Load full user state, dashboard, active section, GUI config | No |
+| `open_lingostar_app` | GPT | Render the welcome/onboarding component | No |
+| `open_lingostar_session_select` | GPT | Render the learning-track picker | No |
+| `open_lingostar_lesson` | GPT | Render the active lesson component | No |
+| `get_lingostar_state` | GPT / Widget | Load private user state, active practice set, UI copy, and help summary | No |
 | `search_lingostar_help` | GPT | Search static help markdown loaded at server startup | No |
-| `select_learning_session` | GPT / Widget | Persist the user's explicitly selected active language session and render dashboard | Yes |
-| `manage_learning_session` | GPT / Widget settings | Create or update a language session; may include the first section and render the appropriate view | Yes |
-| `create_lesson_exercises` | GPT | Store GPT-generated section exercises after validation and render lesson | Yes |
-| `grade_section_answers` | GPT / Widget auto-grader | Store scores and feedback, update profiles, create reviews | Yes |
+| `select_learning_session` | GPT / Widget | Select a learning track by exact ID or target language inside the current user's state | Yes |
+| `manage_learning_session` | GPT | Create or update a learning track; may include the first practice set | Yes |
+| `update_lingostar_settings` | GPT | Apply natural-language settings changes to one learning track | Yes |
+| `create_lesson_exercises` | GPT | Store a generated practice set after validation and render the lesson | Yes |
+| `grade_section_answers` | GPT / Widget | Store scores and feedback, update profiles, and complete the practice set when all answers exist | Yes |
 | `store_level_judgment` | GPT | Record level completion judgment | Yes |
-| `store_goal_judgment` | GPT | Record rigorous goal completion judgment after the minimum section threshold | Yes |
-| `transcribe_audio` | Widget | Server OpenAI STT fallback only | No |
-| `synthesize_speech` | Widget | Server OpenAI TTS fallback only | No |
+| `store_goal_judgment` | GPT | Record rigorous goal completion judgment after the minimum practice-set threshold | Yes |
+| `transcribe_audio` | Widget | Optional server STT fallback | No |
+| `synthesize_speech` | Widget | Optional server TTS fallback | No |
 | `submit_feedback` | Widget | Store product feedback with a sequential admin-review ID | Yes |
-| `delete_session` | GPT / Widget | Delete an explicitly requested session | Yes |
+| `delete_session` | GPT / Widget | Delete one, active, target-language, or all learning tracks for the current user only | Yes |
 
 ## App State
 
 ```ts
 type AppState = {
-  version: "0.8.0";
+  version: "0.10.0";
   activeSessionId: string | null;
   sessions: LanguageSession[];
   currentSection: Section | null;
@@ -40,12 +40,13 @@ type AppState = {
     trackingAgent: { contextsBySessionId: Record<string, unknown>; updatedAt: string };
     problemManagementAgent: { weaknessesBySessionId: Record<string, unknown>; updatedAt: string };
   };
-  dashboard: DashboardSummary;
+  dashboard: Record<string, unknown>; // derived compatibility snapshot, not a user-facing dashboard
   host: { locale: string; interfaceLanguage: "en" | "ko"; developerMode: boolean };
   gui: {
-    screen: "oobe" | "dashboard" | "lesson" | "settings";
+    screen: "welcome" | "select" | "lesson";
     widgetVersion: string;
     help: { title: string; intro: string; features: string[]; footer?: string };
+    uiCopy: Record<string, string>;
     icon: "embedded" | "fallback";
     audio: {
       browserSpeechSynthesis: boolean;
@@ -57,6 +58,16 @@ type AppState = {
   };
 };
 ```
+
+## User-Facing Terms
+
+| Internal field | User-facing wording |
+| --- | --- |
+| `LanguageSession` | learning track / 학습 트랙 |
+| `Section` | practice set / 연습 묶음 |
+| `Exercise` | exercise or problem / 문제 |
+
+The model should use the user-facing wording in chat. Tool inputs still use internal field names.
 
 ## Language Session
 
@@ -70,11 +81,13 @@ type LanguageSession = {
   status: "active" | "paused";
   goal: { type: string; detail: string; status?: "active" | "completed"; startedAt?: string };
   stage: LearnerStage;
-  progressContext: string;  // natural language, interface/native language
-  weaknessContext: string;  // natural language, interface/native language
+  progressContext: string;
+  weaknessContext: string;
+  interests: string[];
+  avoidTopics: string[];
   settings: {
     displayLanguage: "auto" | "en" | "ko";
-    exercisesPerSkill: number; // backward-compatible fallback, 3-6
+    exercisesPerSkill: number; // compatibility fallback, 3-6
     exerciseCounts: {
       language_info: number;
       listening: number;
@@ -82,9 +95,9 @@ type LanguageSession = {
       writing: number;
       speaking: number;
     };
-    sectionPassThreshold: number; // default 85
-    minSectionsForGoalCompletion: number; // minimum 10
-    ttsRate: number; // 0.6-1.4, default 1.0
+    sectionPassThreshold: number;
+    minSectionsForGoalCompletion: number;
+    ttsRate: number; // 0.6-1.4
     speakingEnabled: boolean;
     levelMode: "cefr" | "freeform";
   };
@@ -104,7 +117,7 @@ type LanguageSession = {
 
 ## Section
 
-`exerciseCounts` is authoritative. `exercisesPerSkill` exists for backward compatibility only.
+`exerciseCounts` is authoritative. `exercisesPerSkill` exists for compatibility only.
 
 ```ts
 type Section = {
@@ -129,7 +142,7 @@ type Section = {
 
 ## Exercise Types
 
-`language_info` is a separate structural output type, not an optional field on another exercise.
+`language_info` is a separate structural output type.
 
 ```ts
 type LanguageInfoExercise = {
@@ -158,14 +171,14 @@ Other payload requirements:
 
 ## Grading
 
-The widget auto-grades `language_info`, `listening`, `reading`, and `writing` as soon as the learner answers. Speaking is evaluated by ChatGPT when the section is submitted.
+The widget auto-grades `language_info`, `listening`, `reading`, and `writing`. Speaking is evaluated by ChatGPT when the practice set is submitted.
 
 ```ts
 type ExerciseResult = {
   exerciseId: string;
   score: number; // 0-100
   skill: "language_info" | "listening" | "reading" | "writing" | "speaking";
-  userAnswer?: string; // Submitted choice, written answer, transcript, or [SKIPPED]
+  userAnswer?: string;
   learnerClaim?: string;
   skipped?: boolean;
   needsReview: boolean;
@@ -174,11 +187,11 @@ type ExerciseResult = {
 };
 ```
 
-Skipped results are stored and can create review exercises, but they do not lower the skill profile. Section pass/fail uses only the weighted score:
+Skipped results are stored and can create review exercises, but they do not lower the skill profile. Section pass/fail uses these weights:
 
 - listening: 0.2
 - reading: 0.4
 - writing: 0.3
 - speaking: 0.1
 
-`language_info` is required for completion but is not part of the weighted pass score.
+`language_info` is required for completion but is unweighted.
