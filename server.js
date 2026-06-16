@@ -247,17 +247,19 @@ const speechOutputSchema = {
   mimeType: z.string(),
 };
 
-const exerciseChoiceSchema = z.object({
-  id: z.string().describe("A short, unique identifier for this choice (e.g., 'a', '1', 'choice_A')"),
-  text: z.string().describe("The text content of the multiple choice option")
-});
+function makeChoiceSchema() {
+  return z.object({
+    id: z.string().describe("A short, unique identifier for this choice (e.g., 'a', '1', 'choice_A')"),
+    text: z.string().describe("The text content of the multiple choice option")
+  });
+}
 
 const languageInfoPayloadSchema = z.object({
   topic: z.string().describe("Language-specific knowledge topic, such as writing system, pronunciation rule, particles/articles, honorifics, tones, word order, or exam-format fact."),
   explanation: z.string().describe("Concise teaching note in the user's native/interface language. It should explain the target-language fact before the choice question."),
   targetExamples: z.array(z.string()).min(1).describe("Examples in the target language. Use native script when the language has a native writing system."),
   question: z.string().describe("Multiple-choice question that checks the language-specific information, not general reading comprehension."),
-  choices: z.array(exerciseChoiceSchema).min(3).max(5).describe("An array of 3-5 possible multiple-choice answers for this language-info item."),
+  choices: z.array(makeChoiceSchema()).min(3).max(5).describe("An array of 3-5 possible multiple-choice answers for this language-info item."),
   correctChoiceId: z.string().describe("The id of the correct answer. MUST match one of the choice ids."),
   difficultyStage: learnerStageSchema.describe("The learner stage this language-info item is designed for.")
 }).describe("Structured payload required by the language-info UI.");
@@ -271,7 +273,7 @@ const speakingPayloadSchema = z.object({
 const listeningPayloadSchema = z.object({
   audioText: z.string().describe("The exact text that the TTS engine will speak. MUST BE IN THE TARGET LANGUAGE (e.g. Japanese). MUST USE NATIVE SCRIPT (e.g. Kanji/Hiragana, NEVER Romaji). DO NOT translate this to English or the native language."),
   question: z.string().describe("A question about the audio text"),
-  choices: z.array(exerciseChoiceSchema).length(5).describe("An array of exactly 5 possible multiple choice answers"),
+  choices: z.array(makeChoiceSchema()).length(5).describe("An array of exactly 5 possible multiple choice answers"),
   correctChoiceId: z.string().describe("The id of the choice that is the correct answer. MUST match one of the choices' ids."),
   expectedKeywords: z.array(z.string()).optional().describe("Keywords the user should include in their response if not multiple choice"),
   speechLang: z.string().describe("The BCP-47 language tag for TTS pronunciation (e.g., 'ja-JP', 'en-US')")
@@ -284,7 +286,7 @@ const writingPayloadSchema = z.object({
 const readingPayloadSchema = z.object({
   passage: z.string().describe("The reading passage or text the user must read"),
   question: z.string().describe("The question asking about the passage"),
-  choices: z.array(exerciseChoiceSchema).min(3).max(5).describe("An array of 3-5 possible multiple choice answers"),
+  choices: z.array(makeChoiceSchema()).min(3).max(5).describe("An array of 3-5 possible multiple choice answers"),
   correctChoiceId: z.string().describe("The id of the choice that is the correct answer. MUST match one of the choices' ids.")
 });
 
@@ -342,7 +344,13 @@ const sectionSchema = z.object({
   levelId: z.string().optional().describe("ID of the curriculum level this section belongs to."),
   title: z.string().describe("The title of this lesson section (e.g., 'Basic Greetings')"),
   exercisesPerSkill: z.number().optional().describe("Backward-compatible uniform count per enabled exercise area. Prefer exerciseCounts for new calls."),
-  exerciseCounts: z.record(z.number()).optional().describe("Exact per-area exercise counts. Keys may include language_info, listening, reading, writing, and speaking. Each configured count must be 3-6."),
+  exerciseCounts: z.object({
+    language_info: z.number().optional().describe("Number of language_info exercises"),
+    listening: z.number().optional().describe("Number of listening exercises"),
+    reading: z.number().optional().describe("Number of reading exercises"),
+    writing: z.number().optional().describe("Number of writing exercises"),
+    speaking: z.number().optional().describe("Number of speaking exercises"),
+  }).passthrough().optional().describe("Exact per-area exercise counts. Each configured count must be 3-6."),
   exercises: z.array(exerciseSchema).describe("An array of exercises for this lesson. Make sure to generate exercises for various skills."),
 }).passthrough().describe("A lesson section containing exactly the configured number of exercises for each enabled exercise area: language_info, listening, reading, writing, and speaking when enabled.");
 
@@ -2914,7 +2922,7 @@ function createLingoStarServer() {
             speakingEnabled: z.boolean().optional().describe("Whether future practice sets should include speaking prompts."),
             levelMode: z.enum(["cefr", "freeform"]).optional().describe("Curriculum structure mode."),
           }).passthrough().optional().describe("Settings changes extracted from the learner's natural-language request."),
-        }).passthrough().describe("Only include fields the learner explicitly asked to change or that are necessary to keep the setting coherent."),
+        }).passthrough().optional().describe("Only include fields the learner explicitly asked to change or that are necessary to keep the setting coherent."),
       },
       outputSchema: stateOutputSchema,
       securitySchemes: requiredSecuritySchemes(WRITE_SCOPES),
