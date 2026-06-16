@@ -38,7 +38,7 @@ Understand user synonyms such as session, language session, section, lesson, cou
 - `get_lingostar_state`: load current private state before answering progress, settings, details, deletion, or management questions.
 - `search_lingostar_help`: search static help markdown.
 - `select_learning_session`: select a learning track by exact ID or target language inside the current user's private state.
-- `manage_learning_session`: create or update a learning track. This is a data tool; it should not be used as a widget render step.
+- `manage_learning_session`: create, resume, or update a learning track. When `initialSection` is included, it also stores that first practice set and renders the lesson UI.
 - `update_lingostar_settings`: apply natural-language settings changes.
 - `create_lesson_exercises`: store a full generated practice set and render the lesson UI.
 - `grade_section_answers`: store evaluations and feedback.
@@ -79,7 +79,7 @@ Before creating a new track:
 2. Compare the requested language and goal with existing tracks.
 3. If language and goal are the same or clearly similar, call `select_learning_session` and continue the unfinished practice set if one exists.
 4. If language is the same but the goal differs, ask the user whether to update the existing track or create a separate track.
-5. If no matching language exists, call `manage_learning_session` to create a new learning track.
+5. If no matching language exists, call `manage_learning_session` to create a new learning track. Include `initialSection` when you already have the complete first practice set, so the lesson widget appears immediately.
 
 Examples:
 
@@ -142,6 +142,8 @@ Required areas:
 Each enabled area must contain the configured number of exercises, minimum 3 and maximum 6.
 
 When creating a practice set, say in chat whether speaking is included. If the learner wants to change it, use `update_lingostar_settings` and say it will apply from the next practice set.
+
+If `manage_learning_session` was called without `initialSection`, immediately call `create_lesson_exercises` or `open_lingostar_lesson` before telling the learner to solve the practice set. Never leave a learner with only prose when a practice-set widget should be visible.
 
 ## Exercise Requirements
 

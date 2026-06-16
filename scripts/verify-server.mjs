@@ -281,10 +281,10 @@ const selectTool = findTool(toolsResult, "select_learning_session");
 assert("open app uses welcome template", openTool?._meta?.["openai/outputTemplate"] === EXPECTED_WIDGET_URIS.welcome);
 assert("session select uses select template", selectRenderTool?._meta?.["openai/outputTemplate"] === EXPECTED_WIDGET_URIS.sessionSelect);
 assert("lesson render uses lesson template", lessonRenderTool?._meta?.["openai/outputTemplate"] === EXPECTED_WIDGET_URIS.lesson);
+assert("manage session can render lesson template for start flow", manageTool?._meta?.["openai/outputTemplate"] === EXPECTED_WIDGET_URIS.lesson);
 assert("render tools allow app-side calls", openTool?._meta?.["openai/widgetAccessible"] === true);
 assert("state output schema is described", hasDescription(schemaAt(stateTool?.outputSchema, "state")));
 assert("state tool is data-only without output template", !stateTool?._meta?.["openai/outputTemplate"]);
-assert("manage session is data-only without output template", !manageTool?._meta?.["openai/outputTemplate"]);
 assert("select session is data-only without output template", !selectTool?._meta?.["openai/outputTemplate"]);
 assert("delete session is data-only without output template", !deleteTool?._meta?.["openai/outputTemplate"]);
 assert("state tool is visible to widget app", stateTool?._meta?.ui?.visibility?.includes("app"));
@@ -504,6 +504,43 @@ const deleteByLanguageResult = await rpc("tools/call", {
 assert("delete by target language succeeds", deleteByLanguageResult.isError !== true);
 assert("deleted session removed from user's state", deleteByLanguageResult.structuredContent?.state?.sessions?.length === 0);
 assert("delete returns welcome view after final session", deleteByLanguageResult.structuredContent?.initialView === "welcome");
+
+const initialSectionSessionResult = await rpc("tools/call", {
+  name: "manage_learning_session",
+  arguments: {
+    session: {
+      id: "session-initial-section",
+      targetLanguage: "Italian",
+      nativeLanguage: "Korean",
+      status: "active",
+      goal: { type: "conversation", detail: "Travel basics" },
+      settings: {
+        displayLanguage: "auto",
+        exercisesPerSkill: 3,
+        exerciseCounts: { language_info: 3, listening: 3, reading: 3, writing: 3, speaking: 3 },
+        sectionPassThreshold: 85,
+        minSectionsForGoalCompletion: 10,
+        ttsRate: 1,
+        speakingEnabled: false,
+        levelMode: "cefr",
+      },
+      levels: [{ id: "level-initial-section", name: "A1 basics", status: "active" }],
+      skillProfile: { language_info: 0, speaking: 0, writing: 0, listening: 0, reading: 0 },
+      feedbackMemory: [],
+      sectionHistory: [],
+    },
+    initialSection: {
+      levelId: "level-initial-section",
+      title: "Initial Section With Inline Exercises",
+      exercisesPerSkill: 3,
+      exerciseCounts: { language_info: 3, listening: 3, reading: 3, writing: 3 },
+      exercises: makeExerciseSet(3, false),
+    },
+  },
+  _meta: meta,
+});
+assert("manage session with initial section returns lesson view", initialSectionSessionResult.structuredContent?.initialView === "lesson");
+assert("manage session with initial section stores current section", initialSectionSessionResult.structuredContent?.state?.currentSection?.sessionId === "session-initial-section");
 
 await rpc("tools/call", {
   name: "manage_learning_session",

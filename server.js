@@ -2700,9 +2700,9 @@ function createLingoStarServer() {
     server,
     "manage_learning_session",
     {
-      title: "Manage learning session",
+      title: "Start or manage learning session",
       description:
-        "Creates or updates a language learning session. CRITICAL: When the user asks to start learning, call this tool before giving prose. For a NEW session, provide 'initialSection' whenever possible; otherwise call create_lesson_exercises in the same assistant turn. NEVER output lesson content in chat text. NEVER ask the user to type answers in chat; the user submits answers through the UI.",
+        "Use this when the learner starts, resumes, creates, or updates a language learning track. When initialSection is provided, this tool stores the practice set and renders the lesson widget immediately. If initialSection is omitted, call create_lesson_exercises or open_lingostar_lesson before telling the learner to solve exercises. NEVER output lesson content in chat text. NEVER ask the user to type answers in chat; the user submits answers through the UI.",
       inputSchema: {
         session: sessionSchema.describe("Session parameters. The server fills defaults and preserves structured profile fields."),
         initialSection: sectionSchema
@@ -2718,7 +2718,7 @@ function createLingoStarServer() {
         destructiveHint: false,
         openWorldHint: false,
       },
-      _meta: dataToolMeta(WRITE_SCOPES, "Storing session", "Session stored"),
+      _meta: renderToolMeta(WRITE_SCOPES, "Storing session", "Session stored", LESSON_WIDGET_URI),
     },
     async (args, context) => {
       const auth = await authorizeContext(context, WRITE_SCOPES);
