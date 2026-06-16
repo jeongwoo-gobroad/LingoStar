@@ -26,13 +26,15 @@ flowchart TD
 
 The widget intentionally does not implement a dashboard or settings page. Progress, settings, and deletion are conversation-first because ChatGPT already provides the native composer and Markdown surface.
 
+Host synchronization is deduplicated. The widget must not call `setWidgetState`, `requestDisplayMode`, intrinsic height notifications, or model-context updates on every render. Those calls are reserved for meaningful state changes so ChatGPT does not repeatedly remount or dim the widget while the learner is trying to click.
+
 ## ChatGPT UI Resources
 
 | Resource | Default view | Primary use |
 | --- | --- | --- |
-| `ui://widget/lingostar-welcome-v0-10-0.html` | `welcome` | First-start onboarding and user-facing feature overview |
-| `ui://widget/lingostar-session-select-v0-10-0.html` | `select` | Choose or delete an existing learning track |
-| `ui://widget/lingostar-lesson-v0-10-0.html` | `lesson` | Solve the active practice set |
+| `ui://widget/lingostar-welcome-v0-10-1.html` | `welcome` | First-start onboarding and user-facing feature overview |
+| `ui://widget/lingostar-session-select-v0-10-1.html` | `select` | Choose or delete an existing learning track |
+| `ui://widget/lingostar-lesson-v0-10-1.html` | `lesson` | Solve the active practice set |
 
 Data-only tools handle state reads, static help search, settings updates, deletion, grading, audio fallback, and feedback. Render tools only choose the appropriate component template.
 

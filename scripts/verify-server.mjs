@@ -10,11 +10,11 @@ await import("../server.js");
 let requestId = 0;
 const assertions = [];
 
-const EXPECTED_VERSION = "0.10.0";
+const EXPECTED_VERSION = "0.10.1";
 const EXPECTED_WIDGET_URIS = {
-  welcome: "ui://widget/lingostar-welcome-v0-10-0.html",
-  sessionSelect: "ui://widget/lingostar-session-select-v0-10-0.html",
-  lesson: "ui://widget/lingostar-lesson-v0-10-0.html",
+  welcome: "ui://widget/lingostar-welcome-v0-10-1.html",
+  sessionSelect: "ui://widget/lingostar-session-select-v0-10-1.html",
+  lesson: "ui://widget/lingostar-lesson-v0-10-1.html",
 };
 const DEFAULT_VIEW_BY_RESOURCE = {
   welcome: "welcome",
@@ -300,7 +300,7 @@ const stateResult = await rpc("tools/call", {
   _meta: meta,
 });
 const initialState = stateResult.structuredContent?.state;
-assert("state version is 0.10.0", initialState?.version === EXPECTED_VERSION);
+assert("state version is 0.10.1", initialState?.version === EXPECTED_VERSION);
 assert("initial state opens welcome", stateResult.structuredContent?.initialView === "welcome");
 assert("interface language resolved to ko", initialState?.host?.interfaceLanguage === "ko");
 assert("state exposes UI copy", initialState?.gui?.uiCopy?.welcomeTitle);

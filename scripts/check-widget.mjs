@@ -9,6 +9,9 @@ if (!match) {
 
 const renderedHtml = [];
 const attrs = new Map();
+const listeners = new Map();
+const widgetStateCalls = [];
+const displayModeCalls = [];
 const appEl = {
   addEventListener() {},
   querySelector() {
@@ -23,12 +26,30 @@ const appEl = {
 };
 const windowStub = {
   parent: null,
-  openai: { locale: "ko-KR" },
+  openai: {
+    locale: "ko-KR",
+    setWidgetState(state) {
+      widgetStateCalls.push(state);
+      return Promise.resolve();
+    },
+    requestDisplayMode(args) {
+      displayModeCalls.push(args);
+      return Promise.resolve();
+    },
+    notifyIntrinsicHeight() {},
+    updateModelContext() {
+      return Promise.resolve({});
+    },
+  },
   matchMedia() {
     return { matches: true };
   },
   postMessage() {},
-  addEventListener() {},
+  addEventListener(type, listener) {
+    const bucket = listeners.get(type) || [];
+    bucket.push(listener);
+    listeners.set(type, bucket);
+  },
   speechSynthesis: null,
 };
 windowStub.parent = windowStub;
@@ -70,6 +91,69 @@ await new Promise((resolve) => setTimeout(resolve, 250));
 
 if (!renderedHtml.length) {
   throw new Error("Widget module did not render under a host-like environment.");
+}
+
+const lessonState = {
+  version: "0.10.1",
+  activeSessionId: "session-test",
+  sessions: [{
+    id: "session-test",
+    targetLanguage: "Japanese",
+    nativeLanguage: "Korean",
+    goal: { type: "exam", detail: "JLPT N4" },
+    status: "active",
+    settings: {},
+    runtime: {},
+    sectionHistory: [],
+  }],
+  currentSection: {
+    id: "section-test",
+    sessionId: "session-test",
+    title: "N4 practice",
+    exercises: [{
+      id: "exercise-test",
+      type: "reading",
+      skill: "reading",
+      prompt: "Read and answer.",
+      payload: {
+        passage: "日本語の文です。",
+        question: "What is this?",
+        choices: [{ id: "a", text: "A" }, { id: "b", text: "B" }, { id: "c", text: "C" }],
+        correctChoiceId: "a",
+      },
+    }],
+    results: [],
+  },
+  recentFeedback: [],
+  feedbackItems: [],
+  dashboard: {},
+  host: { interfaceLanguage: "ko-KR" },
+  gui: { screen: "lesson", widgetVersion: "0.10.1" },
+};
+
+const beforeGlobalsRenderCount = renderedHtml.length;
+const globalsEvent = {
+  detail: {
+    globals: {
+      widgetState: { viewMode: "lesson", currentExerciseIndex: 0, tokenAnswer: [], typedAnswers: [], pendingDeleteSessionId: null },
+      toolOutput: { state: lessonState, initialView: "lesson" },
+    },
+  },
+};
+for (const listener of listeners.get("openai:set_globals") || []) {
+  listener(globalsEvent);
+  listener(globalsEvent);
+  listener(globalsEvent);
+}
+await new Promise((resolve) => setTimeout(resolve, 250));
+
+const globalsRenderCount = renderedHtml.length - beforeGlobalsRenderCount;
+if (globalsRenderCount !== 1) {
+  throw new Error(`Widget re-rendered ${globalsRenderCount} times for identical openai:set_globals payloads.`);
+}
+
+if (displayModeCalls.filter((item) => item?.mode === "fullscreen").length > 1) {
+  throw new Error("Widget requested fullscreen repeatedly for the same lesson globals payload.");
 }
 
 if (!html.includes('const ICON_SRC = "__LINGOSTAR_ICON__";')) {
@@ -162,6 +246,18 @@ if (html.includes('data-action="toggle-theme"') || html.includes("theme-toggle")
 
 if (html.includes("background:linear-gradient")) {
   throw new Error("Widget must not rely on decorative gradients; use native cards and accent-only branding.");
+}
+
+if (html.includes('rpcNotify("ui/resize"')) {
+  throw new Error("Widget must not send unsupported resize notifications on every render.");
+}
+
+if (html.includes("animation:fadeIn") || html.includes("@keyframes fadeIn")) {
+  throw new Error("Widget must not restart full-surface fade animations on each render.");
+}
+
+if (!html.includes("lastToolOutputJson") || !html.includes("lastWidgetStateJson") || !html.includes("lastDisplayModeRequest")) {
+  throw new Error("Widget host synchronization must be deduplicated to avoid render loops.");
 }
 
 if (html.includes("skillEmoji") || html.includes("emoji")) {

@@ -168,8 +168,7 @@ button:disabled{cursor:not-allowed;opacity:.45}
 }
 .modal header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
 .empty{min-height:220px;display:grid;place-items:center;text-align:center}
-.animate-in{animation:fadeIn 140ms ease both}
-@keyframes fadeIn{from{opacity:.001;transform:translateY(3px)}to{opacity:1;transform:none}}
+.animate-in{}
 @media (max-width:520px){
   .shell{padding:8px}
   .panel{padding:14px}
@@ -195,7 +194,7 @@ const ICON_SRC = "__LINGOSTAR_ICON__";
 const APP_ORIGIN = "__LINGOSTAR_APP_ORIGIN__";
 const DEFAULT_VIEW = "__LINGOSTAR_DEFAULT_VIEW__";
 const UI_COPY = typeof __LINGOSTAR_UI_COPY__ === "object" ? __LINGOSTAR_UI_COPY__ : { en: {}, ko: {} };
-const APP_VERSION = "0.10.0";
+const APP_VERSION = "0.10.1";
 
 const appEl = document.getElementById("app");
 const hasHost = Boolean(window.openai) || window.parent !== window;
@@ -223,6 +222,16 @@ let busy = false;
 let requestSeq = 0;
 let persistTimer = null;
 let contextTimer = null;
+let heightTimer = null;
+let lastWidgetStateJson = "";
+let lastAppliedWidgetStateJson = "";
+let lastWidgetStateContentJson = "";
+let lastToolOutputJson = "";
+let lastDisplayModeRequest = "";
+let lastContextJson = "";
+let lastHeight = 0;
+let widgetRevision = 0;
+let restoredWidgetStateOnce = false;
 const pendingRequests = new Map();
 
 function normalizeLocale(locale){
@@ -259,6 +268,10 @@ function cssEscape(value){
   return String(value).replace(/["\\]/g, "\\$&");
 }
 function clean(value){ return String(value ?? "").trim(); }
+function stableJson(value){
+  try { return JSON.stringify(value); }
+  catch { return ""; }
+}
 function skillLabel(skill){ return t(skill, skill.replaceAll("_"," ")); }
 function getActiveSession(){
   return (state.sessions || []).find(s => s.id === state.activeSessionId) || (state.sessions || [])[0] || null;
@@ -356,43 +369,94 @@ async function callTool(name, args = {}) {
   return response;
 }
 
+function widgetStateCore() {
+  return {
+    viewMode,
+    currentExerciseIndex,
+    tokenAnswer,
+    typedAnswers: Array.from(typedAnswers.entries()),
+    pendingDeleteSessionId,
+  };
+}
+function widgetStateSnapshot() {
+  return { revision: widgetRevision, ...widgetStateCore() };
+}
 function applyWidgetStateSnapshot(snapshot = {}) {
   if (!snapshot || typeof snapshot !== "object") return false;
+  const snapshotJson = stableJson(snapshot);
+  if (!snapshotJson || snapshotJson === lastAppliedWidgetStateJson) return false;
+  const incomingRevision = Number.isFinite(Number(snapshot.revision)) ? Number(snapshot.revision) : -1;
+  if (restoredWidgetStateOnce && incomingRevision < widgetRevision) return false;
+  const before = stableJson(widgetStateSnapshot());
   if (typeof snapshot.viewMode === "string" && ["welcome","select","lesson"].includes(snapshot.viewMode)) viewMode = snapshot.viewMode;
   if (Number.isInteger(snapshot.currentExerciseIndex)) currentExerciseIndex = snapshot.currentExerciseIndex;
   if (Array.isArray(snapshot.tokenAnswer)) tokenAnswer = snapshot.tokenAnswer;
   if (Array.isArray(snapshot.typedAnswers)) typedAnswers = new Map(snapshot.typedAnswers);
   if (typeof snapshot.pendingDeleteSessionId === "string" || snapshot.pendingDeleteSessionId === null) pendingDeleteSessionId = snapshot.pendingDeleteSessionId;
-  return true;
+  if (incomingRevision >= widgetRevision) widgetRevision = incomingRevision;
+  restoredWidgetStateOnce = true;
+  lastAppliedWidgetStateJson = snapshotJson;
+  const after = stableJson(widgetStateSnapshot());
+  lastWidgetStateContentJson = stableJson(widgetStateCore());
+  lastWidgetStateJson = after || lastWidgetStateJson;
+  return before !== after;
 }
 function persistWidgetStateSoon() {
   if (!hasHost || !window.openai?.setWidgetState) return;
+  const contentJson = stableJson(widgetStateCore());
+  if (contentJson && contentJson !== lastWidgetStateContentJson) {
+    widgetRevision += 1;
+    lastWidgetStateContentJson = contentJson;
+  }
+  const snapshot = widgetStateSnapshot();
+  const snapshotJson = stableJson(snapshot);
+  if (!snapshotJson || snapshotJson === lastWidgetStateJson) return;
   clearTimeout(persistTimer);
   persistTimer = setTimeout(() => {
-    window.openai.setWidgetState({
-      viewMode,
-      currentExerciseIndex,
-      tokenAnswer,
-      typedAnswers: Array.from(typedAnswers.entries()),
-      pendingDeleteSessionId,
-    }).catch(() => {});
-  }, 80);
+    const nextSnapshot = widgetStateSnapshot();
+    const nextJson = stableJson(nextSnapshot);
+    if (!nextJson || nextJson === lastWidgetStateJson) return;
+    lastWidgetStateJson = nextJson;
+    lastAppliedWidgetStateJson = nextJson;
+    try {
+      const result = window.openai.setWidgetState(nextSnapshot);
+      if (result && typeof result.catch === "function") result.catch(() => {});
+    } catch {}
+  }, 120);
 }
 function notifyIntrinsicHeightSoon() {
   if (!hasHost) return;
-  setTimeout(() => {
+  clearTimeout(heightTimer);
+  heightTimer = setTimeout(() => {
     const height = Math.ceil(document.documentElement.scrollHeight || document.body.scrollHeight || 420);
-    rpcNotify("ui/resize", { height });
-  }, 60);
+    if (Math.abs(height - lastHeight) < 4) return;
+    lastHeight = height;
+    if (window.openai?.notifyIntrinsicHeight) {
+      try {
+        const result = window.openai.notifyIntrinsicHeight({ height });
+        if (result && typeof result.catch === "function") result.catch(() => {});
+      } catch {
+        try { window.openai.notifyIntrinsicHeight(height); } catch {}
+      }
+    }
+  }, 90);
 }
 function requestDisplayModeIfUseful() {
   if (!hasHost || !window.openai?.requestDisplayMode) return;
   const targetMode = viewMode === "lesson" && getSection() ? "fullscreen" : "";
   if (!targetMode) return;
+  if (window.openai.displayMode === targetMode) {
+    lastDisplayModeRequest = targetMode;
+    return;
+  }
+  if (lastDisplayModeRequest === targetMode) return;
+  lastDisplayModeRequest = targetMode;
   window.openai.requestDisplayMode({ mode: targetMode }).catch(() => {});
 }
 function requestInlineDisplayMode(reason = "") {
   if (!hasHost || !window.openai?.requestDisplayMode) return;
+  if (lastDisplayModeRequest === "inline" && window.openai.displayMode === "inline") return;
+  lastDisplayModeRequest = "inline";
   window.openai.requestDisplayMode({ mode: "inline" }).catch(() => {});
   updateModelContextForHost(`LingoStar display mode returned inline. Reason: ${reason}`, {
     lingostar: { command: "display_mode_inline", reason },
@@ -400,13 +464,24 @@ function requestInlineDisplayMode(reason = "") {
 }
 function syncCurrentExerciseContextSoon() {
   if (!hasHost) return;
+  const session = getActiveSession();
+  const section = getSection();
+  const exercise = getCurrentExercise();
+  if (!session || !section || !exercise) return;
+  const draft = typedAnswers.get(exercise.id) || "";
+  const contextPayload = {
+    sessionId: session.id,
+    sectionId: section.id,
+    exerciseIndex: currentExerciseIndex,
+    exerciseId: exercise.id,
+    draft,
+    result: getResultForExercise(exercise.id) || null,
+  };
+  const contextJson = stableJson(contextPayload);
+  if (!contextJson || contextJson === lastContextJson) return;
+  lastContextJson = contextJson;
   clearTimeout(contextTimer);
   contextTimer = setTimeout(() => {
-    const session = getActiveSession();
-    const section = getSection();
-    const exercise = getCurrentExercise();
-    if (!session || !section || !exercise) return;
-    const draft = typedAnswers.get(exercise.id) || "";
     updateModelContextForHost([
       "LingoStar current practice context.",
       `Learning track: ${session.id} (${session.targetLanguage || ""})`,
@@ -447,8 +522,11 @@ window.addEventListener("message", event => {
 });
 window.addEventListener("openai:set_globals", event => {
   const globals = event.detail?.globals || {};
-  const restored = applyWidgetStateSnapshot(globals.widgetState);
-  const hydrated = hydrateFromOpenAiGlobals(globals);
+  const restored = globals.widgetState ? applyWidgetStateSnapshot(globals.widgetState) : false;
+  const toolOutputJson = stableJson(globals.toolOutput || null);
+  const shouldHydrate = toolOutputJson && toolOutputJson !== "null" && toolOutputJson !== lastToolOutputJson;
+  if (shouldHydrate) lastToolOutputJson = toolOutputJson;
+  const hydrated = shouldHydrate ? hydrateFromOpenAiGlobals(globals) : false;
   if (restored || hydrated) render();
 }, { passive: true });
 

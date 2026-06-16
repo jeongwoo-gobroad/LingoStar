@@ -285,9 +285,9 @@ Keep CSP minimal. For the current implementation, `WIDGET_CONNECT_DOMAINS` and `
 
 The widget resource URIs are versioned in `server.js`:
 
-- `ui://widget/lingostar-welcome-v0-10-0.html`
-- `ui://widget/lingostar-session-select-v0-10-0.html`
-- `ui://widget/lingostar-lesson-v0-10-0.html`
+- `ui://widget/lingostar-welcome-v0-10-1.html`
+- `ui://widget/lingostar-session-select-v0-10-1.html`
+- `ui://widget/lingostar-lesson-v0-10-1.html`
 
 When changing the widget UI, bump both `WIDGET_VERSION` and the URI filenames so ChatGPT does not reuse older cached component templates.
 

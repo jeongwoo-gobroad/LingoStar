@@ -27,7 +27,7 @@ This document describes the structural-output contract between ChatGPT, the Ling
 
 ```ts
 type AppState = {
-  version: "0.10.0";
+  version: "0.10.1";
   activeSessionId: string | null;
   sessions: LanguageSession[];
   currentSection: Section | null;

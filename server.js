@@ -17,11 +17,11 @@ import { z } from "zod";
 /*  Static assets                                                     */
 /* ------------------------------------------------------------------ */
 
-const SERVICE_VERSION = "0.10.0";
-const WIDGET_VERSION = "0.10.0";
-const WELCOME_WIDGET_URI = "ui://widget/lingostar-welcome-v0-10-0.html";
-const SESSION_SELECT_WIDGET_URI = "ui://widget/lingostar-session-select-v0-10-0.html";
-const LESSON_WIDGET_URI = "ui://widget/lingostar-lesson-v0-10-0.html";
+const SERVICE_VERSION = "0.10.1";
+const WIDGET_VERSION = "0.10.1";
+const WELCOME_WIDGET_URI = "ui://widget/lingostar-welcome-v0-10-1.html";
+const SESSION_SELECT_WIDGET_URI = "ui://widget/lingostar-session-select-v0-10-1.html";
+const LESSON_WIDGET_URI = "ui://widget/lingostar-lesson-v0-10-1.html";
 const WIDGET_URI = LESSON_WIDGET_URI;
 const WIDGET_URIS = {
   welcome: WELCOME_WIDGET_URI,
