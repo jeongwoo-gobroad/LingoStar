@@ -3803,6 +3803,17 @@ const httpServer = createServer(async (req, res) => {
   }
 
 
+  if (req.method === "GET" && url.pathname === "/.well-known/openai-apps-challenge") {
+    const challengeToken = process.env.OPENAI_APPS_CHALLENGE_TOKEN || ENV_FILE.OPENAI_APPS_CHALLENGE_TOKEN || "YOUR_TOKEN_HERE";
+    res
+      .writeHead(200, {
+        "content-type": "text/plain; charset=utf-8",
+        "cache-control": "public, max-age=300",
+      })
+      .end(challengeToken);
+    return;
+  }
+
   if (
     req.method === "GET" &&
     (

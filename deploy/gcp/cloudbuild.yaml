@@ -24,6 +24,7 @@ substitutions:
   _OAUTH_ALLOW_SCOPELESS_TOKENS: "false"
   _FEEDBACK_ID_SECRET: feedback-id:latest
   _FEEDBACK_PW_SECRET: feedback-pw:latest
+  _OPENAI_APPS_CHALLENGE_TOKEN: "5sFymDKBc-wUGQHSXdtkmMDOQ0FJOj94oiisfPm-B8E"
 
 steps:
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
@@ -101,6 +102,8 @@ steps:
       - OAUTH_SCOPES=${_OAUTH_SCOPES}
       - --set-env-vars
       - OAUTH_REQUEST_SCOPES=${_OAUTH_REQUEST_SCOPES}
+      - --set-env-vars
+      - OPENAI_APPS_CHALLENGE_TOKEN=${_OPENAI_APPS_CHALLENGE_TOKEN}
       - --set-env-vars
       - OAUTH_RESOURCE_DOCUMENTATION=${_APP_ORIGIN}/privacy-poilcy.html
       - --set-secrets
