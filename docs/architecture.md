@@ -32,9 +32,11 @@ Host synchronization is deduplicated. The widget must not call `setWidgetState`,
 
 | Resource | Default view | Primary use |
 | --- | --- | --- |
-| `ui://widget/lingostar-welcome-v0-10-1.html` | `welcome` | First-start onboarding and user-facing feature overview |
-| `ui://widget/lingostar-session-select-v0-10-1.html` | `select` | Choose or delete an existing learning track |
-| `ui://widget/lingostar-lesson-v0-10-1.html` | `lesson` | Solve the active practice set |
+| `ui://widget/lingostar-welcome-v0-10-2.html` | `welcome` | First-start onboarding and user-facing feature overview |
+| `ui://widget/lingostar-session-select-v0-10-2.html` | `select` | Choose or delete an existing learning track |
+| `ui://widget/lingostar-lesson-v0-10-2.html` | `lesson` | Solve the active practice set |
+
+The server also keeps the previous `v0-10-1` widget resource URIs registered as compatibility aliases. This prevents already-open ChatGPT conversations or cached published-app metadata from failing with a template-fetch error after a version bump.
 
 Data-only tools handle state reads, static help search, settings updates, deletion, grading, audio fallback, and feedback. Render tools only choose the appropriate component template.
 

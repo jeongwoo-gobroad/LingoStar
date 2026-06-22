@@ -16,6 +16,11 @@ const EXPECTED_WIDGET_URIS = {
   sessionSelect: "ui://widget/lingostar-session-select-v0-10-2.html",
   lesson: "ui://widget/lingostar-lesson-v0-10-2.html",
 };
+const LEGACY_WIDGET_URIS = {
+  welcome: "ui://widget/lingostar-welcome-v0-10-1.html",
+  sessionSelect: "ui://widget/lingostar-session-select-v0-10-1.html",
+  lesson: "ui://widget/lingostar-lesson-v0-10-1.html",
+};
 const DEFAULT_VIEW_BY_RESOURCE = {
   welcome: "welcome",
   sessionSelect: "select",
@@ -204,6 +209,8 @@ const otherUserMeta = { "openai/locale": "ko-KR", "openai/subject": "verify-user
 const iconResponse = await fetch(`http://localhost:${PORT}/icon.png`);
 assert("icon route returns png", iconResponse.ok && iconResponse.headers.get("content-type")?.includes("image/png"));
 assert("icon route has bytes", (await iconResponse.arrayBuffer()).byteLength > 0);
+const iconHeadResponse = await fetch(`http://localhost:${PORT}/icon.png`, { method: "HEAD" });
+assert("icon HEAD route returns png", iconHeadResponse.ok && iconHeadResponse.headers.get("content-type")?.includes("image/png"));
 
 const previewResponse = await fetch(`http://localhost:${PORT}/preview`);
 const previewHtml = await previewResponse.text();
@@ -249,6 +256,13 @@ for (const [viewName, uri] of Object.entries(EXPECTED_WIDGET_URIS)) {
   assert(`${viewName} widget resource includes default view`, widgetResource?.text?.includes(`const DEFAULT_VIEW = "${expectedDefault}"`));
   assert(`${viewName} widget resource includes UI copy`, widgetResource?.text?.includes("const UI_COPY = typeof"));
   assert(`${viewName} widget resource includes CSP metadata`, Boolean(widgetResource?._meta?.ui?.csp));
+}
+
+for (const [viewName, uri] of Object.entries(LEGACY_WIDGET_URIS)) {
+  const resourceResult = await rpc("resources/read", { uri });
+  const widgetResource = resourceResult.contents?.[0];
+  assert(`${viewName} legacy widget resource can be read`, widgetResource?.uri === uri);
+  assert(`${viewName} legacy widget keeps current app version`, widgetResource?.text?.includes('const APP_VERSION = "0.10.2"'));
 }
 
 const rootResourceResult = await rpcAt("/", "resources/read", { uri: EXPECTED_WIDGET_URIS.lesson });
@@ -409,6 +423,7 @@ const settingsResult = await rpc("tools/call", {
     patch: {
       settings: {
         speakingEnabled: false,
+        sectionPassThreshold: 95,
         exerciseCounts: { language_info: 4, listening: 3, reading: 3, writing: 4, speaking: 3 },
         ttsRate: 0.9,
       },
@@ -477,6 +492,21 @@ assert("section excludes speaking when speaking is disabled", !("speaking" in co
 assert("section has 3 language_info", counts.language_info === 3);
 assert("section has 3 writing", counts.writing === 3);
 
+const invalidGradingResult = await rpc("tools/call", {
+  name: "grade_section_answers",
+  arguments: {
+    sessionId: session?.id,
+    sectionId: section?.id,
+    evaluations: [
+      { exerciseId: "ex-not-in-section", score: 100, skill: "reading", needsReview: false, userAnswer: "a", feedback: { short: "Invalid." } },
+    ],
+    sectionFeedback: "Invalid grading should be rejected.",
+  },
+  _meta: meta,
+});
+assert("unknown exercise grading is rejected", invalidGradingResult.isError === true);
+assert("unknown exercise grading does not store result", invalidGradingResult.structuredContent?.state?.currentSection?.results?.length === 0);
+
 const gradingResult = await rpc("tools/call", {
   name: "grade_section_answers",
   arguments: {
@@ -495,6 +525,30 @@ const gradingResult = await rpc("tools/call", {
 const afterGrading = gradingResult.structuredContent?.state;
 assert("results stored", afterGrading?.currentSection?.results?.length === 4);
 assert("profile updated on 0-100 grading", afterGrading?.sessions?.[0]?.skillProfile?.writing > 5);
+
+const completeWithoutSpeakingResult = await rpc("tools/call", {
+  name: "grade_section_answers",
+  arguments: {
+    sessionId: session?.id,
+    sectionId: section?.id,
+    evaluations: [
+      { exerciseId: "ex-language_info-2", score: 100, skill: "language_info", needsReview: false, userAnswer: "a", feedback: { short: "Correct." } },
+      { exerciseId: "ex-language_info-3", score: 100, skill: "language_info", needsReview: false, userAnswer: "a", feedback: { short: "Correct." } },
+      { exerciseId: "ex-listening-2", score: 100, skill: "listening", needsReview: false, userAnswer: "a", feedback: { short: "Correct." } },
+      { exerciseId: "ex-listening-3", score: 100, skill: "listening", needsReview: false, userAnswer: "a", feedback: { short: "Correct." } },
+      { exerciseId: "ex-reading-2", score: 100, skill: "reading", needsReview: false, userAnswer: "a", feedback: { short: "Correct." } },
+      { exerciseId: "ex-reading-3", score: 100, skill: "reading", needsReview: false, userAnswer: "a", feedback: { short: "Correct." } },
+      { exerciseId: "ex-writing-2", score: 100, skill: "writing", needsReview: false, userAnswer: "Aki studies at the library.", feedback: { short: "Good." } },
+      { exerciseId: "ex-writing-3", score: 100, skill: "writing", needsReview: false, userAnswer: "Aki studies at the library.", feedback: { short: "Good." } },
+    ],
+    sectionFeedback: "Complete speaking-disabled section.",
+  },
+  _meta: meta,
+});
+const completedWithoutSpeakingSession = completeWithoutSpeakingResult.structuredContent?.state?.sessions?.find((item) => item.id === session?.id);
+const completedWithoutSpeakingHistory = completedWithoutSpeakingSession?.sectionHistory?.[0];
+assert("speaking-disabled section completes", completeWithoutSpeakingResult.structuredContent?.state?.currentSection === null);
+assert("speaking-disabled section can pass above 90 threshold", completedWithoutSpeakingHistory?.passed === true && completedWithoutSpeakingHistory?.weightedScore >= 95);
 
 const deleteByLanguageResult = await rpc("tools/call", {
   name: "delete_session",

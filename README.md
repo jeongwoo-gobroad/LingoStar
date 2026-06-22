@@ -12,7 +12,7 @@ LingoStar는 ChatGPT Apps용 외국어 학습 MCP 앱입니다. ChatGPT가 학�
 - ChatGPT iframe 위젯: [public/lingostar-widget.html](./public/lingostar-widget.html)
 - GCP/Cloud Run 배포 문서: [docs/deployment-gcp.md](./docs/deployment-gcp.md)
 - ChatGPT Apps 제출 JSON: [chatgpt-app-submission.json](./chatgpt-app-submission.json)
-- 개인정보 처리방침: [privacy-poilcy.html](./privacy-poilcy.html)
+- 개인정보 처리방침: [privacy-policy.html](./privacy-poilcy.html)
 - 이용약관: [terms-of-service.html](./terms-of-service.html)
 
 ## 학습 섹션 구조

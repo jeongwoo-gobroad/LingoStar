@@ -23,7 +23,7 @@ Cloud Run gives LingoStar a stable public HTTPS origin for ChatGPT Apps:
 - Widget origin: `https://YOUR_ORIGIN`
 - Icon: `https://YOUR_ORIGIN/icon.png`
 - OAuth protected-resource metadata: `https://YOUR_ORIGIN/.well-known/oauth-protected-resource`
-- Privacy policy: `https://YOUR_ORIGIN/privacy-poilcy.html`
+- Privacy policy: `https://YOUR_ORIGIN/privacy-policy.html` (legacy `privacy-poilcy.html` is also served)
 - Terms of service: `https://YOUR_ORIGIN/terms-of-service.html`
 
 The server reads Cloud Run's `PORT` environment variable and listens on `0.0.0.0`, which satisfies the Cloud Run runtime contract.
@@ -87,7 +87,7 @@ OAUTH_CLIENT_ID=YOUR_AUTH0_CLIENT_ID
 OAUTH_SCOPE_MODE=none
 OAUTH_VALIDATE_CLIENT_ID=true
 OAUTH_ALLOW_SCOPELESS_TOKENS=false
-OAUTH_RESOURCE_DOCUMENTATION=https://YOUR_ORIGIN/privacy-poilcy.html
+OAUTH_RESOURCE_DOCUMENTATION=https://YOUR_ORIGIN/privacy-policy.html
 ```
 
 Use `LINGOSTAR_AUTH_REQUIRED=0` only for local demos or private review videos.
@@ -183,7 +183,7 @@ curl "$origin/.well-known/oauth-protected-resource"
 
 ```text
 MCP URL: https://YOUR_RUN_APP_URL/mcp
-Privacy Policy: https://YOUR_RUN_APP_URL/privacy-poilcy.html
+Privacy Policy: https://YOUR_RUN_APP_URL/privacy-policy.html
 Terms of Service: https://YOUR_RUN_APP_URL/terms-of-service.html
 ```
 
@@ -258,7 +258,7 @@ Use these values in the app submission/developer console:
 ```text
 MCP endpoint: https://YOUR_ORIGIN/mcp
 OAuth resource metadata: https://YOUR_ORIGIN/.well-known/oauth-protected-resource
-Privacy policy: https://YOUR_ORIGIN/privacy-poilcy.html
+Privacy policy: https://YOUR_ORIGIN/privacy-policy.html
 Terms of service: https://YOUR_ORIGIN/terms-of-service.html
 Icon: https://YOUR_ORIGIN/icon.png
 ```
@@ -285,9 +285,11 @@ Keep CSP minimal. For the current implementation, `WIDGET_CONNECT_DOMAINS` and `
 
 The widget resource URIs are versioned in `server.js`:
 
-- `ui://widget/lingostar-welcome-v0-10-1.html`
-- `ui://widget/lingostar-session-select-v0-10-1.html`
-- `ui://widget/lingostar-lesson-v0-10-1.html`
+- `ui://widget/lingostar-welcome-v0-10-2.html`
+- `ui://widget/lingostar-session-select-v0-10-2.html`
+- `ui://widget/lingostar-lesson-v0-10-2.html`
+
+The server keeps the previous `v0-10-1` resource URIs registered as aliases. Keep at least one previous version available after each UI version bump so existing ChatGPT conversations and published-app caches can still fetch a template.
 
 When changing the widget UI, bump both `WIDGET_VERSION` and the URI filenames so ChatGPT does not reuse older cached component templates.
 
@@ -332,6 +334,7 @@ After Cloud Run deployment:
 $origin = gcloud run services describe lingostar --region asia-northeast3 --format "value(status.url)"
 curl "$origin/status.json"
 curl "$origin/icon.png" -I
+curl "$origin/privacy-policy.html" -I
 curl "$origin/privacy-poilcy.html" -I
 curl "$origin/terms-of-service.html" -I
 curl "$origin/.well-known/oauth-protected-resource"

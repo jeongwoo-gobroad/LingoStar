@@ -1,7 +1,7 @@
 import { createServer } from "node:http";
 import { Buffer } from "node:buffer";
 import { existsSync, readFileSync } from "node:fs";
-import { randomUUID } from "node:crypto";
+import { randomUUID, timingSafeEqual } from "node:crypto";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import {
   registerAppResource,
@@ -27,6 +27,16 @@ const WIDGET_URIS = {
   welcome: WELCOME_WIDGET_URI,
   sessionSelect: SESSION_SELECT_WIDGET_URI,
   lesson: LESSON_WIDGET_URI,
+};
+const LEGACY_WIDGET_URIS = {
+  welcome: ["ui://widget/lingostar-welcome-v0-10-1.html"],
+  sessionSelect: ["ui://widget/lingostar-session-select-v0-10-1.html"],
+  lesson: ["ui://widget/lingostar-lesson-v0-10-1.html"],
+};
+const ALL_WIDGET_URIS = {
+  welcome: [WIDGET_URIS.welcome, ...LEGACY_WIDGET_URIS.welcome],
+  sessionSelect: [WIDGET_URIS.sessionSelect, ...LEGACY_WIDGET_URIS.sessionSelect],
+  lesson: [WIDGET_URIS.lesson, ...LEGACY_WIDGET_URIS.lesson],
 };
 const iconAssetPath = existsSync("public/icon-96.png")
   ? "public/icon-96.png"
@@ -56,6 +66,7 @@ const SUPPORTED_UI_LOCALES = ["en", "ko"];
 const SKILLS = ["speaking", "writing", "listening", "reading"];
 const EXERCISE_AREAS = ["language_info", "listening", "reading", "writing", "speaking"];
 const SECTION_SCORE_WEIGHTS = { listening: 0.2, reading: 0.4, writing: 0.3, speaking: 0.1 };
+const MAX_AUDIO_BYTES = 10 * 1024 * 1024;
 
 /* ------------------------------------------------------------------ */
 /*  Environment                                                        */
@@ -179,7 +190,7 @@ const OAUTH_RESOURCE_METADATA_URL = `${APP_ORIGIN}/.well-known/oauth-protected-r
 const OAUTH_RESOURCE_DOCUMENTATION =
   process.env.OAUTH_RESOURCE_DOCUMENTATION ??
   ENV_FILE.OAUTH_RESOURCE_DOCUMENTATION ??
-  `${APP_ORIGIN}/privacy-poilcy.html`;
+  `${APP_ORIGIN}/privacy-policy.html`;
 const ICON_URL = iconPng ? `${APP_ORIGIN}/icon.png` : "";
 const widgetHtmlTemplate = readFileSync("public/lingostar-widget.html", "utf8");
 const UI_COPY_PATHS = {
@@ -248,10 +259,13 @@ const speechOutputSchema = {
 };
 
 function makeChoiceSchema() {
-  return z.object({
-    id: z.string().describe("A short, unique identifier for this choice (e.g., 'a', '1', 'choice_A')"),
-    text: z.string().describe("The text content of the multiple choice option")
-  });
+  return z.union([
+    z.object({
+      id: z.string().describe("A short, unique identifier for this choice (e.g., 'a', '1', 'choice_A')"),
+      text: z.string().describe("The text content of the multiple choice option")
+    }),
+    z.string().describe("Choice text. When strings are used, the zero-based index is treated as the choice id.")
+  ]);
 }
 
 const languageInfoPayloadSchema = z.object({
@@ -1244,6 +1258,14 @@ function validateSectionSkillCounts(section, session) {
 
   for (const exercise of exercises) {
     const label = exercise?.id || `sequence ${exercise?.sequence ?? "?"}`;
+    const area = normalizeAreaName(exercise?.skill || exercise?.type);
+    if (!EXERCISE_AREAS.includes(area)) {
+      errors.push(`${label}: unknown exercise area "${area}"`);
+      continue;
+    }
+    if (!enabledAreas.includes(area)) {
+      errors.push(`${label}: ${area} is disabled for this learning track`);
+    }
     if (exercise.type !== exercise.skill) {
       errors.push(`${label}: type and skill must match`);
     }
@@ -1432,6 +1454,9 @@ function openAiAudioErrorMessage(sessionOrLocale, error) {
 async function transcribeSpeechWithOpenAI({ audioBase64, mimeType = "audio/webm", speechLang }) {
   const buffer = Buffer.from(normalizeAudioBase64(audioBase64), "base64");
   if (!buffer.length) throw new Error("No audio bytes were provided.");
+  if (buffer.length > MAX_AUDIO_BYTES) {
+    throw new Error(`Audio is too large. Maximum size is ${Math.floor(MAX_AUDIO_BYTES / 1024 / 1024)} MB.`);
+  }
 
   const formData = new FormData();
   formData.append("model", OPENAI_STT_MODEL);
@@ -1884,13 +1909,15 @@ function refreshDashboard(state) {
 
   for (const session of state.sessions) {
     const completedSections = (session.sectionHistory ?? []).filter(
-      (s) => s.status === "completed"
+      (s) => s.status === "completed" || s.status === "passed"
     ).length;
     totalCompletedSections += completedSections;
 
-    const profile = session.skillProfile ?? { speaking: 0, writing: 0, listening: 0, reading: 0 };
-    const avg =
-      (profile.speaking + profile.writing + profile.listening + profile.reading) / 4;
+    const profile = session.skillProfile ?? {};
+    const enabledSkills = enabledSkillsForSession(session);
+    const avg = enabledSkills.length
+      ? enabledSkills.reduce((sum, skill) => sum + (Number(profile[skill]) || 0), 0) / enabledSkills.length
+      : 0;
     totalSkillScore += avg;
   }
 
@@ -2174,13 +2201,21 @@ function exerciseIdsForSection(section) {
 function computeSectionScore(section, session) {
   const results = section.results ?? [];
   const bySkill = {};
-  for (const area of Object.keys(SECTION_SCORE_WEIGHTS)) bySkill[area] = [];
+  const sectionSkills = new Set((section.exercises ?? []).map((exercise) => normalizeAreaName(exercise.skill || exercise.type)));
+  const enabledScoreAreas = Object.keys(SECTION_SCORE_WEIGHTS)
+    .filter((area) => enabledExerciseAreasForSession(session).includes(area))
+    .filter((area) => sectionSkills.has(area));
+  for (const area of enabledScoreAreas) bySkill[area] = [];
   for (const result of results) {
     if (bySkill[result.skill]) bySkill[result.skill].push(Math.max(0, Math.min(100, Number(result.score) || 0)));
   }
 
+  const totalWeight = enabledScoreAreas.reduce((sum, skill) => sum + (SECTION_SCORE_WEIGHTS[skill] ?? 0), 0) || 1;
   let weightedScore = 0;
-  for (const [skill, weight] of Object.entries(SECTION_SCORE_WEIGHTS)) {
+  const normalizedWeights = {};
+  for (const skill of enabledScoreAreas) {
+    const weight = (SECTION_SCORE_WEIGHTS[skill] ?? 0) / totalWeight;
+    normalizedWeights[skill] = Number(weight.toFixed(4));
     const scores = bySkill[skill] ?? [];
     const average = scores.length ? scores.reduce((sum, score) => sum + score, 0) / scores.length : 0;
     weightedScore += average * weight;
@@ -2190,7 +2225,7 @@ function computeSectionScore(section, session) {
     weightedScore: Number(weightedScore.toFixed(1)),
     threshold,
     passed: weightedScore >= threshold,
-    weights: SECTION_SCORE_WEIGHTS,
+    weights: normalizedWeights,
   };
 }
 
@@ -2216,6 +2251,17 @@ function htmlEscape(value) {
     .replace(/'/g, "&#39;");
 }
 
+function safeEqualText(leftValue, rightValue) {
+  const left = Buffer.from(String(leftValue ?? ""), "utf8");
+  const right = Buffer.from(String(rightValue ?? ""), "utf8");
+  const length = Math.max(left.length, right.length, 1);
+  const paddedLeft = Buffer.alloc(length);
+  const paddedRight = Buffer.alloc(length);
+  left.copy(paddedLeft);
+  right.copy(paddedRight);
+  return timingSafeEqual(paddedLeft, paddedRight) && left.length === right.length;
+}
+
 function feedbackAdminAuthorized(req) {
   if (!FEEDBACK_ADMIN_ID || !FEEDBACK_ADMIN_PASSWORD) return false;
   const header = cleanText(req.headers.authorization);
@@ -2231,10 +2277,11 @@ function feedbackAdminAuthorized(req) {
   if (splitAt < 0) return false;
   const id = decoded.slice(0, splitAt);
   const password = decoded.slice(splitAt + 1);
-  return id === FEEDBACK_ADMIN_ID && password === FEEDBACK_ADMIN_PASSWORD;
+  return safeEqualText(id, FEEDBACK_ADMIN_ID) && safeEqualText(password, FEEDBACK_ADMIN_PASSWORD);
 }
 
 function feedbackUnauthorized(res) {
+  setBaseHttpSecurityHeaders(res);
   res.writeHead(401, {
     "content-type": "text/plain; charset=utf-8",
     "www-authenticate": 'Basic realm="LingoStar feedback"',
@@ -2296,9 +2343,40 @@ ${nav}
 }
 
 function writeJson(res, status, payload) {
+  setBaseHttpSecurityHeaders(res);
   res
     .writeHead(status, { "content-type": "application/json; charset=utf-8" })
     .end(JSON.stringify(payload, null, 2));
+}
+
+function writeJsonForRequest(req, res, status, payload) {
+  sendHttp(
+    req,
+    res,
+    status,
+    { "content-type": "application/json; charset=utf-8" },
+    JSON.stringify(payload, null, 2)
+  );
+}
+
+function setBaseHttpSecurityHeaders(res) {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("Referrer-Policy", "no-referrer");
+  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+}
+
+function sendHttp(req, res, status, headers = {}, body = "") {
+  setBaseHttpSecurityHeaders(res);
+  res.writeHead(status, headers);
+  if (req.method === "HEAD") {
+    res.end();
+    return;
+  }
+  res.end(body);
+}
+
+function isGetOrHead(req) {
+  return req.method === "GET" || req.method === "HEAD";
 }
 
 function readRequestJson(req) {
@@ -2352,6 +2430,7 @@ function publicConfig() {
     widgetVersion: WIDGET_VERSION,
     appOrigin: APP_ORIGIN,
     widgetUris: WIDGET_URIS,
+    legacyWidgetUris: LEGACY_WIDGET_URIS,
     authRequired: AUTH_REQUIRED,
     help: {
       ko: `${APP_ORIGIN}/help?locale=ko`,
@@ -2483,21 +2562,32 @@ function createLingoStarServer() {
     }));
   }
 
-  registerLingoStarResource(
+  function registerLingoStarResourceFamily(name, uris, defaultView, description) {
+    uris.forEach((uri, index) => {
+      registerLingoStarResource(
+        index === 0 ? name : `${name}-legacy-${index}`,
+        uri,
+        defaultView,
+        description
+      );
+    });
+  }
+
+  registerLingoStarResourceFamily(
     "lingostar-welcome",
-    WELCOME_WIDGET_URI,
+    ALL_WIDGET_URIS.welcome,
     "welcome",
     "LingoStar welcome and onboarding card. Use for first-start guidance when the learner has no saved learning tracks."
   );
-  registerLingoStarResource(
+  registerLingoStarResourceFamily(
     "lingostar-session-select",
-    SESSION_SELECT_WIDGET_URI,
+    ALL_WIDGET_URIS.sessionSelect,
     "select",
     "LingoStar learning-track selector. Use only for choosing or deleting saved language tracks; show detailed progress and settings conversationally in ChatGPT text."
   );
-  registerLingoStarResource(
+  registerLingoStarResourceFamily(
     "lingostar-lesson",
-    LESSON_WIDGET_URI,
+    ALL_WIDGET_URIS.lesson,
     "lesson",
     "LingoStar fullscreen-friendly lesson surface for solving the active language section. Use after creating exercises or when the user wants to continue the current section."
   );
@@ -3149,6 +3239,25 @@ function createLingoStarServer() {
         return replyWithState(state, textFor(session).missingContext, true);
       }
 
+      const exerciseById = new Map((section.exercises ?? []).map((exercise) => [exercise.id, exercise]));
+      const invalidEvaluations = [];
+      for (const result of args.evaluations ?? []) {
+        const exercise = exerciseById.get(result.exerciseId);
+        if (!exercise) {
+          invalidEvaluations.push(result.exerciseId);
+          continue;
+        }
+        result.skill = normalizeAreaName(exercise.skill || exercise.type);
+      }
+      if (invalidEvaluations.length) {
+        return replyWithState(
+          state,
+          `Invalid grading payload. Unknown exercise ID(s): ${invalidEvaluations.map(cleanText).join(", ")}`,
+          true,
+          { initialView: "lesson" }
+        );
+      }
+
       // Upsert results by exercise ID so repeated grading does not create duplicates.
       section.results ??= [];
       for (const result of args.evaluations ?? []) {
@@ -3662,6 +3771,7 @@ function setMcpResponseHeaders(req, res) {
   const origin = req.headers.origin || "*";
   const allowedOrigin = allowedCorsOrigin(origin);
   res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
+  res.setHeader("Vary", "Origin");
   res.setHeader("Access-Control-Expose-Headers", "Mcp-Session-Id, WWW-Authenticate");
   res.setHeader("X-Accel-Buffering", "no");
   return allowedOrigin;
@@ -3732,7 +3842,7 @@ async function handleStatelessMcpRequest(req, res) {
 
 const httpServer = createServer(async (req, res) => {
   if (!req.url) {
-    res.writeHead(400).end("Missing URL");
+    sendHttp(req, res, 400, { "content-type": "text/plain; charset=utf-8" }, "Missing URL");
     return;
   }
 
@@ -3751,16 +3861,15 @@ const httpServer = createServer(async (req, res) => {
     return;
   }
 
-  if (req.method === "GET" && (url.pathname === "/healthz" || url.pathname === "/status.json")) {
-    res
-      .writeHead(200, { "content-type": "application/json; charset=utf-8" })
-      .end(JSON.stringify({
+  if (isGetOrHead(req) && (url.pathname === "/healthz" || url.pathname === "/status.json")) {
+    writeJsonForRequest(req, res, 200, {
         ok: true,
         service: "lingostar",
         version: SERVICE_VERSION,
         widgetVersion: WIDGET_VERSION,
         widgetUri: WIDGET_URI,
         widgetUris: WIDGET_URIS,
+        legacyWidgetUris: LEGACY_WIDGET_URIS,
         authRequired: AUTH_REQUIRED,
         developerMode: DEVELOPER_MODE,
         aiFallbackEnabled: IS_AI_FALLBACK,
@@ -3782,19 +3891,19 @@ const httpServer = createServer(async (req, res) => {
         oauthValidateClientId: OAUTH_VALIDATE_CLIENT_ID,
         oauthAllowScopelessTokens: OAUTH_ALLOW_SCOPELESS_TOKENS,
         feedbackAdminConfigured: Boolean(FEEDBACK_ADMIN_ID && FEEDBACK_ADMIN_PASSWORD),
-      }));
+      });
     return;
   }
 
-  if (req.method === "GET" && url.pathname === "/api/config") {
-    writeJson(res, 200, publicConfig());
+  if (isGetOrHead(req) && url.pathname === "/api/config") {
+    writeJsonForRequest(req, res, 200, publicConfig());
     return;
   }
 
-  if (req.method === "GET" && url.pathname === "/api/help") {
+  if (isGetOrHead(req) && url.pathname === "/api/help") {
     const locale = normalizeUiLocale(url.searchParams.get("locale")) || "ko";
     const query = url.searchParams.get("q") || "";
-    writeJson(res, 200, query ? searchHelpContent(locale, query) : helpContentFor(locale));
+    writeJsonForRequest(req, res, 200, query ? searchHelpContent(locale, query) : helpContentFor(locale));
     return;
   }
 
@@ -3804,71 +3913,79 @@ const httpServer = createServer(async (req, res) => {
     url.pathname === "/api/session/select" ||
     url.pathname.startsWith("/api/session/")
   ) {
-    writeJson(res, 410, {
+    writeJsonForRequest(req, res, 410, {
       message: "The web state API is disabled. Manage LingoStar learning tracks through the ChatGPT app tools.",
     });
     return;
   }
 
 
-  if (req.method === "GET" && url.pathname === "/.well-known/openai-apps-challenge") {
+  if (isGetOrHead(req) && url.pathname === "/.well-known/openai-apps-challenge") {
     const challengeToken = process.env.OPENAI_APPS_CHALLENGE_TOKEN || ENV_FILE.OPENAI_APPS_CHALLENGE_TOKEN || "YOUR_TOKEN_HERE";
-    res
-      .writeHead(200, {
+    sendHttp(
+      req,
+      res,
+      200,
+      {
         "content-type": "text/plain; charset=utf-8",
         "cache-control": "public, max-age=300",
-      })
-      .end(challengeToken);
+      },
+      challengeToken
+    );
     return;
   }
 
   if (
-    req.method === "GET" &&
+    isGetOrHead(req) &&
     (
       url.pathname === "/.well-known/oauth-protected-resource" ||
       url.pathname === "/.well-known/oauth-protected-resource/mcp"
     )
   ) {
-    res
-      .writeHead(200, {
+    sendHttp(
+      req,
+      res,
+      200,
+      {
         "content-type": "application/json; charset=utf-8",
         "cache-control": "public, max-age=300",
-      })
-      .end(JSON.stringify(oauthProtectedResourceMetadata(), null, 2));
+      },
+      JSON.stringify(oauthProtectedResourceMetadata(), null, 2)
+    );
     return;
   }
 
-  if (req.method === "GET" && (url.pathname === "/" || url.pathname === "/auth/callback")) {
-    res
-      .writeHead(200, { "content-type": "text/html; charset=utf-8" })
-      .end(renderHomePage());
+  if (isGetOrHead(req) && (url.pathname === "/" || url.pathname === "/auth/callback")) {
+    sendHttp(req, res, 200, { "content-type": "text/html; charset=utf-8" }, renderHomePage());
     return;
   }
 
-  if (req.method === "GET" && url.pathname === "/help") {
+  if (isGetOrHead(req) && url.pathname === "/help") {
     const locale = normalizeUiLocale(url.searchParams.get("locale")) || "ko";
-    res
-      .writeHead(200, { "content-type": "text/html; charset=utf-8" })
-      .end(renderHelpPage(locale));
+    sendHttp(req, res, 200, { "content-type": "text/html; charset=utf-8" }, renderHelpPage(locale));
     return;
   }
 
-  if (req.method === "GET" && url.pathname === "/icon.png" && iconPng) {
-    res
-      .writeHead(200, {
+  if (isGetOrHead(req) && url.pathname === "/icon.png" && iconPng) {
+    sendHttp(
+      req,
+      res,
+      200,
+      {
         "content-type": "image/png",
         "cache-control": "public, max-age=3600",
-      })
-      .end(iconPng);
+      },
+      iconPng
+    );
     return;
   }
 
-  if (req.method === "GET" && url.pathname === "/preview") {
-    res.writeHead(200, { "content-type": "text/html; charset=utf-8" }).end(widgetHtml);
+  if (isGetOrHead(req) && url.pathname === "/preview") {
+    sendHttp(req, res, 200, { "content-type": "text/html; charset=utf-8" }, widgetHtml);
     return;
   }
 
-  if (req.method === "GET" && url.pathname === "/feedback") {
+  if (isGetOrHead(req) && url.pathname === "/feedback") {
     if (!feedbackAdminAuthorized(req)) {
       feedbackUnauthorized(res);
       return;
@@ -3877,24 +3994,20 @@ const httpServer = createServer(async (req, res) => {
       const page = Math.max(1, Number.parseInt(url.searchParams.get("page") || "1", 10) || 1);
       const pageSize = clampInteger(url.searchParams.get("pageSize"), 1, 100, 20);
       const items = await loadFeedbackItems();
-      res
-        .writeHead(200, { "content-type": "text/html; charset=utf-8" })
-        .end(renderFeedbackPage(items, page, pageSize));
+      sendHttp(req, res, 200, { "content-type": "text/html; charset=utf-8" }, renderFeedbackPage(items, page, pageSize));
     } catch (error) {
-      res
-        .writeHead(500, { "content-type": "text/plain; charset=utf-8" })
-        .end(`Feedback page failed: ${cleanText(error?.message)}`);
+      sendHttp(req, res, 500, { "content-type": "text/plain; charset=utf-8" }, `Feedback page failed: ${cleanText(error?.message)}`);
     }
     return;
   }
 
-  if (req.method === "GET" && url.pathname === "/privacy-poilcy.html" && privacyPolicyHtml) {
-    res.writeHead(200, { "content-type": "text/html; charset=utf-8" }).end(privacyPolicyHtml);
+  if (isGetOrHead(req) && (url.pathname === "/privacy-poilcy.html" || url.pathname === "/privacy-policy.html") && privacyPolicyHtml) {
+    sendHttp(req, res, 200, { "content-type": "text/html; charset=utf-8" }, privacyPolicyHtml);
     return;
   }
 
-  if (req.method === "GET" && url.pathname === "/terms-of-service.html" && termsOfServiceHtml) {
-    res.writeHead(200, { "content-type": "text/html; charset=utf-8" }).end(termsOfServiceHtml);
+  if (isGetOrHead(req) && url.pathname === "/terms-of-service.html" && termsOfServiceHtml) {
+    sendHttp(req, res, 200, { "content-type": "text/html; charset=utf-8" }, termsOfServiceHtml);
     return;
   }
 
@@ -3951,11 +4064,11 @@ const httpServer = createServer(async (req, res) => {
       return;
     }
 
-    res.writeHead(405).end("Method Not Allowed");
+    sendHttp(req, res, 405, { "content-type": "text/plain; charset=utf-8" }, "Method Not Allowed");
     return;
   }
 
-  res.writeHead(404).end("Not Found");
+  sendHttp(req, res, 404, { "content-type": "text/plain; charset=utf-8" }, "Not Found");
 });
 
 httpServer.listen(port, "0.0.0.0", () => {

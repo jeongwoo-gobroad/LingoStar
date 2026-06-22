@@ -71,7 +71,7 @@ function Get-EnvVars {
     "OAUTH_SCOPE_MODE=$OAuthScopeMode",
     "OAUTH_VALIDATE_CLIENT_ID=$OAuthValidateClientId",
     "OAUTH_ALLOW_SCOPELESS_TOKENS=$OAuthAllowScopelessTokens",
-    "OAUTH_RESOURCE_DOCUMENTATION=$AppOrigin/privacy-poilcy.html"
+    "OAUTH_RESOURCE_DOCUMENTATION=$AppOrigin/privacy-policy.html"
   )
   return "^##^" + ($vars -join "##")
 }

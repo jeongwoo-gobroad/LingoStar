@@ -105,7 +105,7 @@ steps:
       - --set-env-vars
       - OPENAI_APPS_CHALLENGE_TOKEN=${_OPENAI_APPS_CHALLENGE_TOKEN}
       - --set-env-vars
-      - OAUTH_RESOURCE_DOCUMENTATION=${_APP_ORIGIN}/privacy-poilcy.html
+      - OAUTH_RESOURCE_DOCUMENTATION=${_APP_ORIGIN}/privacy-policy.html
       - --set-secrets
       - OPENAI_API_KEY=${_OPENAI_SECRET},FEEDBACK_ADMIN_ID=${_FEEDBACK_ID_SECRET},FEEDBACK_ADMIN_PASSWORD=${_FEEDBACK_PW_SECRET}
 
